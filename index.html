@@ -2,8 +2,17 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1013">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rimfrost">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+#swupdate{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:100000;background:#1b2a33;color:#e8f4f8;border:1px solid #9fd6e8;border-radius:10px;padding:10px 16px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.5);cursor:pointer}</style>
 </head>
 <body>
 <title>Rimfrost</title>
@@ -35,6 +44,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .frame{background:rgba(21,28,34,.92);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:220px;max-width:44vw}
 .frame .top{display:flex;justify-content:space-between;gap:6px;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden}
 .frame .top span:first-child{overflow:hidden;text-overflow:ellipsis}
+.fxrow{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}.fxrow:empty{display:none}.fxc{position:relative;width:26px;height:26px;border-radius:4px;border:1px solid #4caf50;overflow:hidden;background:#0d1419}.fxc.bad{border-color:#e05050}.fxc img{width:100%;height:100%;display:block}.fxc b{position:absolute;left:0;right:0;bottom:0;font-size:10px;line-height:11px;text-align:center;background:rgba(0,0,0,.65);color:#fff;font-weight:800}
 .frame .sub{font-size:12px;color:var(--mute);margin-bottom:4px}
 .bar{position:relative;height:14px;background:#0a0e11;border-radius:3px;overflow:hidden;margin-top:3px}
 .bar i{position:absolute;inset:0 auto 0 0;display:block;transition:width .15s}
@@ -146,6 +156,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .barprev{display:flex;gap:4px;margin:10px 0;flex-wrap:wrap}.bp{width:40px;height:40px;border:1px solid var(--line);border-radius:5px;background:#0d1419;position:relative;overflow:hidden}.bp img{width:100%;height:100%}.bp span{position:absolute;left:2px;top:0;font-size:10px;font-weight:800;text-shadow:0 1px 2px #000}
 .abico{width:36px;height:36px;border-radius:5px;margin-right:10px;flex:none;border:1px solid var(--line)}.item.dim{opacity:.55}.item select{background:#0d1419;color:var(--text);border:1px solid var(--line);border-radius:5px;padding:5px;max-width:170px;flex:none}
 .smithgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px}.smithgrid .btn{font-size:12.5px;padding:6px 8px;text-align:left}.btn.dimb{opacity:.45}
+.abico.drag{cursor:grab;touch-action:none}.bp{cursor:default}.bp.has{cursor:grab;touch-action:none}.bp.over{border-color:var(--coin);box-shadow:0 0 0 2px var(--coin) inset}
+.dragghost{position:fixed;width:40px;height:40px;margin:-20px 0 0 -20px;pointer-events:none;z-index:9999;border-radius:6px;opacity:.9;box-shadow:0 4px 14px rgba(0,0,0,.6)}
 .slot.empty{opacity:.45;border-style:dashed}
 @media (max-width:640px){.menu-grid,.kbgrid{grid-template-columns:1fr}}
 .char{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;text-align:left;color:var(--text);width:100%}
@@ -189,12 +201,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
     <div class="sub" id="pdesc">-</div>
     <div class="bar"><i id="phpi" style="background:var(--hp)"></i><i id="pshi" class="shield"></i><b class="num" id="phpt"></b></div>
     <div class="bar"><i id="presi"></i><b class="num" id="prest"></b></div>
-    <div class="sub" id="pbuffs" style="margin:4px 0 0;min-height:0"></div>
+    <div class="fxrow" id="pbuffs"></div>
   </div>
   <div class="frame" id="tframe" hidden>
     <div class="top"><span id="tname">-</span><span class="num" id="tlvl"></span></div>
     <div class="sub" id="tdesc"></div>
     <div class="bar"><i id="thpi" style="background:var(--bad)"></i><b class="num" id="thpt"></b></div>
+    <div class="fxrow" id="tbuffs"></div>
   </div>
 </div>
 
@@ -440,12 +453,15 @@ const AB = {
   judge:{name:"Himmelsk dom", lvl:26, cost:40, cd:15, range:220, school:"holy", icon:"sun", tgt:"enemy",
     desc:()=>`Ljuset dömer målet: ${fmt(spow()*4.5)} skada.`,
     run:t=>{burst(t.x,t.y,"#fff2b0",24);hit(t,spow()*4.5,"holy","judge");}},
-  bear:{name:"Björnhamn", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
-    desc:()=>`Byter hamn till björn: +60% hälsa, mindre skada och använder ilska. Tryck igen för att återgå.`,
+  bear:{name:"Björnform", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
+    desc:()=>`Förvandlas till björn: +60% hälsa, mindre skada och använder ilska. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="bear"?null:"bear")},
-  cat:{name:"Varghamn", lvl:10, cost:0, range:0, school:"nature", icon:"cat", tgt:"self", offGcd:true, form:true,
-    desc:()=>`Byter hamn till varg: +30% fart, snabba attacker och energi. Tryck igen för att återgå.`,
+  cat:{name:"Vargform", lvl:15, cost:0, range:0, school:"nature", icon:"cat", tgt:"self", offGcd:true, form:true,
+    desc:()=>`Förvandlas till varg: +30% fart, snabba attacker och energi. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="cat"?null:"cat")},
+  leopard:{name:"Leopardform", lvl:20, cost:0, range:0, school:"nature", icon:"dash", tgt:"self", offGcd:true, form:true,
+    desc:()=>`Förvandlas till leopard: +50% springhastighet. I leopardform kan du inte attackera eller kasta formler. Tryck igen för att återgå.`,
+    run:()=>setForm(P.form==="leopard"?null:"leopard")},
   // bear
   maul:{name:"Björnslag", lvl:10, cost:15, res:"rage", range:55, school:"phys", icon:"claw", tgt:"enemy",
     desc:()=>`Ett tungt slag med ramen: ${fmt(pow()*1.8)} skada.`, run:t=>{slash(t);hit(t,pow()*1.8,"phys","maul");}},
@@ -479,9 +495,10 @@ const BARS = {
   warrior:["heroic","charge","shout","rend","whirlwind","execute","shieldbash","secondwind","quake"],
   hunter:["steady","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow"],
   priest:["smite","heal","swp","pws","mindblast","holynova","renew","darkpulse","judgment"],
-  druid:["wrath","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat"],
-  druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat"],
-  druid_cat:["claw","rake","bite","dash","pounce","bear","cat"],
+  druid:["wrath","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat","leopard"],
+  druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat","leopard"],
+  druid_cat:["claw","rake","bite","dash","pounce","bear","cat","leopard"],
+  druid_leopard:["leopard","bear","cat"],
   paladin:["palstrike","palheal","hammer","holyshield","crusader","consecrate","avenging","bubble","judge"]
 };
 const trainCost = id => AB[id].lvl<=1 ? 0 : Math.round(AB[id].lvl*AB[id].lvl*1.2 + 4);
@@ -542,10 +559,10 @@ const TALENTS = {
     {id:"naturalist",tier:1,max:3,name:"Naturalist",d:r=>`+${5*r}% maxhälsa.`},
     {id:"impRejuv",tier:1,max:3,name:"Förbättrad föryngring",d:r=>`Dina helningar är ${10*r}% starkare.`},
     {id:"d_dodge",tier:2,max:3,name:"Vargreflexer",eff:{dodge:0.01},d:r=>`+${r}% chans att undvika attacker.`},
-    {id:"feral",tier:2,max:3,name:"Vildinstinkt",d:r=>`Attacker i björn- och varghamn gör +${8*r}% skada.`},
-    {id:"thickHide",tier:2,max:2,name:"Tjock päls",d:r=>`Du tar ${5*r}% mindre skada i björnhamn.`},
+    {id:"feral",tier:2,max:3,name:"Vildinstinkt",d:r=>`Attacker i björn- och vargform gör +${8*r}% skada.`},
+    {id:"thickHide",tier:2,max:2,name:"Tjock päls",d:r=>`Du tar ${5*r}% mindre skada i björnform.`},
     {id:"naturesGrace",tier:2,max:3,name:"Naturens nåd",d:r=>`Naturens vrede och Stjärnfall kastas ${(0.15*r).toFixed(2)} sek snabbare.`},
-    {id:"heartWild",tier:3,max:1,name:"Vildmarkens hjärta",d:()=>`+10% skada med allt och +10% hälsa i björnhamn.`},
+    {id:"heartWild",tier:3,max:1,name:"Vildmarkens hjärta",d:()=>`+10% skada med allt och +10% hälsa i björnform.`},
     {id:"d_prim",tier:4,max:3,name:"Urkraft",eff:{dmg:0.04},d:r=>`+${4*r}% skada med allt.`},
     {id:"d_oak",tier:4,max:3,name:"Ekens styrka",eff:{hp:0.05},d:r=>`+${5*r}% maxhälsa.`},
     {id:"d_grove",tier:5,max:1,name:"Lundens väktare",eff:{dmg:0.08,hp:0.08},d:()=>`+8% skada och +8% maxhälsa.`}],
@@ -619,7 +636,7 @@ const WEAPON_NAMES = {mage:"Stav", warrior:"Svärd", hunter:"Pilbåge", priest:"
 </script>
 <script>
 // ======================= WORLD DATA =======================
-const MW = 220, MH = 178;
+const OW = 220, MW = 328, MH = 178; // OW = overworld width; tiles x >= OW hold the dungeon instances
 
 // Zones: Voronoi regions around c (tile coords). w = weight (bigger area). t = terrain.
 const ZONES = {
@@ -953,12 +970,107 @@ const QUESTS = [
   {id:"f6", npc:"frode", lvl:28, name:"Isblommor", text:"Isblommor (kräver Örtplockning 140) ger de starkaste dryckerna. Plocka 6.", obj:[["gather","iceflower",6]]},
   {id:"f7", npc:"hedda", lvl:29, req:["f5"], name:"Isjätten Hrimgar", text:"Hrimgar sitter på sin tron längst in i Frostkronan. Hans Glaciärkross är förödande – spring ut ur cirkeln. Besegra honom och rädda landet.", obj:[["kill","giant",1]], mult:3}
 ];
+
+// ======================= DUNGEONS (instances) =======================
+// Each dungeon is carved in the area right of the overworld (x >= OW) and reached through an entrance next to a camp.
+Object.assign(ZONES, {
+  d_mine:{name:"Järngruvan", lv:[12,15], c:[0,0], t:"rock", dungeon:true},
+  d_temple:{name:"Dränkta templet", lv:[17,20], c:[0,0], t:"swamp", dungeon:true},
+  d_forge:{name:"Glödsmedjan", lv:[22,25], c:[0,0], t:"ash", dungeon:true},
+  d_vault:{name:"Frostvalvet", lv:[27,30], c:[0,0], t:"snow", dungeon:true}
+});
+const DGX = {pack:{hpm:1.25, dmm:1.1}, mini:{hpm:1.3, dmm:1.0}, boss:{hpm:1.5, dmm:1.0}};
+Object.assign(MOBS, {
+  // Järngruvan
+  gruvkobold:{name:"Gruvkobold", lv:[12,14], color:"#c9a24a", r:9, sp:95, shape:"humanoid", drop:"candle", dg:"d_mine", ...DGX.pack},
+  gruvspindel:{name:"Gruvspindel", lv:[12,14], color:"#4a4038", r:11, sp:100, shape:"spider", drop:"silk", dg:"d_mine", ...DGX.pack},
+  stenvakt:{name:"Stenväktare", lv:[13,14], color:"#8a8478", r:14, sp:72, shape:"golem", drop:"rune", dg:"d_mine", ...DGX.pack},
+  krakk:{name:"Förmannen Krakk", lv:[15,15], color:"#e0b040", r:12, sp:92, shape:"humanoid", elite:3, mini:true, drop:"candle", dg:"d_mine", ...DGX.mini,
+    special:{name:"Hackslag", every:9, r:85, windup:1.3, mult:2.0}},
+  grottbjorn:{name:"Grottbjörnen", lv:[15,15], color:"#5a4a3a", r:15, sp:92, shape:"boar", elite:3, mini:true, drop:"bearfur", dg:"d_mine", ...DGX.mini,
+    special:{name:"Raseri", every:9, r:90, windup:1.3, mult:2.0}},
+  djuptjur:{name:"Tjuren från djupet", lv:[16,16], color:"#7a2a1a", r:20, sp:88, shape:"troll", elite:4, boss:true, drop:"tooth", dg:"d_mine", ...DGX.boss,
+    special:{name:"Bergsstöt", every:8, r:115, windup:1.5, mult:2.4}},
+  // Dränkta templet
+  kultist:{name:"Träskkultist", lv:[17,19], color:"#4a6a4a", r:11, sp:90, shape:"humanoid", drop:"cloth", ranged:200, dg:"d_temple", ...DGX.pack},
+  drunknad:{name:"Den drunknade", lv:[17,19], color:"#7a9a7a", r:11, sp:82, shape:"humanoid", drop:"cloth", dg:"d_temple", ...DGX.pack},
+  templebloss:{name:"Templets irrbloss", lv:[18,19], color:"#9ef0b0", glow:"140,240,170", r:9, sp:85, shape:"wisp", drop:"glowdust", ranged:210, dg:"d_temple", ...DGX.pack},
+  hagga:{name:"Träskhäxan Hagga", lv:[20,20], color:"#a77bff", r:12, sp:90, shape:"humanoid", elite:3, mini:true, ranged:220, drop:"goblinear", dg:"d_temple", ...DGX.mini,
+    special:{name:"Förbannelse", every:9, r:90, windup:1.3, mult:2.0}},
+  templevakt:{name:"Templets väktare", lv:[20,20], color:"#5a8a6a", r:13, sp:95, shape:"humanoid", elite:3, mini:true, drop:"stonewing", dg:"d_temple", ...DGX.mini,
+    special:{name:"Stenregn", every:9, r:95, windup:1.3, mult:2.0}},
+  profeten:{name:"Den sjunkna profeten", lv:[21,21], color:"#3a8a6a", r:18, sp:85, shape:"humanoid", elite:4, boss:true, ranged:220, drop:"dust", dg:"d_temple", ...DGX.boss,
+    special:{name:"Tidvatten", every:8, r:120, windup:1.5, mult:2.4}},
+  // Glödsmedjan
+  smedjeorc:{name:"Smedjans slav", lv:[22,24], color:"#aa4a2a", r:12, sp:92, shape:"humanoid", drop:"ember", dg:"d_forge", ...DGX.pack},
+  eldhund:{name:"Glödhund", lv:[22,24], color:"#d0441a", r:12, sp:105, shape:"wolf", drop:"ember", dg:"d_forge", ...DGX.pack},
+  levandeglod:{name:"Levande glöd", lv:[23,24], color:"#ff9a4a", glow:"255,150,70", r:10, sp:85, shape:"wisp", drop:"cinder", ranged:220, dg:"d_forge", ...DGX.pack},
+  ignar:{name:"Smedmästare Ignar", lv:[25,25], color:"#ff7a3a", r:15, sp:80, shape:"golem", elite:3, mini:true, drop:"cinder", dg:"d_forge", ...DGX.mini,
+    special:{name:"Smideshammare", every:9, r:90, windup:1.3, mult:2.0}},
+  magmagargoyl:{name:"Magmagargoylen", lv:[25,25], color:"#c84a1a", r:13, sp:100, shape:"humanoid", elite:3, mini:true, drop:"stonewing", dg:"d_forge", ...DGX.mini,
+    special:{name:"Lavaregn", every:9, r:95, windup:1.3, mult:2.0}},
+  eldtyrann:{name:"Eldtyrannen", lv:[26,26], color:"#ff4a1a", r:20, sp:85, shape:"golem", elite:4, boss:true, drop:"cinder", dg:"d_forge", ...DGX.boss,
+    special:{name:"Infernovåg", every:8, r:120, windup:1.5, mult:2.4}},
+  // Frostvalvet
+  isvaktare:{name:"Valvets väktare", lv:[27,29], color:"#bfe6ff", r:12, sp:85, shape:"humanoid", drop:"shard", dg:"d_vault", ...DGX.pack},
+  frostulv:{name:"Frostulv", lv:[27,29], color:"#e0f0ff", r:12, sp:105, shape:"wolf", drop:"fur", dg:"d_vault", ...DGX.pack},
+  isande:{name:"Isande", lv:[28,29], color:"#b4d6e4", glow:"160,210,230", r:10, sp:90, shape:"wisp", drop:"dust", ranged:220, dg:"d_vault", ...DGX.pack},
+  valvbjorn:{name:"Valvets isbjörn", lv:[30,30], color:"#ffffff", r:15, sp:92, shape:"boar", elite:3, mini:true, drop:"fur", dg:"d_vault", ...DGX.mini,
+    special:{name:"Frostklös", every:9, r:90, windup:1.3, mult:2.0}},
+  skrymer:{name:"Rimtrollet Skrymer", lv:[30,30], color:"#9ab8c8", r:15, sp:88, shape:"troll", elite:3, mini:true, drop:"tooth", dg:"d_vault", ...DGX.mini,
+    special:{name:"Isskalv", every:9, r:95, windup:1.3, mult:2.0}},
+  skadi:{name:"Isdrottningen Skadi", lv:[31,31], color:"#a8d8ec", r:18, sp:85, shape:"humanoid", elite:4, boss:true, ranged:220, drop:"heart", dg:"d_vault", ...DGX.boss,
+    special:{name:"Evig vinter", every:8, r:125, windup:1.5, mult:2.5}}
+});
+Object.assign(LOOT, {
+  gruvkobold:[["candle",0.3]], gruvspindel:[["silk",0.4]], stenvakt:[["rune",0.35]], krakk:[["candle",1]], grottbjorn:[["bearfur",1]], djuptjur:[["tooth",1],["rune",1]],
+  kultist:[["cloth",0.35]], drunknad:[["cloth",0.35]], templebloss:[["glowdust",0.4]], hagga:[["goblinear",1]], templevakt:[["stonewing",1]], profeten:[["dust",1]],
+  smedjeorc:[["ember",0.35]], eldhund:[["ember",0.35]], levandeglod:[["cinder",0.35]], ignar:[["cinder",1]], magmagargoyl:[["stonewing",1]], eldtyrann:[["cinder",1],["ember",1]],
+  isvaktare:[["shard",0.35]], frostulv:[["fur",0.4]], isande:[["dust",0.35]], valvbjorn:[["fur",1]], skrymer:[["tooth",1]], skadi:[["heart",1],["shard",1]]
+});
+Object.assign(QITEMS, {
+  krakkkey:{name:"Förmannens nyckelknippa"}, haggaeye:{name:"Häxans glasöga"}, ignarhammer:{name:"Ignars smideshammare"}, skrymerhorn:{name:"Skrymers ishorn"}
+});
+// layout: rooms in order (0 = entrance), puzzle = lever/rune room; gate closes the way out of that room until it is solved
+const DUNGEONS = {
+  d_mine:{hub:"jarnfastet", ent:{x:111, y:78}, oy:2, floor:"T_ROCK", wall:"T_CLIFF", obst:"T_BOULDER", lever:"Spak", gate:"Gruvgrind",
+    pack:["gruvkobold","gruvspindel","stenvakt"], mini:["krakk","grottbjorn"], boss:"djuptjur", puzzles:["lever","rune"],
+    keeper:{id:"dk_mine", name:"Gruvvakten Torgny", role:"Ingång: Järngruvan", race:"dwarf", color:"#a0683a"},
+    intro:"Den gamla järngruvan är full av kobolder och något mycket större längst in."},
+  d_temple:{hub:"traskvakten", ent:{x:147, y:125}, oy:46, floor:"T_CRYPT", wall:"T_CWALL", obst:"T_WATER", lever:"Offerskål", gate:"Stenport",
+    pack:["kultist","drunknad","templebloss"], mini:["hagga","templevakt"], boss:"profeten", puzzles:["rune","lever"],
+    keeper:{id:"dk_temple", name:"Pilgrimen Ylva", role:"Ingång: Dränkta templet", race:"human", color:"#4a6a5a"},
+    intro:"Templet sjönk ner i träsket för länge sedan. Profeten som styr där vägrar dö."},
+  d_forge:{hub:"askvakten", ent:{x:157, y:38}, oy:90, floor:"T_ASH", wall:"T_CWALL", obst:"T_LAVA", lever:"Ventil", gate:"Järnport",
+    pack:["smedjeorc","eldhund","levandeglod"], mini:["ignar","magmagargoyl"], boss:"eldtyrann", puzzles:["lever","rune"],
+    keeper:{id:"dk_forge", name:"Askvandraren Brand", role:"Ingång: Glödsmedjan", race:"orc", color:"#aa4a2a"},
+    intro:"I Glödsmedjan smids vapen åt Eldtyrannen. Stäng ventilerna för att ta dig förbi värmen."},
+  d_vault:{hub:"isporten", ent:{x:197, y:84}, oy:134, floor:"T_SNOW", wall:"T_ICE", obst:"T_SPINE", lever:"Frostkristall", gate:"Isport",
+    pack:["isvaktare","frostulv","isande"], mini:["valvbjorn","skrymer"], boss:"skadi", puzzles:["rune","lever"],
+    keeper:{id:"dk_vault", name:"Runristaren Sölve", role:"Ingång: Frostvalvet", race:"elf", color:"#8ab0c8"},
+    intro:"Under isen sover Isdrottningen Skadi i sitt valv. Ingen som gått in har kommit ut."}
+};
+for(const [id,D] of Object.entries(DUNGEONS)){ D.id = id; NPCS.push({...D.keeper, dungeon:id, at:{x:D.ent.x-2, y:D.ent.y+2}}); }
+QUESTS.push(
+  {id:"m1", npc:"halvard", lvl:12, name:"Kobolderna i gruvan", text:"Järngruvan är full av kobolder. Gå in genom gruvingången öster om fästet och döda 8 gruvkobolder.", obj:[["kill","gruvkobold",8]]},
+  {id:"m2", npc:"halvard", lvl:13, name:"Förmannens nycklar", text:"Förmannen Krakk bär nycklarna till hela gruvan. Ta dem från honom.", obj:[["loot","krakkkey",1,"krakk",1]]},
+  {id:"m3", npc:"halvard", lvl:14, name:"Tjuren från djupet", text:"Längst in i Järngruvan lever en väldig tjur. Döda den så kan fästet bryta järn igen.", obj:[["kill","djuptjur",1]]},
+  {id:"t1", npc:"sigvard", lvl:17, name:"Kulten i templet", text:"Träskkultister har tagit Dränkta templet söder om lägret. Döda 8 av dem.", obj:[["kill","kultist",8]]},
+  {id:"t2", npc:"sigvard", lvl:18, name:"Häxans öga", text:"Träskhäxan Hagga ser allt genom sitt glasöga. Ta det ifrån henne.", obj:[["loot","haggaeye",1,"hagga",1]]},
+  {id:"t3", npc:"sigvard", lvl:19, name:"Den sjunkna profeten", text:"Profeten i templets djup måste stoppas. Besegra honom.", obj:[["kill","profeten",1]]},
+  {id:"g1", npc:"runa", lvl:22, name:"Släck glöden", text:"Levande glöd flyger runt i Glödsmedjan. Släck 8 av dem.", obj:[["kill","levandeglod",8]]},
+  {id:"g2", npc:"runa", lvl:23, name:"Mästarens hammare", text:"Smedmästare Ignar smider Eldtyrannens vapen. Ta hans hammare.", obj:[["loot","ignarhammer",1,"ignar",1]]},
+  {id:"g3", npc:"runa", lvl:24, name:"Eldtyrannen", text:"Eldtyrannen i Glödsmedjan vill bränna hela Askfälten. Besegra honom.", obj:[["kill","eldtyrann",1]]},
+  {id:"v1", npc:"hedda", lvl:27, name:"Valvets väktare", text:"Isväktare vaktar Frostvalvet norr om porten. Krossa 8 av dem.", obj:[["kill","isvaktare",8]]},
+  {id:"v2", npc:"hedda", lvl:28, name:"Skrymers horn", text:"Rimtrollet Skrymer blåser i ett horn som väcker drottningen. Ta hornet.", obj:[["loot","skrymerhorn",1,"skrymer",1]]},
+  {id:"v3", npc:"hedda", lvl:29, name:"Isdrottningen", text:"Isdrottningen Skadi får inte vakna helt. Besegra henne i Frostvalvet.", obj:[["kill","skadi",1]]}
+);
 </script>
 <script>
 // ======================= WORLD =======================
 const T_GRASS=0,T_FOREST=1,T_WATER=2,T_ROCK=3,T_CLIFF=4,T_TREE=5,T_PATH=6,T_SWAMP=7,T_COBBLE=8,T_HOUSE=9,T_DEAD=10,T_BOULDER=11,T_CRYPT=12,T_CWALL=13,T_PINE=14,T_ASH=15,T_LAVA=16,T_SNOW=17,T_ICE=18,T_SPINE=19,T_OBSID=20,
-  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28,T_BLIGHT=29,T_GLOOM=30;
-const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T_PINE,T_LAVA,T_ICE,T_SPINE,T_OBSID,T_BIRCH,T_VTREE,T_RCLIFF,T_CACTUS]);
+  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28,T_BLIGHT=29,T_GLOOM=30,T_GATE=31;
+const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T_PINE,T_LAVA,T_ICE,T_SPINE,T_OBSID,T_BIRCH,T_VTREE,T_RCLIFF,T_CACTUS,T_GATE]);
 const TERRAIN = {
   meadow:(n,m)=> n>0.74?T_TREE : m>0.88?T_BOULDER : T_GRASS,
   forest:(n,m)=> n>0.53?T_TREE : T_FOREST,
@@ -985,7 +1097,7 @@ const rand = (a,b) => a + Math.random()*(b-a);
 
 function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function noise(seed, scale){
-  const r = rng(seed), gw = Math.ceil(MW/scale)+3, gh = Math.ceil(MH/scale)+3, g = [];
+  const r = rng(seed), gw = Math.ceil(OW/scale)+3, gh = Math.ceil(MH/scale)+3, g = [];
   for(let i=0;i<gw*gh;i++) g.push(r());
   const sm = t => t*t*(3-2*t);
   return (x,y) => { const fx=x/scale, fy=y/scale, x0=Math.floor(fx), y0=Math.floor(fy), sx=sm(fx-x0), sy=sm(fy-y0);
@@ -1004,26 +1116,28 @@ const nearHub = (x,y,extra) => Object.keys(HUBS).some(h=>hubDist(x,y,h) < HUBS[h
 function genWorld(){
   map = new Array(MW*MH); zmap = new Array(MW*MH);
   const n1 = noise(11,6), n2 = noise(23,2.5), wa = noise(37,9), wb = noise(41,9);
-  const zl = Object.entries(ZONES);
+  const zl = Object.entries(ZONES).filter(([,z])=>!z.dungeon);
   for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
+    if(x >= OW){ map[y*MW+x] = T_CLIFF; zmap[y*MW+x] = null; continue; }
     const wx = x + (wa(x,y)-0.5)*18, wy = y + (wb(x,y)-0.5)*18;
     let best = null, bd = 1e9;
     for(const [id,z] of zl){ const d = Math.hypot(wx-z.c[0], wy-z.c[1]) - (z.w||0); if(d < bd){ bd = d; best = id; } }
     zmap[y*MW+x] = best;
     const t = ZONES[best].t, n = n1(x,y)*0.65 + n2(x,y)*0.35, m2 = n2(x+50,y+50);
-    map[y*MW+x] = (x<2||y<2||x>=MW-2||y>=MH-2) ? BORDER[t] : TERRAIN[t](n, m2);
+    map[y*MW+x] = (x<2||y<2||x>=OW-2||y>=MH-2) ? BORDER[t] : TERRAIN[t](n, m2);
   }
   for(const h of Object.values(HUBS)) h.zone = zmap[h.y*MW+h.x];
   const roadTiles = new Set();
-  const set=(x,y,t)=>{ if(x>=2&&y>=2&&x<MW-2&&y<MH-2) map[y*MW+x]=t; };
+  const set=(x,y,t)=>{ if(x>=2&&y>=2&&x<OW-2&&y<MH-2) map[y*MW+x]=t; };
   const floorAt=(x,y)=>FLOOR[ZONES[zmap[y*MW+x]].t];
-  const clear=(cx,cy,r)=>{ for(let y=cy-r;y<=cy+r;y++) for(let x=cx-r;x<=cx+r;x++) if(x>=2&&y>=2&&x<MW-2&&y<MH-2&&Math.hypot(x-cx,y-cy)<=r) set(x,y,floorAt(x,y)); };
+  const clear=(cx,cy,r)=>{ for(let y=cy-r;y<=cy+r;y++) for(let x=cx-r;x<=cx+r;x++) if(x>=2&&y>=2&&x<OW-2&&y<MH-2&&Math.hypot(x-cx,y-cy)<=r) set(x,y,floorAt(x,y)); };
   const road=(x1,y1,x2,y2,ph)=>{ const L=Math.hypot(x2-x1,y2-y1); for(let i=0;i<=L*2;i++){ const t=i/(L*2), w=Math.sin(t*Math.PI*2.5+ph)*2.2*Math.sin(t*Math.PI);
     const nx=-(y2-y1)/L, ny=(x2-x1)/L; const x=Math.round(x1+(x2-x1)*t+nx*w), y=Math.round(y1+(y2-y1)*t+ny*w);
     for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){ set(x+ox,y+oy,T_PATH); roadTiles.add((y+oy)*MW+x+ox); } } };
   ROADS.forEach(([a,b],i)=>road(HUBS[a].x,HUBS[a].y,HUBS[b].x,HUBS[b].y,i*0.7));
   for(const [id,l] of Object.entries(LAIRS)){ road(HUBS[l.from].x,HUBS[l.from].y,l.x,l.y,id.length); clear(l.x,l.y,l.r); }
   road(HUBS.traskvakten.x,HUBS.traskvakten.y,(CRYPT.x0+CRYPT.x1)/2|0,CRYPT.y0-2,1.3);
+  for(const D of Object.values(DUNGEONS)){ const h = HUBS[D.hub]; road(h.x, h.y, D.ent.x, D.ent.y, 0.4); clear(D.ent.x, D.ent.y, 3); }
   // crypt
   for(let y=CRYPT.y0;y<=CRYPT.y1;y++) for(let x=CRYPT.x0;x<=CRYPT.x1;x++){ const edge = y===CRYPT.y0||x===CRYPT.x0||x===CRYPT.x1||y===CRYPT.y1; map[y*MW+x] = edge?T_CWALL:T_CRYPT; zmap[y*MW+x] = "dimma"; }
   const mid = (CRYPT.x0+CRYPT.x1)/2|0; for(let x=mid-1;x<=mid+1;x++){ map[CRYPT.y0*MW+x]=T_CRYPT; map[(CRYPT.y0-1)*MW+x]=T_PATH; }
@@ -1047,12 +1161,13 @@ function genWorld(){
   const h0 = HUBS.frostvik; reach = new Uint8Array(MW*MH); const q=[h0.y*MW+h0.x]; reach[q[0]]=1;
   while(q.length){ const i=q.pop(), x=i%MW, y=(i/MW)|0; for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+ox, ny=y+oy, j=ny*MW+nx; if(nx>=0&&ny>=0&&nx<MW&&ny<MH&&!reach[j]&&!SOLID.has(map[j])){ reach[j]=1; q.push(j);} } }
   for(let i=0;i<MW*MH;i++) if(!reach[i]&&!SOLID.has(map[i])){ const z=ZONES[parentZone(zmap[i])]; map[i] = z ? BORDER[z.t] : T_CLIFF; }
+  carveDungeons();
 }
 
 // random reachable tile matching a predicate
 const R = rng(2024);
 function pickTile(pred, tries=6000){
-  for(let i=0;i<tries;i++){ const x=2+Math.floor(R()*(MW-4)), y=2+Math.floor(R()*(MH-4)); const j=y*MW+x;
+  for(let i=0;i<tries;i++){ const x=2+Math.floor(R()*(OW-4)), y=2+Math.floor(R()*(MH-4)); const j=y*MW+x;
     if(reach[j] && !SOLID.has(map[j]) && pred(x,y,zmap[j],map[j])) return {x,y}; }
   return null;
 }
@@ -1096,17 +1211,18 @@ function spawnAll(){
     const p = pickTile((x,y,z,t)=>z===it.zone && t!==T_PATH && free(x,y,t) && (!it.far || hubDist(x,y,it.far) > it.d)); if(!p) continue; used.add(p.y*MW+p.x);
     qobjs.push({qitem:id, def:it, x:p.x*TILE+16, y:p.y*TILE+16, active:true, respawn:0}); } }
   const byHub = {};
-  for(const n of NPCS){ (byHub[n.hub] = byHub[n.hub] || []).push(n); }
+  for(const n of NPCS){ if(n.at){ npcs.push({...n, x:n.at.x*TILE+16, y:n.at.y*TILE+16, fx:1}); continue; } (byHub[n.hub] = byHub[n.hub] || []).push(n); }
   for(const [hid, list] of Object.entries(byHub)){ const h = HUBS[hid], rad = h.kind==="town" ? 4.9 : 2.4;
     list.forEach((n,i)=>{ const a = i/list.length*Math.PI*2 - Math.PI/2 + 0.3; let rr = rad, x, y;
       do { x = h.x*TILE+16 + Math.cos(a)*rr*TILE; y = h.y*TILE+16 + Math.sin(a)*rr*TILE; rr -= 0.25; } while(collides(x, y, 10) && rr > 1);
       npcs.push({...n, x, y, fx: x < h.x*TILE ? 1 : -1}); }); }
+  spawnDungeons();
 }
 
 function makeMob(type, tx, ty, lvl){
   const d = MOBS[type], el = d.elite||1;
   const m = {type, def:d, name:d.name, lvl, elite:!!d.elite, x:tx*TILE+16, y:ty*TILE+16, hx:tx*TILE+16, hy:ty*TILE+16, r:d.r, sp:d.sp,
-    maxHp:Math.round((30+lvl*18)*el), dmg:(3+lvl*2.4)*(d.elite?1.25:1)*(d.passive?0.6:1), atkSpd:d.boss?2.2:2.0, state:"idle", dots:[], slowT:0, slowPct:0, rootT:0, stunT:0,
+    maxHp:Math.round((30+lvl*18)*el*(d.hpm||1)), dmg:(3+lvl*2.4)*(d.elite?1.25:1)*(d.passive?0.6:1)*(d.dmm||1), atkSpd:d.boss?2.2:2.0, state:"idle", dots:[], slowT:0, slowPct:0, rootT:0, stunT:0,
     atkT:0, wanderT:rand(1,4), wx:null, wy:null, specT:d.special?d.special.every:0, tele:null, dead:false, respawn:0, fx:1, flash:0, swing:0, evading:false, ph:Math.random()*6};
   m.hp = m.maxHp; return m;
 }
@@ -1253,13 +1369,13 @@ function setForm(f){
   if(f==="bear") P.rage = Math.max(P.rage, 10);
   if(f==="cat") P.energy = 100;
   recompute(false);
-  ring(P.x, P.y, 40, f==="bear"?"#c89a68":f==="cat"?"#c9a3ff":"#9cf07a");
+  ring(P.x, P.y, 40, f==="bear"?"#c89a68":f==="cat"?"#c9a3ff":f==="leopard"?"#ffd36b":"#9cf07a");
   buildHotbar();
 }
 
 function killMob(m){
   m.dead = true; m.hp = 0; m.dots = []; m.tele = null; m.state = "idle";
-  m.respawn = m.def.boss ? 150 : m.elite ? 90 : 28;
+  m.respawn = m.def.dg ? 1e9 : m.def.boss ? 150 : m.elite ? 90 : 28;
   if(P.target === m) P.target = null;
   const diff = m.lvl - S.level;
   let xp = 0;
@@ -1275,6 +1391,7 @@ function killMob(m){
   if(xp>0) gainXP(xp);
   questKill(m.type);
   if(m.def.boss || m.elite){ showBanner(`${m.name} har fallit!`, "", 4); }
+  if(m.def.dg) dungeonKill(m);
 }
 
 function avoidChances(){
@@ -1309,6 +1426,7 @@ function die(){
 }
 function revive(){
   P.dead = false;
+  if(P.inDungeon){ reviveFromDungeon(); return; }
   const sp = Object.values(HUBS).sort((a,b)=>Math.hypot(P.x/TILE-a.x,P.y/TILE-a.y)-Math.hypot(P.x/TILE-b.x,P.y/TILE-b.y))[0];
   P.x = sp.x*TILE+16; P.y = (sp.y+2)*TILE+16;
   P.hp = P.maxHp*0.6; P.mana = P.maxMana*0.6; P.target = null; P.shield = 0;
@@ -1324,6 +1442,7 @@ function tryUse(id){
   const a = AB[id];
   if(!S.learned.includes(id)) return;
   if(P.casting){ if(P.casting.kind==="gather") cancelCast(); else return; }
+  if(P.form==="leopard" && !a.form) return err("Du kan inte attackera eller kasta formler i leopardform");
   if(!a.offGcd && P.gcd > 0) return;
   if((P.cds[id]||0) > 0) return err("Inte redo än");
   let t = null;
@@ -1373,6 +1492,7 @@ function autoInfo(){
 function autoAttack(dt){
   const ai = autoInfo(); P.autoT = Math.max(0, P.autoT - dt);
   const t = P.target; if(P.autoTarget && (P.autoTarget!==t || P.autoTarget.dead)) P.autoTarget = null;
+  if(P.form==="leopard") return;
   if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
   P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
@@ -1444,7 +1564,7 @@ function levelUp(){
   log(`Du nådde nivå ${S.level}.`, "#ffd36b");
   buildHotbar(); save(true);
 }
-function allBarIds(){ return S.cls==="druid" ? [...BARS.druid, ...BARS.druid_bear, ...BARS.druid_cat].filter(Boolean) : BARS[S.cls]; }
+function allBarIds(){ return S.cls==="druid" ? [...new Set([...BARS.druid, ...BARS.druid_bear, ...BARS.druid_cat])] : BARS[S.cls]; }
 
 // ---- quests
 const qById = id => QUESTS.find(q=>q.id===id);
@@ -1487,6 +1607,8 @@ function questSpot(q){
   const i = q.obj.findIndex((o,k)=>qProg(q,k) < o[2]); const o = q.obj[i];
   const avg = list => list.length ? {x:list.reduce((a,b)=>a+b.x,0)/list.length/TILE, y:list.reduce((a,b)=>a+b.y,0)/list.length/TILE} : null;
   if(!o) return null;
+  const dgt = o[0]==="kill" ? MOBS[o[1]].dg : o[0]==="loot" ? MOBS[o[3]].dg : null;
+  if(dgt && !(P && P.inDungeon===dgt)) return {x:DUNGEONS[dgt].ent.x, y:DUNGEONS[dgt].ent.y};
   if(o[0]==="kill") return avg(mobs.filter(m=>m.type===o[1]).map(m=>({x:m.hx,y:m.hy})));
   if(o[0]==="loot") return avg(mobs.filter(m=>m.type===o[3]).map(m=>({x:m.hx,y:m.hy})));
   if(o[0]==="collect") return avg(qobjs.filter(n=>n.qitem===o[1]));
@@ -1563,7 +1685,7 @@ function updPlayer(dt){
   } else if(P.leap){ moveEnt(P, P.leap.vx*dt, P.leap.vy*dt); P.leap.t -= dt; P.moving = true; if(P.leap.t <= 0) P.leap = null; }
   else if(il > 0.05){
     if(P.casting) cancelCast(P.casting.kind==="spell" ? "Avbrutet – du rörde dig" : null);
-    const sp = 150 * (P.form==="cat"?1.3:1) * (P.buffs.dash?1.7:1);
+    const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
     moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true;
   }
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.el >= P.casting.total) completeCast(); }
@@ -1745,6 +1867,7 @@ function gainGear(it, how){
 }
 // gear drop when a monster dies
 function mobGearDrop(m){
+  if(m.def.mini){ gainGear(makeGear({q:2, il:m.lvl, cls:S.cls}), "Byte"); return; }
   if(BEASTS.has(m.type) || m.def.passive) return;
   const src = m.def.boss ? "boss" : m.elite ? "elite" : "normal";
   const chance = src==="boss" ? 1 : src==="elite" ? 0.6 : 0.08;
@@ -1797,6 +1920,186 @@ function gearDesc(it, showCmp){
   return `<b style="color:${QUAL[it.q].color}">${esc(it.n)}</b> <span class="muted">· ${QUAL[it.q].name} · ${SLOTS[it.slot].name} · ${gearTypeName(it)}</span>
     <div class="d">${statLines(it, showCmp && cur && cur!==it ? cur : null)}</div>
     <div class="d">${ok ? "" : `<span style="color:#ff6b5e">Kan inte användas av ${CLASSES[S.cls].name}. </span>`}<span style="color:${lvlOk?"var(--mute)":"#ff6b5e"}">Kräver nivå ${it.il}</span>${showCmp && cur && cur!==it ? ` <span class="muted">· jämfört med ${esc(cur.n)}</span>` : ""}</div>`;
+}
+</script>
+<script>
+// ======================= DUNGEONS: carving, spawning, puzzles, entering/leaving =======================
+const DG_W = 102, DG_H = 40;
+const TILE_BY_NAME = () => ({T_ROCK, T_CRYPT, T_ASH, T_SNOW, T_CLIFF, T_CWALL, T_ICE, T_BOULDER, T_WATER, T_LAVA, T_SPINE});
+const ROOM_SIZES = [[8,8],[10,9],[11,10],[10,10],[11,10],[10,9],[14,13]];
+let dobjs = [];                 // levers, runes, tablets, portals inside dungeons
+const DSTATE = {};              // per dungeon: {keep, done}
+const RUNE_COL = [["Röd","#e0453a"],["Blå","#3f86e0"],["Grön","#3fbf5a"],["Gul","#f0d040"]];
+
+// lay out the rooms of one dungeon: a chain from left to right, rooms alternate high/low, joined by 3 wide corridors
+function dgLayout(D){
+  const T = TILE_BY_NAME(), x0 = OW + 4, y0 = D.oy, rooms = [];
+  let cx = x0 + 2;
+  ROOM_SIZES.forEach(([w,h], i)=>{
+    const last = i === ROOM_SIZES.length-1, cy = last ? y0 + (DG_H>>1) : y0 + (i%2===0 ? 11 : DG_H-12);
+    rooms.push({x:cx, y:cy-(h>>1), w, h, cx:cx+(w>>1), cy}); cx += w + 4;
+  });
+  return {x0, y0, rooms, floor:T[D.floor], wall:T[D.wall], obst:T[D.obst]};
+}
+function carveDungeons(){
+  for(const D of Object.values(DUNGEONS)){
+    const L = dgLayout(D); D.L = L; D.gates = [];
+    const setT = (x,y,t)=>{ if(x>OW && x<MW-1 && y>0 && y<MH-1){ map[y*MW+x] = t; zmap[y*MW+x] = D.id; } };
+    for(let y=L.y0; y<L.y0+DG_H; y++) for(let x=L.x0; x<L.x0+DG_W && x<MW-1; x++) setT(x, y, L.wall);
+    L.rooms.forEach((r,i)=>{
+      for(let y=r.y; y<r.y+r.h; y++) for(let x=r.x; x<r.x+r.w; x++) setT(x, y, L.floor);
+      if(i>0 && i<L.rooms.length-1){ // a few obstacles in the corners, never in the middle
+        for(const [ox,oy] of [[2,2],[r.w-3,r.h-3]]) setT(r.x+ox, r.y+oy, L.obst); }
+      if(i === L.rooms.length-1) for(const [ox,oy] of [[3,3],[r.w-4,3],[3,r.h-4],[r.w-4,r.h-4]]) setT(r.x+ox, r.y+oy, L.obst);
+    });
+    // corridors between room i and i+1 (horizontal out, vertical in the gap, horizontal in)
+    for(let i=0;i<L.rooms.length-1;i++){
+      const a = L.rooms[i], b = L.rooms[i+1], gx = a.x + a.w; // gap columns gx..gx+3: stubs at gx and gx+3, the vertical corridor in gx+1..gx+2
+      for(let x=a.x+a.w-1; x<=gx+2; x++) for(let k=-1;k<=1;k++) setT(x, a.cy+k, L.floor);
+      const yA = Math.min(a.cy, b.cy)-1, yB = Math.max(a.cy, b.cy)+1;
+      for(let y=yA; y<=yB; y++) for(let x=gx+1; x<=gx+2; x++) setT(x, y, L.floor);
+      for(let x=gx+1; x<=b.x; x++) for(let k=-1;k<=1;k++) setT(x, b.cy+k, L.floor);
+      // gates: after each puzzle room (rooms 2 and 4) the way out is closed until the puzzle is solved
+      if(i===2 || i===4){ const g = {room:i, tiles:[]}; for(let k=-1;k<=1;k++) g.tiles.push([gx, a.cy+k]); D.gates.push(g); }
+    }
+    deco.push({k:"brazier", x:(L.rooms[0].x+1)*TILE+16, y:(L.rooms[0].y+1)*TILE+16}, {k:"brazier", x:(L.rooms[0].x+L.rooms[0].w-2)*TILE+16, y:(L.rooms[0].y+1)*TILE+16});
+    const br = L.rooms[L.rooms.length-1]; deco.push({k:"brazier", x:(br.x+1)*TILE+16, y:(br.y+1)*TILE+16}, {k:"brazier", x:(br.x+br.w-2)*TILE+16, y:(br.y+1)*TILE+16},
+      {k:"brazier", x:(br.x+1)*TILE+16, y:(br.y+br.h-2)*TILE+16}, {k:"brazier", x:(br.x+br.w-2)*TILE+16, y:(br.y+br.h-2)*TILE+16});
+    deco.push({k:"brazier", x:(D.ent.x-1)*TILE+16, y:(D.ent.y-1)*TILE+16}, {k:"brazier", x:(D.ent.x+1)*TILE+16, y:(D.ent.y-1)*TILE+16});
+  }
+}
+function setGate(D, g, closed){ for(const [x,y] of g.tiles) map[y*MW+x] = closed ? T_GATE : D.L.floor; }
+// (re)build a dungeon: fresh monsters, closed gates, unsolved puzzles
+function resetDungeon(D){
+  mobs = mobs.filter(m=>m.def.dg !== D.id); dobjs = dobjs.filter(o=>o.dg !== D.id);
+  const L = D.L, r = L.rooms, rr = rng(hashStr(D.id) ^ Math.floor(Math.random()*1e9)), lv = ZONES[D.id].lv;
+  const put = (type, tx, ty, lvl) => { const m = makeMob(type, tx, ty, lvl); mobs.push(m); return m; };
+  const pack = (room, n) => { const rm = r[room]; for(let i=0;i<n;i++){ const a = i/n*Math.PI*2 + 0.4, tx = Math.round(rm.cx + Math.cos(a)*2.2), ty = Math.round(rm.cy + Math.sin(a)*2); put(D.pack[(room+i)%3], tx, ty, lv[0] + Math.floor(rr()*(lv[1]-lv[0]))); } };
+  pack(1, 3); pack(2, 2); pack(4, 3);
+  put(D.mini[0], r[3].cx, r[3].cy, MOBS[D.mini[0]].lv[0]); pack(3, 2);
+  put(D.mini[1], r[5].cx, r[5].cy, MOBS[D.mini[1]].lv[0]);
+  put(D.boss, r[6].cx + 2, r[6].cy, MOBS[D.boss].lv[0]);
+  // corridor guards
+  put(D.pack[0], r[5].x - 2, r[5].cy, lv[1]-1);
+  for(const g of D.gates) setGate(D, g, true);
+  // puzzles: room 2 and room 4
+  D.puzzles.forEach((kind, pi)=>{ const rm = r[pi===0 ? 2 : 4], gate = D.gates[pi];
+    if(kind === "lever"){ [[1,1],[rm.w-2,1],[1,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"lever", gate:pi, i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16})); }
+    else { const order = [0,1,2,3].sort(()=>rr()-0.5); D.order = D.order || []; D.order[pi] = order; D.prog = D.prog || []; D.prog[pi] = 0;
+      [[1,1],[rm.w-2,1],[1,rm.h-2],[rm.w-2,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"rune", gate:pi, c:i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16}));
+      dobjs.push({dg:D.id, kind:"tablet", gate:pi, x:(rm.cx)*TILE+16, y:(rm.y+1)*TILE+16}); }
+    gate.open = false; });
+  dobjs.push({dg:D.id, kind:"exit", x:(r[0].x+1)*TILE+16, y:(r[0].cy)*TILE+16});
+  DSTATE[D.id] = {keep:false, done:false};
+}
+function spawnDungeons(){ dobjs = []; for(const D of Object.values(DUNGEONS)){ resetDungeon(D); dobjs.push({dg:null, dgEnt:D.id, kind:"entrance", x:D.ent.x*TILE+16, y:D.ent.y*TILE+16}); } }
+
+// ---- puzzles
+function openGate(D, pi){ const g = D.gates[pi]; if(g.open) return; g.open = true; setGate(D, g, false);
+  const [gx, gy] = g.tiles[1]; ring(gx*TILE+16, gy*TILE+16, 70, "#ffd36b"); showBanner(`${D.gate}en öppnas!`, "Vägen framåt är fri", 3); log(`${D.gate}en öppnades.`, "#7be08a"); }
+function useDObj(o){
+  const D = DUNGEONS[o.dg];
+  if(o.kind === "entrance") return openPanel("npc", DUNGEONS[o.dgEnt].keeper.id);
+  if(o.kind === "exit" || o.kind === "exitEnd") return leaveDungeon(false);
+  if(o.kind === "lever"){
+    if(o.on) return; o.on = true; burst(o.x, o.y-10, "#ffd36b", 10);
+    const all = dobjs.filter(x=>x.dg===o.dg && x.kind==="lever" && x.gate===o.gate), n = all.filter(x=>x.on).length;
+    floatText(o.x, o.y-40, `${D.lever} ${n}/${all.length}`, "#ffd36b");
+    if(n === all.length) openGate(D, o.gate);
+  }
+  if(o.kind === "tablet"){
+    const ord = D.order[o.gate].map(i=>RUNE_COL[i][0]).join(" → ");
+    log(`Tavlan: "Väck runorna i rätt ordning: ${ord}."`, "#e6bd5c"); floatText(o.x, o.y-40, ord, "#e6bd5c");
+  }
+  if(o.kind === "rune"){
+    if(o.on || D.gates[o.gate].open) return;
+    const want = D.order[o.gate][D.prog[o.gate]];
+    if(o.c === want){ o.on = true; D.prog[o.gate]++; burst(o.x, o.y-10, RUNE_COL[o.c][1], 12); floatText(o.x, o.y-40, RUNE_COL[o.c][0], RUNE_COL[o.c][1]);
+      if(D.prog[o.gate] >= 4) openGate(D, o.gate); }
+    else { D.prog[o.gate] = 0; dobjs.filter(x=>x.dg===o.dg && x.kind==="rune" && x.gate===o.gate).forEach(x=>x.on=false);
+      floatText(o.x, o.y-40, "Fel ordning! Runorna slocknar.", "#ff6b5e"); burst(o.x, o.y-10, "#ff5a40", 12); playerDamage(P.maxHp*0.08, null); }
+  }
+}
+// ---- boss / progress
+function dungeonKill(m){
+  const D = DUNGEONS[m.def.dg]; if(!D) return;
+  if(m.def.boss){ DSTATE[D.id].done = true; const br = D.L.rooms[D.L.rooms.length-1];
+    dobjs.push({dg:D.id, kind:"exitEnd", x:(br.x+br.w-3)*TILE+16, y:br.cy*TILE+16});
+    setTimeout(()=>showBanner(`${ZONES[D.id].name} rensad!`, "En portal ut har öppnats", 5), 1500); log(`Du har rensat ${ZONES[D.id].name}! Gå in i portalen för att komma ut.`, "#7be08a"); }
+}
+function camBounds(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x0:L.x0*TILE, y0:L.y0*TILE, x1:Math.min(MW, L.x0+DG_W)*TILE, y1:(L.y0+DG_H)*TILE}; } return {x0:0, y0:0, x1:OW*TILE, y1:MH*TILE}; }
+function mapRegion(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x:L.x0, y:L.y0, w:Math.min(MW, L.x0+DG_W)-L.x0, h:DG_H}; } return {x:0, y:0, w:OW, h:MH}; }
+// ---- entering and leaving
+function enterDungeon(id){
+  const D = DUNGEONS[id]; if(!D || P.dead) return;
+  if(!DSTATE[id] || !DSTATE[id].keep || DSTATE[id].done) resetDungeon(D);
+  closePanel(); P.casting = null; P.autoTarget = null; P.target = null; projs = []; zones = [];
+  for(const m of mobs) if(m.state==="chase") evade(m);
+  const r0 = D.L.rooms[0]; P.x = (r0.cx)*TILE+16; P.y = (r0.cy)*TILE+16; P.inDungeon = id; DSTATE[id].keep = false;
+  showBanner(ZONES[id].name, `Instans · nivå ${ZONES[id].lv[0]}–${ZONES[id].lv[1]}`, 4);
+  log(`Du gick in i ${ZONES[id].name}. Portalen bakom dig tar dig ut igen.`, "#9fd6e8"); save(true);
+}
+function placeAtEntrance(D){ P.x = D.ent.x*TILE+16; P.y = (D.ent.y+1)*TILE+16; }
+function leaveDungeon(){
+  const D = DUNGEONS[P.inDungeon]; if(!D) return;
+  for(const m of mobs) if(m.def.dg===D.id && m.state==="chase") evade(m);
+  P.inDungeon = null; P.target = null; P.autoTarget = null; projs = []; zones = [];
+  placeAtEntrance(D); DSTATE[D.id].keep = false;
+  showBanner(ZONES[parentZone(zoneAtTile(D.ent.x, D.ent.y))]?.name || "", "Du lämnade instansen", 3); save(true);
+}
+function reviveFromDungeon(){
+  const D = DUNGEONS[P.inDungeon]; P.inDungeon = null;
+  for(const m of mobs) if(m.def.dg===D.id && !m.dead){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
+  DSTATE[D.id].keep = true;     // progress stays: dead monsters stay dead and opened gates stay open
+  placeAtEntrance(D);
+  P.hp = P.maxHp*0.6; P.mana = P.maxMana*0.6; P.target = null; P.shield = 0;
+  document.getElementById("dead").hidden = true;
+  showBanner(ZONES[D.id].name, "Du vaknade vid ingången. Gå in igen för att fortsätta.", 4); save(true);
+}
+function dungeonInfoHTML(id){
+  const D = DUNGEONS[id], z = ZONES[id], st = DSTATE[id] || {}, lvlCol = S.level < z.lv[0]-1 ? "var(--bad)" : S.level > z.lv[1]+3 ? "var(--mute)" : "var(--coin)";
+  const quests = QUESTS.filter(q=>q.obj.some(o=>(o[0]==="kill"&&MOBS[o[1]].dg===id)||(o[0]==="loot"&&MOBS[o[3]].dg===id)));
+  return `<h3>${z.name}</h3><div class="item"><div><b style="color:${lvlCol}">Instans · nivå ${z.lv[0]}–${z.lv[1]}</b><div class="d">${esc(D.intro)}</div>
+    <div class="d">Svårare än vanliga områden – grupper av fiender, två pussel, två minibossar (släpper alltid grön utrustning) och en slutboss som alltid släpper blå eller bättre. Dör du vaknar du här utanför, och det du redan rensat ligger kvar.</div>
+    ${st.keep && !st.done ? `<div class="d" style="color:var(--coin)">Du har påbörjat instansen – går du in fortsätter du där du var.</div>` : ""}
+    ${quests.length ? `<div class="d">Uppdrag hit: ${quests.map(q=>`${esc(q.name)} (${esc(npcName(q.npc))})`).join(", ")}</div>` : ""}</div>
+    <button class="btn pri" data-act="enterdg" data-id="${id}">Gå in</button></div>
+    ${st.keep && !st.done ? `<div class="row" style="margin-top:6px"><button class="btn" data-act="resetdg" data-id="${id}">Börja om från början</button></div>` : ""}`;
+}
+// drawing of puzzle objects and portals
+function drawDObj(c, o){
+  const t = time;
+  c.save(); c.translate(o.x, o.y);
+  if(o.kind === "lever"){
+    c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 4, 12, 4); c.fillStyle = "#4a4d55"; c.fillRect(-9, -6, 18, 10); c.fillStyle = "#2a2d33"; c.fillRect(-9, 2, 18, 2);
+    c.strokeStyle = "#8a7a5a"; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -2); c.lineTo(o.on ? 9 : -9, -18); c.stroke();
+    c.fillStyle = o.on ? "#7be08a" : "#e05a4a"; c.beginPath(); c.arc(o.on ? 9 : -9, -18, 4, 0, 7); c.fill();
+    if(!o.on){ c.fillStyle = `rgba(255,211,107,${0.25+Math.sin(t*4)*0.15})`; c.beginPath(); c.arc(0, -8, 16, 0, 7); c.fill(); }
+  } else if(o.kind === "rune"){
+    const [, col] = RUNE_COL[o.c];
+    c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 4, 13, 4); c.fillStyle = "#5d6068"; c.beginPath(); c.roundRect(-10, -26, 20, 30, [8,8,2,2]); c.fill();
+    c.fillStyle = col; c.globalAlpha = o.on ? 1 : 0.55 + Math.sin(t*3 + o.c)*0.15; c.beginPath(); c.moveTo(0,-20); c.lineTo(6,-11); c.lineTo(0,-2); c.lineTo(-6,-11); c.closePath(); c.fill(); c.globalAlpha = 1;
+    if(o.on){ const g = c.createRadialGradient(0,-11,2,0,-11,30); g.addColorStop(0, col+"aa"); g.addColorStop(1, col+"00"); c.fillStyle = g; c.beginPath(); c.arc(0,-11,30,0,7); c.fill(); }
+  } else if(o.kind === "tablet"){
+    c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 4, 14, 4); c.fillStyle = "#7a7468"; c.fillRect(-12, -24, 24, 28); c.fillStyle = "#5a554b";
+    for(let i=0;i<4;i++) c.fillRect(-8, -19+i*6, 16, 2);
+    RUNE_COL.forEach(([,col],i)=>{ c.fillStyle = col; c.fillRect(-10+i*6, -28, 4, 3); });
+  } else { // portal (purple = way out / entrance, gold = cleared)
+    const done = o.kind === "exitEnd";
+    if(o.kind === "entrance"){ c.fillStyle = "#2a2a30"; c.beginPath(); c.ellipse(0, -18, 26, 34, 0, Math.PI, 0); c.lineTo(26, 6); c.lineTo(-26, 6); c.fill(); c.fillStyle = "#5a5a64"; c.fillRect(-30, -4, 8, 10); c.fillRect(22, -4, 8, 10); }
+    for(let i=0;i<3;i++){ c.strokeStyle = done ? `rgba(255,211,107,${0.8-i*0.2})` : `rgba(160,120,255,${0.8-i*0.2})`; c.lineWidth = 3; c.beginPath(); c.ellipse(0, -22, 16+i*3+Math.sin(t*3+i)*1.5, 26+i*3, 0, 0, 7); c.stroke(); }
+    const g = c.createRadialGradient(0,-22,2,0,-22,26); g.addColorStop(0, done ? "rgba(255,240,180,.9)" : "rgba(220,200,255,.9)"); g.addColorStop(1, done ? "rgba(255,180,60,.15)" : "rgba(100,60,200,.15)");
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, -22, 16, 26, 0, 0, 7); c.fill();
+  }
+  c.restore();
+}
+function dobjLabel(o){ if(o.kind==="entrance") return `[E] Gå in i ${ZONES[o.dgEnt].name}`; const D = DUNGEONS[o.dg];
+  return o.kind==="lever" ? (o.on ? null : `[E] Dra i ${D.lever.toLowerCase()}`) : o.kind==="rune" ? (o.on ? null : `[E] Väck den ${RUNE_COL[o.c][0].toLowerCase()} runan`) : o.kind==="tablet" ? "[E] Läs tavlan" : "[E] Lämna instansen"; }
+// darkness inside dungeons: only a circle around the hero (and fires) is lit
+function drawDungeonDark(c, cam, vw, vh){
+  if(!P.inDungeon) return;
+  const g = c.createRadialGradient(P.x, P.y-16, 120, P.x, P.y-16, 430); g.addColorStop(0, "rgba(5,6,10,0)"); g.addColorStop(1, "rgba(5,6,10,.72)");
+  c.fillStyle = g; c.fillRect(cam.x, cam.y, vw, vh);
 }
 </script>
 <script>
@@ -1858,6 +2161,7 @@ function makeTilesInner(){
   tileSprites[T_CACTUS] = mk((g, r) => { sand(g, r); g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(16,28,8,3,0,0,7); g.fill(); g.fillStyle = "#4f7a3a"; g.beginPath(); g.roundRect(13,6,6,22,3); g.fill(); g.beginPath(); g.roundRect(6,12,5,9,2); g.fill(); g.beginPath(); g.roundRect(21,9,5,9,2); g.fill(); g.fillRect(9,18,5,3); g.fillRect(18,15,4,3); });
   tileSprites[T_BLIGHT] = mk((g, r) => { g.fillStyle = "#5a5a48"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#6a6a52","#4a4a3c","#7a6a5a"], 2); });
   tileSprites[T_GLOOM] = mk((g, r) => { g.fillStyle = "#3a3a40"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#48484e","#2c2c32","#5a4a5a"], 2); });
+  tileSprites[T_GATE] = mk((g, r) => { g.fillStyle = "#1c1d22"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#6a6d75"; for(let i=0;i<4;i++) g.fillRect(3+i*8, 0, 3, TILE); g.fillRect(0, 6, TILE, 3); g.fillRect(0, 22, TILE, 3); g.fillStyle = "#9aa0a8"; for(let i=0;i<4;i++) g.fillRect(3+i*8, 0, 1, TILE); });
   tileSprites[T_CWALL] = mk((g, r) => { g.fillStyle = "#1f2227"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#3a3f47"; g.fillRect(0,0,TILE,8); g.strokeStyle = "#2a2e34"; g.strokeRect(0.5,8.5,15,11); g.strokeRect(16.5,8.5,15,11); g.strokeRect(8.5,20.5,15,11); });
 }
 // ground textures (CC0, Screaming Brain Studios) drawn continuously across tiles; objects drawn on top
@@ -1886,7 +2190,7 @@ function tileSprite(t, x, y){
 
 // minimap base
 const mmBase = document.createElement("canvas"); mmBase.width = MW; mmBase.height = MH;
-const MM_COL = {[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40",[T_BLIGHT]:"#6a6a54",[T_GLOOM]:"#44444c"};
+const MM_COL = {[T_GATE]:"#8a8d95",[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40",[T_BLIGHT]:"#6a6a54",[T_GLOOM]:"#44444c"};
 function makeMinimap(){ const mm = document.getElementById("mm"); mm.width = 120; mm.height = 80; const g = mmBase.getContext("2d"); for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){ g.fillStyle = MM_COL[map[y*MW+x]]; g.fillRect(x,y,1,1); } }
 
 function shade(hex, f){ const n = parseInt(hex.slice(1),16); let r=n>>16, g=(n>>8)&255, b=n&255; r=clamp(Math.round(r*f),0,255); g=clamp(Math.round(g*f),0,255); b=clamp(Math.round(b*f),0,255); return `rgb(${r},${g},${b})`; }
@@ -2007,7 +2311,7 @@ function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(!running){ ctx.fillStyle = "#0b1013"; ctx.fillRect(0,0,W,H); return; }
   const vw = W/ZOOM, vh = H/ZOOM;
-  cam.x = clamp(P.x - vw/2, 0, MW*TILE - vw); cam.y = clamp(P.y - vh/2, 0, MH*TILE - vh);
+  const cb = camBounds(); cam.x = clamp(P.x - vw/2, cb.x0, Math.max(cb.x0, cb.x1 - vw)); cam.y = clamp(P.y - vh/2, cb.y0, Math.max(cb.y0, cb.y1 - vh));
   ctx.setTransform(DPR*ZOOM,0,0,DPR*ZOOM, -Math.round(cam.x*DPR*ZOOM), -Math.round(cam.y*DPR*ZOOM));
   const x0 = Math.floor(cam.x/TILE), y0 = Math.floor(cam.y/TILE), x1 = Math.ceil((cam.x+vw)/TILE), y1 = Math.ceil((cam.y+vh)/TILE);
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ if(x<0||y<0||x>=MW||y>=MH) continue; drawTile(ctx, x, y); }
@@ -2030,6 +2334,7 @@ function render(){
   for(const m of mobs) if(!m.dead && inView(m)) ents.push({y:m.y, f:()=>drawMob(ctx, m)});
   for(const n of npcs) if(inView(n)) ents.push({y:n.y, f:()=>{ const [sx,sy] = raceScale(n.race); if(!drawLPC(ctx, npcLook(n), n.x, n.y, {anim:"walk", frame:0, dir:2}, sx, sy)) drawHero(ctx, n.x, n.y, {race:n.race, skin:RACES[n.race||"human"].skin, body:n.color, fx:n.fx, hair:RACES[n.race||"human"].hair, ph:n.x}); }});
   for(const d of deco) if((d.k==="fire"||d.k==="brazier") && inView(d,90)) ents.push({y:d.y, f:()=>drawDeco(ctx, d)});
+  for(const o of dobjs) if(inView(o,90)) ents.push({y:o.y, f:()=>drawDObj(ctx, o)});
   if(!P.dead || true) ents.push({y:P.y, f:()=>{ ctx.globalAlpha = P.dead ? 0.35 : 1;
     if(P.buffs.bubble){ ctx.fillStyle = `rgba(255,230,140,${0.18+Math.sin(time*6)*0.06})`; ctx.strokeStyle = "rgba(255,240,170,.85)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(P.x, P.y-24, 30, 0, 7); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1; }
     if(P.shield>0){ ctx.strokeStyle = "rgba(255,246,208,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(P.x, P.y-16, 22, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
@@ -2044,6 +2349,7 @@ function render(){
     if(p.kind==="arrow"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang||0); ctx.strokeStyle = "#d8cfb4"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(4,0); ctx.stroke(); ctx.fillStyle = p.color; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(2,-3); ctx.lineTo(2,3); ctx.fill(); ctx.restore(); ctx.lineWidth = 1; }
     else { const g = ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,p.size*2.2); g.addColorStop(0,"#fff"); g.addColorStop(0.35,p.color); g.addColorStop(1,"rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*2.2,0,7); ctx.fill(); }
   }
+  drawDungeonDark(ctx, cam, vw, vh);
   drawSfx(ctx, Math.min(0.05, (performance.now() - (render._lt||performance.now()))/1000));
   drawBossFx(ctx, Math.min(0.05, (performance.now() - (render._lt||performance.now()))/1000)); render._lt = performance.now();
   for(const p of parts){ ctx.globalAlpha = Math.max(0, p.life/p.max); ctx.fillStyle = p.color; ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size); } ctx.globalAlpha = 1;
@@ -2058,7 +2364,7 @@ function render(){
     const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
   // interaction hint
   const it = nearestInteract();
-  if(it && !P.dead){ const o = it.obj; const label = it.type==="npc" ? `[E] Prata med ${o.name}` : o.qitem ? `[E] Plocka upp ${o.def.name}` : `[E] ${o.def.skill==="mining"?"Bryt":"Plocka"} ${o.def.name}${S.skills[o.def.skill]<o.def.req?` (kräver ${o.def.req})`:""}`;
+  if(it && !P.dead){ const o = it.obj; const label = it.type==="dobj" ? dobjLabel(o).replace("[E]", `[${keyName(KB.interact)}]`) : it.type==="npc" ? `[E] Prata med ${o.name}` : o.qitem ? `[E] Plocka upp ${o.def.name}` : `[E] ${o.def.skill==="mining"?"Bryt":"Plocka"} ${o.def.name}${S.skills[o.def.skill]<o.def.req?` (kräver ${o.def.req})`:""}`;
     ctx.font = "700 12px 'Alegreya Sans', sans-serif"; const w = ctx.measureText(label).width + 12; const yy = o.y + 18;
     ctx.fillStyle = "rgba(10,14,17,.8)"; ctx.fillRect(o.x - w/2, yy, w, 18); ctx.fillStyle = "#e6bd5c"; ctx.fillText(label, o.x, yy+13); }
   // floating text
@@ -2105,9 +2411,10 @@ function nearestInteract(){
   if(best) return best;
   for(const n of nodes){ if(!n.active) continue; const d = dist(P,n); if(d < 42 && d < bd){ bd = d; best = {type:"node", obj:n}; } }
   for(const n of qobjs){ if(!n.active || !needsQItem(n.qitem)) continue; const d = dist(P,n); if(d < 42 && d < bd){ bd = d; best = {type:"node", obj:n}; } }
+  for(const o of dobjs){ const d = dist(P,o); if(d < 48 && d < bd && dobjLabel(o)){ bd = d; best = {type:"dobj", obj:o}; } }
   return best;
 }
-function interact(){ if(P.dead) return; const it = nearestInteract(); if(!it) return; if(it.type==="npc") openPanel("npc", it.obj.id); else if(!P.casting) startGather(it.obj); }
+function interact(){ if(P.dead) return; const it = nearestInteract(); if(!it) return; if(it.type==="dobj") return useDObj(it.obj); if(it.type==="npc") openPanel("npc", it.obj.id); else if(!P.casting) startGather(it.obj); }
 function drawQObj(c, n){
   const tw = Math.sin(time*4 + n.x)*0.5+0.5; c.save(); c.translate(n.x, n.y);
   c.fillStyle = `rgba(243,220,85,${0.18+tw*0.2})`; c.beginPath(); c.arc(0,-4,16,0,7); c.fill();
@@ -2125,11 +2432,18 @@ function drawQObj(c, n){
 }
 // full world map (M)
 function drawWorldMap(cv){
-  const W2 = cv.width, k = W2/MW, H2 = MH*k; cv.height = H2; const g = cv.getContext("2d");
-  g.imageSmoothingEnabled = false; g.drawImage(mmBase, 0, 0, MW, MH, 0, 0, W2, H2);
+  const reg = mapRegion(), W2 = cv.width, k = W2/reg.w, H2 = reg.h*k; cv.height = H2; const g = cv.getContext("2d"); cv._reg = reg;
+  g.imageSmoothingEnabled = false; g.drawImage(mmBase, reg.x, reg.y, reg.w, reg.h, 0, 0, W2, H2);
+  if(P.inDungeon){ g.fillStyle = "rgba(10,14,17,.15)"; g.fillRect(0,0,W2,H2); g.textAlign = "center"; g.font = "700 26px 'Alegreya Sans', sans-serif"; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.85)";
+    const nm = ZONES[P.inDungeon].name; g.strokeText(nm, W2/2, 34); g.fillStyle = "#fff"; g.fillText(nm, W2/2, 34);
+    for(const o of dobjs) if(o.dg===P.inDungeon){ const x = (o.x/TILE-reg.x)*k, y = (o.y/TILE-reg.y)*k; g.fillStyle = o.kind.startsWith("exit") ? "#a77bff" : o.kind==="lever"||o.kind==="rune" ? (o.on?"#7be08a":"#f3dc55") : "#e6bd5c"; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); }
+    for(const m of mobs) if(m.def.dg===P.inDungeon && !m.dead && (m.def.mini||m.def.boss)){ const x = (m.x/TILE-reg.x)*k, y = (m.y/TILE-reg.y)*k; g.fillStyle = "#ff3b30"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, m.def.boss?10:7, 0, 7); g.fill(); g.stroke(); }
+    const base = cv._base || (cv._base = document.createElement("canvas")); base.width = W2; base.height = H2; base.getContext("2d").drawImage(cv, 0, 0); cv._k = k; drawMapPlayer(cv); return; }
   g.fillStyle = "rgba(10,14,17,.25)"; g.fillRect(0,0,W2,H2);
   g.textAlign = "center"; g.textBaseline = "middle";
-  for(const [id,z] of Object.entries(ZONES)){ const d = z.lv[0] - S.level; const col = S.level > z.lv[1]+2 ? "#b8c0c4" : d > 2 ? "#ff7a6a" : "#f3dc55";
+  for(const D of Object.values(DUNGEONS)){ const x = D.ent.x*k, y = D.ent.y*k; g.fillStyle = "#a77bff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); g.stroke();
+    g.font = `700 ${Math.max(9, k*3.6)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t = `${ZONES[D.id].name} (${ZONES[D.id].lv[0]}–${ZONES[D.id].lv[1]})`; g.textAlign = "left"; g.strokeText(t, x+9, y+1); g.fillStyle = "#cdb8ff"; g.fillText(t, x+9, y+1); g.textAlign = "center"; }
+  for(const [id,z] of Object.entries(ZONES)){ if(z.dungeon) continue; const d = z.lv[0] - S.level; const col = S.level > z.lv[1]+2 ? "#b8c0c4" : d > 2 ? "#ff7a6a" : "#f3dc55";
     g.font = `700 ${Math.max(11, k*5.5)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)";
     const hb = Object.values(HUBS).find(h=>h.zone===id) || {x:z.c[0], y:z.c[1]}; const x = hb.x*k, y = hb.y*k - 40; g.strokeText(z.name, x, y); g.fillStyle = "#fff"; g.fillText(z.name, x, y);
     g.font = `700 ${Math.max(10, k*4.4)}px 'Alegreya Sans', sans-serif`; g.strokeText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); g.fillStyle = col; g.fillText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); }
@@ -2139,8 +2453,28 @@ function drawWorldMap(cv){
   act.forEach((q,i)=>{ const sp = questSpot(q); if(!sp) return; const x = sp.x*k, y = sp.y*k;
     g.fillStyle = sp.turnin ? "#7be08a" : "#f3dc55"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fill(); g.stroke();
     g.fillStyle = "#111"; g.font = "800 10px 'Alegreya Sans', sans-serif"; g.fillText(sp.turnin ? "?" : String(i+1), x, y+0.5); });
-  const px = P.x/TILE*k, py = P.y/TILE*k; g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill(); g.stroke();
-  g.fillStyle = "#e2534d"; g.beginPath(); g.arc(px, py, 2, 0, 7); g.fill();
+  const base = cv._base || (cv._base = document.createElement("canvas")); base.width = W2; base.height = H2; base.getContext("2d").drawImage(cv, 0, 0);
+  cv._k = k; drawMapPlayer(cv);
+}
+// the player marker on the big map: pulsing rings, an arrow showing where you face and a "Du" label (redrawn every frame while the map is open)
+function drawMapPlayer(cv){
+  if(!cv || !cv._base) return; const g = cv.getContext("2d"), k = cv._k;
+  g.drawImage(cv._base, 0, 0);
+  const reg = cv._reg || {x:0, y:0}, px = (P.x/TILE - reg.x)*k, py = (P.y/TILE - reg.y)*k, ph = (time*1.2) % 1;
+  g.save();
+  // dim everything a little except around the player
+  for(const off of [0, 0.5]){ const p = (ph + off) % 1; g.strokeStyle = `rgba(255,90,60,${0.85*(1-p)})`; g.lineWidth = 3; g.beginPath(); g.arc(px, py, 10 + p*34, 0, 7); g.stroke(); }
+  g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1; g.setLineDash([4,4]);
+  g.beginPath(); g.moveTo(px, 0); g.lineTo(px, py-16); g.moveTo(px, py+16); g.lineTo(px, cv.height); g.moveTo(0, py); g.lineTo(px-16, py); g.moveTo(px+16, py); g.lineTo(cv.width, py); g.stroke(); g.setLineDash([]);
+  const ang = [-Math.PI/2, Math.PI, Math.PI/2, 0][P.dir==null?2:P.dir];
+  g.translate(px, py); g.rotate(ang + Math.PI/2);
+  g.fillStyle = "#ff4a2a"; g.strokeStyle = "#fff"; g.lineWidth = 2.5;
+  g.beginPath(); g.moveTo(0, -13); g.lineTo(9, 9); g.lineTo(0, 4); g.lineTo(-9, 9); g.closePath(); g.fill(); g.stroke();
+  g.restore();
+  g.font = "800 14px 'Alegreya Sans', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  const tw = g.measureText("Du är här").width + 14, ly = py - 30 < 12 ? py + 30 : py - 30;
+  g.fillStyle = "rgba(255,74,42,.95)"; g.beginPath(); g.roundRect(px - tw/2, ly - 10, tw, 20, 6); g.fill();
+  g.fillStyle = "#fff"; g.fillText("Du är här", px, ly + 0.5);
 }
 </script>
 <script>
@@ -2391,7 +2725,7 @@ function drawSfx(c, dt){
       fxDraw(c, "flat", el, z.x + Math.cos(ang)*rr, z.y + Math.sin(ang)*rr*0.7, z.r*1.0, ph, 0.75*a); } }
   for(const e of sfxs){ e.t += dt; fxDraw(c, e.kind, e.el, e.x, e.y, e.size, e.t/e.dur, Math.min(1, (e.dur-e.t)*6)); }
   sfxs = sfxs.filter(e=>e.t < e.dur); c.restore(); }
-const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
+const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}, leopard:{c:"Fox", s:1.35, tint:["#e8b23a",0.38]}};
 </script>
 <script>
 // ======================= ACTION BARS, KEYBINDINGS, MENU, SPELLBOOK, CRAFTING =======================
@@ -2399,7 +2733,7 @@ const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
 const BAR_SIZE = 10;
 function barKeyNow(){ return S.cls==="druid" && P && P.form ? P.form : "main"; }
 function barSource(key){ return S.cls==="druid" ? (key==="main" ? BARS.druid : BARS["druid_"+key]) : BARS[S.cls]; }
-function barKeys(){ return S.cls==="druid" ? ["main","bear","cat"] : ["main"]; }
+function barKeys(){ return S.cls==="druid" ? ["main","bear","cat","leopard"] : ["main"]; }
 function ensureBars(){
   if(!S.bars || typeof S.bars !== "object") S.bars = {};
   for(const key of barKeys()){
@@ -2476,17 +2810,50 @@ function keysHTML(){
 function spellsHTML(){
   ensureBars();
   const tabs = barKeys(), key = tabs.includes(spellTab) ? spellTab : "main", bar = S.bars[key];
-  const TAB_NAME = {main:S.cls==="druid"?"Normal form":"Formler", bear:"Björnform", cat:"Kattform"};
-  let h = `<h2>Formelbok</h2><div class="muted">Alla ${CLASSES[S.cls].name}-förmågor. Välj en knapp i listan för att lägga formeln där. Formler lär du dig hos din klass tränare.</div>`;
+  const TAB_NAME = {main:S.cls==="druid"?"Normal form":"Formler", bear:"Björnform", cat:"Vargform", leopard:"Leopardform"};
+  let h = `<h2>Formelbok</h2><div class="muted">Dra en formels ikon till en knapp i raden nedan. Du kan också dra mellan knapparna för att flytta dem, eller dra en knapp ut ur raden för att tömma den. Nya formler lär du dig hos din klass tränare.</div>`;
   if(tabs.length > 1) h += `<div class="row" style="margin-top:8px">${tabs.map(t=>`<button class="btn ${t===key?"pri":""}" data-act="spelltab" data-k="${t}">${TAB_NAME[t]}</button>`).join("")}</div>`;
-  h += `<div class="barprev">${bar.map((id,i)=>`<div class="bp" title="${id?esc(AB[id].name):"Tom"}">${id?`<img src="${abIconURL(id)}" alt="">`:""}<span>${keyName(KB["bar"+(i+1)])}</span></div>`).join("")}</div>`;
+  h += `<div class="barprev" data-bar="${key}">${bar.map((id,i)=>`<div class="bp ${id?"has":""}" data-slot="${i}" ${id?`data-sid="${id}"`:""} title="${id?esc(AB[id].name):"Tom knapp"}">${id?`<img src="${abIconURL(id)}" alt="" draggable="false">`:""}<span>${keyName(KB["bar"+(i+1)])}</span></div>`).join("")}</div>`;
   const list = barSource(key);
   h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id);
     const meta = [ `nivå ${a.lvl}`, a.cost ? `${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}` : "", a.cast ? `${a.cast} sek kasttid` : "omedelbar", a.cd ? `${a.cd} sek nedkylning` : "", a.range ? `räckvidd ${a.range}` : "" ].filter(Boolean).join(" · ");
-    const sel = learned ? `<select data-act="bind" data-id="${id}" data-bar="${key}" aria-label="Knapp för ${esc(a.name)}"><option value="-1">Ingen knapp</option>${bar.map((_,i)=>`<option value="${i}" ${slot===i?"selected":""}>Knapp ${i+1} (${keyName(KB["bar"+(i+1)])})</option>`).join("")}</select>` : `<span class="muted" style="font-size:12px">${S.level >= a.lvl ? "Lär dig hos tränaren" : `Låses upp på nivå ${a.lvl}`}</span>`;
-    return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico" src="${abIconURL(id)}" alt=""><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${sel}</div>`; }).join("")}</div>`;
+    const side = learned ? `<span class="muted" style="font-size:12px;flex:none">${slot>=0 ? `På knapp ${keyName(KB["bar"+(slot+1)])}` : "Inte på någon knapp"}</span>` : `<span class="muted" style="font-size:12px;flex:none">${S.level >= a.lvl ? "Lär dig hos tränaren" : `Låses upp på nivå ${a.lvl}`}</span>`;
+    return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico ${learned?"drag":""}" src="${abIconURL(id)}" alt="" draggable="false" ${learned?`data-drag="${id}" title="Dra till en knapp"`:""}><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${side}</div>`; }).join("")}</div>`;
   return h;
 }
+// ---- drag & drop of abilities onto the bar (only inside the spellbook)
+let dragAb = null;
+function moveOnBar(key, id, from, to){
+  ensureBars(); const b = S.bars[key];
+  if(to < 0){ if(from >= 0) b[from] = null; }
+  else if(from >= 0){ const other = b[to]; b[to] = id; b[from] = other || null; }
+  else { for(let i=0;i<BAR_SIZE;i++) if(b[i]===id) b[i] = null; b[to] = id; }
+  buildHotbar(); save();
+}
+document.addEventListener("pointerdown", e=>{
+  if(panelKind !== "spells") return;
+  const src = e.target.closest("[data-drag], .bp[data-sid]"); if(!src || !$("panel").contains(src)) return;
+  e.preventDefault();
+  const id = src.dataset.drag || src.dataset.sid, from = src.dataset.slot != null ? +src.dataset.slot : -1;
+  const key = $("panel").querySelector(".barprev").dataset.bar;
+  const ghost = document.createElement("img"); ghost.src = abIconURL(id); ghost.className = "dragghost"; document.body.appendChild(ghost);
+  dragAb = {id, from, key, ghost, moved:false, x0:e.clientX, y0:e.clientY};
+  ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
+});
+document.addEventListener("pointermove", e=>{
+  if(!dragAb) return; dragAb.moved = dragAb.moved || Math.hypot(e.clientX-dragAb.x0, e.clientY-dragAb.y0) > 4;
+  dragAb.ghost.style.left = e.clientX + "px"; dragAb.ghost.style.top = e.clientY + "px";
+  document.querySelectorAll(".bp.over").forEach(el=>el.classList.remove("over"));
+  const el = document.elementFromPoint(e.clientX, e.clientY), slot = el && el.closest(".bp[data-slot]"); if(slot) slot.classList.add("over");
+});
+document.addEventListener("pointerup", e=>{
+  if(!dragAb) return; const d = dragAb; dragAb = null; d.ghost.remove();
+  const el = document.elementFromPoint(e.clientX, e.clientY), slot = el && el.closest(".bp[data-slot]");
+  if(slot) moveOnBar(d.key, d.id, d.from, +slot.dataset.slot);
+  else if(d.from >= 0 && d.moved) moveOnBar(d.key, d.id, d.from, -1);
+  if(panelKind === "spells") renderPanel();
+});
+document.addEventListener("pointercancel", ()=>{ if(dragAb){ dragAb.ghost.remove(); dragAb = null; } });
 
 // ---- crafting: alchemy from herbs, smithing gear from ore
 const ALCH = [
@@ -2530,6 +2897,47 @@ function doSmith(ore, slot){ const t = SMITH_TIERS.find(x=>x.ore===ore); if(!t |
   const n = smithOre(slot), g = smithGold(t, slot); if((S.bag[ore]||0) < n || S.gold < g) return; if(S.gear.length >= GEAR_MAX) return err("Väskan är full");
   removeItem(ore, n); S.gold -= g; const q = Math.random() < 0.15 ? 3 : 2;
   gainGear(makeGear({slot, cls:S.cls, q, il:t.il}), "Du smidde"); burst(P.x, P.y, "#ffd36b", 14); save(); }
+// ---- active effects shown under the player and target frames
+const FX_AB = {buff:{}, hot:{}, dot:{}};
+for(const [id,a] of Object.entries(AB)){ const src = String(a.run||"");
+  for(const m of src.matchAll(/buff\("(\w+)"/g)) FX_AB.buff[m[1]] = FX_AB.buff[m[1]] || id;
+  for(const m of src.matchAll(/dot\(\w+,"(\w+)"/g)) FX_AB.dot[m[1]] = FX_AB.dot[m[1]] || id;
+  for(const m of src.matchAll(/hot\("(\w+)"[^;]*,\s*(\d+)\)/g)){ FX_AB.hot[m[1]] = FX_AB.hot[m[1]] || id; a.cd = Math.max(a.cd||0, +m[2]); } // a heal over time can't be recast while it lasts
+}
+const FX_EXTRA = {
+  elixir:{name:"Styrkeelixir", d:"+20% skada.", icon:"flask", c:"#ffd36b"}, ironskin:{name:"Järnhudselixir", d:"Du tar 15% mindre skada.", icon:"shield", c:"#9aa3ad"},
+  keen:{name:"Skärpeelixir", d:"+5% chans till kritisk träff.", icon:"star", c:"#ffb347"}, sage:{name:"Visdomselixir", d:"+20% formelkraft.", icon:"flask", c:"#9fd6e8"},
+  hotstreak:{name:"Het svit", d:"Nästa Solbrand är omedelbar.", icon:"burst", c:"#ff8a3a"}
+};
+const GICO = {};
+function genIconURL(icon, color){ const k = icon+color; if(GICO[k]) return GICO[k]; const c = document.createElement("canvas"); c.width = c.height = 64; drawIcon(c, icon, color); return GICO[k] = c.toDataURL(); }
+function abDesc(id){ try{ return AB[id].desc(); }catch(_){ return ""; } }
+function playerEffects(){
+  const L = [];
+  for(const h of P.hots){ const id = FX_AB.hot[h.key]; L.push({k:"h_"+h.key, url:id?abIconURL(id):genIconURL("bloom","#7be08a"), name:id?AB[id].name:"Helning", d:"Helar dig över tid.", left:h.left, good:true}); }
+  for(const [k,v] of Object.entries(P.buffs)){ const id = FX_AB.buff[k], x = FX_EXTRA[k];
+    if(id) L.push({k:"b_"+k, url:abIconURL(id), name:AB[id].name, d:abDesc(id), left:v, good:true});
+    else if(x) L.push({k:"b_"+k, url:genIconURL(x.icon, x.c), name:x.name, d:x.d, left:v, good:true}); }
+  if(P.shield > 0) L.push({k:"shield", url:genIconURL("shield","#8fd8ff"), name:"Skyddssköld", d:`Absorberar ${Math.ceil(P.shield)} skada till.`, left:P.shieldT, good:true});
+  if(P.sitting) L.push({k:"rest", url:genIconURL("cross","#7be08a"), name:"Vilar", d:"Du återhämtar hälsa och mana snabbare.", left:null, good:true});
+  if(P.potCd > 0) L.push({k:"pot", url:genIconURL("flask","#c03a52"), name:"Dryckesnedkylning", d:"Du kan inte dricka en ny dryck än.", left:P.potCd, good:false});
+  return L;
+}
+function targetEffects(t){
+  const L = [];
+  for(const d of t.dots){ const id = FX_AB.dot[d.key]; L.push({k:"d_"+d.key, url:id?abIconURL(id):genIconURL("skull","#a77bff"), name:id?AB[id].name:"Skada över tid", d:`Tar ${Math.round(d.per)} skada per sekund.`, left:d.left, good:false}); }
+  if(t.stunT > 0) L.push({k:"stun", url:genIconURL("fist","#ffd36b"), name:"Bedövad", d:"Kan inte röra sig eller attackera.", left:t.stunT, good:false});
+  if(t.rootT > 0 && !t.dots.some(d=>d.key==="roots")) L.push({k:"root", url:genIconURL("roots","#6a9a3a"), name:"Fastfrusen", d:"Kan inte röra sig.", left:t.rootT, good:false});
+  if(t.slowT > 0) L.push({k:"slow", url:genIconURL("shard","#8fd8ff"), name:"Nedsaktad", d:`${Math.round((t.slowPct||0)*100)}% långsammare.`, left:t.slowT, good:false});
+  return L;
+}
+function fmtLeft(s){ if(s == null) return ""; return s >= 60 ? Math.ceil(s/60)+"m" : Math.ceil(s)+""; }
+function renderEffects(el, list){
+  const sig = list.map(e=>e.k).join(",");
+  if(el._sig !== sig){ el._sig = sig;
+    el.innerHTML = list.map(e=>`<div class="fxc ${e.good?"":"bad"}" title="${esc(e.name)}${e.d?" – "+esc(e.d):""}"><img src="${e.url}" alt=""><b></b></div>`).join(""); }
+  const kids = el.children; list.forEach((e,i)=>{ const b = kids[i] && kids[i].lastChild; if(b) setT(b, fmtLeft(e.left)); });
+}
 </script>
 <script>
 // ======================= UI =======================
@@ -2624,7 +3032,7 @@ function updHotbar(){
     s.b.classList.toggle("oom", !locked && P[type] < costOf(s.id));
     let oor = false; if(a.tgt==="enemy" && P.target && !P.target.dead){ const d = dist(P,P.target)-P.target.r; oor = d > a.range || (a.minRange && d < a.minRange); }
     s.b.classList.toggle("oor", !!oor);
-    s.b.classList.toggle("active", (s.id==="bear"&&P.form==="bear")||(s.id==="cat"&&P.form==="cat"));
+    s.b.classList.toggle("active", (s.id==="bear"&&P.form==="bear")||(s.id==="cat"&&P.form==="cat")||(s.id==="leopard"&&P.form==="leopard"));
     setT(s.cd, cd>0 ? (cd>=10?Math.ceil(cd):cd.toFixed(1)) : (!a.offGcd && P.gcd>0 ? "·" : ""));
   }
 }
@@ -2632,17 +3040,16 @@ function updHotbar(){
 // ---- HUD
 function updHUD(dt){
   setT($("pname"), S.name); setT($("plvl"), "Nivå "+S.level);
-  setT($("pdesc"), `${RACES[S.race].name} ${CLASSES[S.cls].name}${P.form==="bear"?" · Björnform":P.form==="cat"?" · Varghamn":""}`);
+  setT($("pdesc"), `${RACES[S.race].name} ${CLASSES[S.cls].name}${P.form==="bear"?" · Björnform":P.form==="cat"?" · Vargform":P.form==="leopard"?" · Leopardform":""}`);
   setW($("phpi"), P.hp/P.maxHp); setW($("pshi"), P.shield/P.maxHp); setT($("phpt"), `${Math.ceil(P.hp)} / ${P.maxHp}`);
   const type = resType(), mr = maxRes(type); const ri = $("presi"); if(ri._c !== type){ ri._c = type; ri.style.background = RES_COLOR[type]; }
   setW(ri, P[type]/mr); setT($("prest"), `${RES_NAME[type]} ${Math.floor(P[type])} / ${mr}${P.form==="cat"&&P.cp?` · Kombo ${P.cp}`:""}`);
-  const bl = []; if(P.buffs.shout) bl.push("Stridsrop"); if(P.buffs.elixir) bl.push("Styrkeelixir"); if(P.buffs.ironskin) bl.push("Järnhud"); if(P.buffs.keen) bl.push("Skärpa"); if(P.buffs.sage) bl.push("Visdom"); if(P.sitting) bl.push("Vilar"); if(P.buffs.dash) bl.push("Rusning"); if(P.buffs.hotstreak) bl.push("Het svit"); if(P.buffs.avenging) bl.push("Rättfärdig vrede"); if(P.buffs.bubble) bl.push("Gudomlig sköld"); if(P.hots.length) bl.push("Helas"); if(P.shield>0) bl.push("Sköld");
-  setT($("pbuffs"), bl.join(" · "));
+  renderEffects($("pbuffs"), playerEffects());
   const t = P.target, tf = $("tframe");
   if(t && !t.dead){ tf.hidden = false; setT($("tname"), t.name); const tl = $("tlvl"); setT(tl, (t.elite?"Elit ":"")+"Nivå "+t.lvl); tl.className = "num "+lvlClass(t.lvl);
     setW($("thpi"), t.hp/t.maxHp); setT($("thpt"), `${Math.max(0,Math.ceil(t.hp))} / ${t.maxHp}`);
-    const st = []; if(t.evading) st.push("Undviker"); if(t.stunT>0) st.push("Bedövad"); if(t.rootT>0) st.push("Fastfrusen"); if(t.slowT>0) st.push("Nedsaktad"); if(t.dots.length) st.push(t.dots.length+" effekt"+(t.dots.length>1?"er":""));
-    if(P.autoTarget===t) st.unshift(dist(P,t)-t.r > (autoInfo()||{range:52}).range ? "Attackerar – gå närmare" : "Attackerar"); setT($("tdesc"), st.join(" · ") || (t.state==="chase"?"I strid":"Lugn")); }
+    const st = []; if(t.evading) st.push("Undviker"); 
+    if(P.autoTarget===t) st.unshift(dist(P,t)-t.r > (autoInfo()||{range:52}).range ? "Attackerar – gå närmare" : "Attackerar"); setT($("tdesc"), st.join(" · ") || (t.state==="chase"?"I strid":"Lugn")); renderEffects($("tbuffs"), targetEffects(t)); }
   else tf.hidden = true;
   setT($("zone"), ZONES[curZone]?.name || ""); setT($("gold"), `${S.gold} guld`);
   const need = xpNeed(S.level); setW($("xpi"), S.level>=MAX_LVL ? 1 : S.xp/need); setT($("xpt"), S.level>=MAX_LVL ? "Maxnivå" : `${S.xp} / ${need} XP`);
@@ -2662,6 +3069,8 @@ function refreshTracker(){
 }
 
 // ---- panels
+let respecArm = false;
+function respecCost(){ return S.level * 6; }
 function charEquipHTML(){
   const slots = SLOT_ORDER.filter(s=>s!=="offhand" || CLASS_OFF[S.cls].length);
   const tot = Object.keys(STAT_NAME).map(k=>[k, Math.round(gearStat(k)*10)/10]).filter(x=>x[1]);
@@ -2682,7 +3091,7 @@ function vendorGearHTML(n){
   return h;
 }
 let panelKind = null, panelArg = null;
-function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } panelKind = kind; panelArg = arg; renderPanel(); $("panel").hidden = false; }
+function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; }
 function closePanel(){ panelKind = null; $("panel").hidden = true; }
 function renderPanel(){
   const el = $("panel"); let h = `<button class="x" data-act="close" aria-label="Stäng">✕</button>`;
@@ -2708,7 +3117,7 @@ function renderPanel(){
     const pts = talentPoints(), spent = talentsSpent(), left = pts - spent;
     h += `<h2>Talanger</h2>`;
     if(S.level < 10) h += `<div class="muted">Talangsystemet låses upp på nivå 10. Du får sedan 1 talangpoäng per nivå (21 poäng på nivå 30).</div>`;
-    else h += `<div class="row" style="justify-content:space-between"><div><span class="coin">${left}</span> poäng kvar · ${spent} använda</div><button class="btn" data-act="respec">Återställ talanger</button></div>`;
+    else h += `<div class="row" style="justify-content:space-between"><div><span class="coin">${left}</span> poäng kvar · ${spent} använda</div><span class="muted" style="font-size:12.5px">Återställ hos din klass tränare (${respecCost()} guld)</span></div>`;
     const list = TALENTS[S.cls]; h += `<div class="tiers" style="margin-top:10px">`;
     [1,2,3,4,5].forEach(tier=>{ const need = TIER_NEED[tier]; h += `<h3 style="margin:4px 0 0">Rad ${tier}${need?` · kräver ${need} använda poäng`:""}</h3><div class="tier">`;
       list.filter(t=>t.tier===tier).forEach(t=>{ const r = T(t.id), can = left>0 && r<t.max && spent>=need && S.level>=10;
@@ -2732,7 +3141,8 @@ function renderPanel(){
       <div class="item"><div><b>Tränare</b><div class="d">Nya förmågor lär du dig hos din klass tränare. Det finns tränare i alla fyra hembyarna. De kostar guld. En blå ! över tränaren betyder att det finns något nytt att lära.</div></div></div>
       <div class="item"><div><b>Vila</b><div class="d">Tryck X (eller välj det i Menyn) för att sätta dig ner. Då återhämtar du hälsa och mana 2,5 gånger snabbare. Det går bara utanför strid, när det gått minst 5 sekunder sedan striden tog slut. Du reser dig när du går, attackerar, använder en förmåga eller blir anfallen.</div></div></div>
       <div class="item"><div><b>Utrustning</b><div class="d">Fiender kan släppa utrustning och vissa uppdrag ger utrustning som belöning. Handlare säljer vanlig och ovanlig utrustning för din klass. Tryck B och sedan "Ta på" för att använda den, och C för att se vad du har på dig. Kvaliteter från sämst till bäst: grå, vit, grön, blå, lila, orange. Lila och orange går inte att köpa – de måste hittas.</div></div></div>
-      <div class="item"><div><b>Talanger</b><div class="d">Från nivå 10 får du talangpoäng (tryck N) som gör dina förmågor eller din hjälte starkare.</div></div></div>
+      <div class="item"><div><b>Talanger</b><div class="d">Från nivå 10 får du talangpoäng (tryck N) som gör dina förmågor eller din hjälte starkare. Poängen räcker inte till alla talanger, så du får välja. Vill du fördela om dem kan din klass tränare återställa talangerna mot en avgift som beror på din nivå.</div></div></div>
+      <div class="item"><div><b>Instanser</b><div class="d">Vid lägren i Järnkammen, Dimträsket, Askfälten och Frostkronan finns ingångar (lila prick på kartan) till instanser: Järngruvan (12–15), Dränkta templet (17–20), Glödsmedjan (22–25) och Frostvalvet (27–30). Prata med vakten eller gå fram till portalen för att gå in. Där finns grupper av fiender, pussel (spakar och runor – läs tavlan för rätt ordning), två minibossar som alltid släpper grön utrustning och en slutboss som alltid släpper blå eller bättre. Dör du vaknar du vid ingången och kan fortsätta där du var. Lägrets uppdragsgivare har uppdrag till instansen.</div></div></div>
       <div class="item"><div><b>Elitfiender</b><div class="d">Bossar och elitfiender gör attacker med en röd cirkel. Spring ut ur cirkeln innan den fylls.</div></div></div>
       <div class="item"><div><b>Sparning</b><div class="d">Spelet sparas automatiskt${cloud?" i ditt konto och":""} i webbläsaren.</div></div></div>
       <div class="item"><div><b>Meny och tangenter</b><div class="d">Esc stänger öppna fönster, avbryter en formel eller tar bort målet – och öppnar Menyn när inget annat finns att stänga. I Menyn finns Tangentbindningar där du ser och byter alla tangenter.</div></div></div>
@@ -2751,12 +3161,15 @@ function renderPanel(){
       active.forEach(q=>{ h += `<div class="item"><div><b>${esc(q.name)}</b><div class="d">${q.obj.map((o,i)=>`${esc(objName(o))}: ${qProg(q,i)}/${o[2]}`).join(" · ")}</div></div></div>`; });
       soon.forEach(q=>{ h += `<div class="item"><div><b style="color:var(--bad)">${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl}</span><div class="d">Du är för låg nivå. Kom tillbaka när du är nivå ${q.lvl}.</div></div><button class="btn" disabled>Acceptera</button></div>`; });
       h += `</div>`; }
+    if(n.dungeon) h += dungeonInfoHTML(n.dungeon);
     if(n.trains){
       if(n.trains !== S.cls){ h += `<p class="muted">Jag tränar bara ${CLASSES[n.trains].name}s. Leta upp din egen tränare.</p>`; }
       else { const ready = allBarIds().filter(id=>AB[id].lvl<=S.level && !S.learned.includes(id)); const later = allBarIds().some(id=>AB[id].lvl>S.level && !S.learned.includes(id));
         h += `<h3>Lär dig</h3>`;
         h += ready.length ? `<div class="list">${ready.map(id=>{ const a = AB[id], c = trainCost(id); return `<div class="item"><div><b>${a.name}</b> <span class="coin">${c} guld</span><div class="d">${esc(a.desc())}</div></div><button class="btn pri" data-act="learn" data-id="${id}" ${S.gold<c?"disabled":""}>Lär dig</button></div>`; }).join("")}</div>` : `<p class="muted">Du kan allt jag kan lära dig just nu.</p>`;
-        if(later) h += `<p class="muted">Kom tillbaka när du har blivit starkare.</p>`; }
+        if(later) h += `<p class="muted">Kom tillbaka när du har blivit starkare.</p>`;
+        if(S.level >= 10){ const c = respecCost(), sp = talentsSpent();
+          h += `<h3>Glöm talanger</h3><div class="item"><div><b>Återställ alla talanger</b> <span class="coin">${c} guld</span><div class="d">${sp ? `Du får tillbaka alla ${sp} talangpoäng och kan fördela dem på nytt.` : "Du har inte använt några talangpoäng än."} Priset beror på din nivå.</div></div><button class="btn ${respecArm?"pri":""}" data-act="respec" ${!sp||S.gold<c?"disabled":""}>${respecArm?"Säker? Klicka igen":"Återställ"}</button></div>`; } }
     }
     if(n.shop){
       h += `<h3>Köp</h3><div class="list">${SHOP.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} guld</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Köp</button></div>`).join("")}</div>`;
@@ -2768,11 +3181,11 @@ function renderPanel(){
       h += `<h3>Smedja</h3><div class="item"><div style="display:flex;align-items:center">${wIco(WICON[S.cls],40)}<div><b>${WEAPON_NAMES[S.cls]} +${S.weapon}</b><div class="d">${c ? `Förbättra till +${S.weapon+1} (mer skada): ${c.n} ${ITEMS[c.ore].name} och ${c.gold} guld. Du har ${S.bag[c.ore]||0} ${ITEMS[c.ore].name.toLowerCase()}.` : "Ditt vapen är fullt förbättrat."}</div></div></div>${c?`<button class="btn pri" data-act="upgrade" ${((S.bag[c.ore]||0)>=c.n && S.gold>=c.gold)?"":"disabled"}>Förbättra</button>`:""}</div>`; }
     if(n.alch){
       h += `<h3>Alkemi</h3><div class="list">${RECIPES.map((r,i)=>{ const ok = Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v); return `<div class="item"><div style="display:flex;align-items:center">${icoHTML(r.out)}<div><b>${ITEMS[r.out].name}</b><div class="d">${Object.entries(r.need).map(([k,v])=>`${v} ${ITEMS[k].name} (har ${S.bag[k]||0})`).join(" + ")} · ${ITEMS[r.out].desc}</div></div></div><button class="btn" data-act="craft" data-i="${i}" ${ok?"":"disabled"}>Brygg</button></div>`; }).join("")}</div>`; }
-    if(!n.trains && !n.shop && !n.smith && !n.alch && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">Jag har inget mer åt dig just nu, ${esc(S.name)}.</p>`;
+    if(!n.dungeon && !n.trains && !n.shop && !n.smith && !n.alch && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">Jag har inget mer åt dig just nu, ${esc(S.name)}.</p>`;
   } else if(panelKind==="map"){
     const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
     h += `<h2>Karta</h2><canvas id="wmap" width="1040" style="display:block;width:100%;border-radius:6px;border:1px solid var(--line)"></canvas>`;
-    h += `<div class="muted" style="margin-top:6px;font-size:12.5px">Vit prick = du. Gul = här görs uppdraget. Grön ? = lämna in. Nivåer: gult passar dig, rött är farligt, grått är för lätt.</div>`;
+    h += `<div class="muted" style="margin-top:6px;font-size:12.5px">Röd pil med "Du är här" = du (pilen visar åt vilket håll du är vänd). Gul = här görs uppdraget. Grön ? = lämna in. Nivåer: gult passar dig, rött är farligt, grått är för lätt.</div>`;
     h += act.length ? `<h3>Dina uppdrag</h3><div class="list">${act.map((q,i)=>{ const sp = questSpot(q); const z = sp ? zinfo(zoneAtTile(Math.floor(sp.x),Math.floor(sp.y))) : null; return `<div class="item"><div><b>${qReady(q)?"?":i+1}. ${esc(q.name)}</b> <span class="muted">· ${qReady(q)?`lämna in hos ${esc(npcName(qTurnInNpc(q)))}`:""}${z?(qReady(q)?" i ":"")+esc(z.name)+(z.lv?` (nivå ${z.lv[0]}–${z.lv[1]})`:""):""}</span></div></div>`; }).join("")}</div>` : `<p class="muted">Du har inga aktiva uppdrag.</p>`;
   } else if(panelKind==="confirmnew"){
     h += `<h2>Ny karaktär?</h2><p class="muted">${esc(S.name)} (nivå ${S.level}) ersätts av en ny hjälte. Det går inte att ångra.</p><div class="row"><button class="btn" data-act="close">Avbryt</button><button class="btn pri" data-act="reallynew">Skapa ny karaktär</button></div>`;
@@ -2789,6 +3202,8 @@ $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
   if(a==="bind") return;
+  if(a==="enterdg"){ enterDungeon(id); return; }
+  if(a==="resetdg"){ const D = DUNGEONS[id]; resetDungeon(D); log(`${ZONES[id].name} har återställts.`, "#9fd6e8"); }
   if(a==="open"){ openPanel(k); return; }
   if(a==="rest"){ closePanel(); toggleRest(); return; }
   if(a==="rebind"){ startRebind(k); return; }
@@ -2813,7 +3228,9 @@ $("panel").addEventListener("click", e=>{
   if(a==="upgrade"){ const c = smithCost(S.weapon); if(c && (S.bag[c.ore]||0)>=c.n && S.gold>=c.gold){ removeItem(c.ore, c.n); S.gold -= c.gold; S.weapon++; log(`Ditt vapen är nu +${S.weapon}.`, "#e6bd5c"); burst(P.x,P.y,"#ffd36b",16); save(true); } }
   if(a==="craft"){ const r = RECIPES[+b.dataset.i]; for(const [kk,v] of Object.entries(r.need)) removeItem(kk, v); addItem(r.out, r.n); log(`Du bryggde ${ITEMS[r.out].name}.`, "#9cf07a"); refreshTracker(); }
   if(a==="tal"){ const t = TALENTS[S.cls].find(x=>x.id===id); S.talents[id] = (S.talents[id]||0)+1; recompute(false); buildHotbar(); log(`Talang: ${t.name} ${S.talents[id]}/${t.max}`, "#e6bd5c"); save(); }
-  if(a==="respec"){ S.talents = {}; recompute(false); buildHotbar(); }
+  if(a==="respec"){ const c = respecCost();
+    if(!respecArm){ respecArm = true; } else if(S.gold >= c && talentsSpent() > 0){ respecArm = false; S.gold -= c; S.talents = {}; recompute(false); buildHotbar(); log(`Dina talanger är återställda (${c} guld).`, "#e6bd5c"); burst(P.x, P.y, "#ffd36b", 16); save(true); } }
+  else respecArm = false;
   if(a==="newchar"){ save(true); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
   renderPanel();
 });
@@ -2958,7 +3375,7 @@ $("atkbtn").addEventListener("click", ()=>startAttack());
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?Math.round(P.x):null, y:P?Math.round(P.y):null, t:Date.now()}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now()}; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
@@ -3005,6 +3422,7 @@ function loop(ts){
   const dt = Math.min(0.05, (ts - last)/1000 || 0); last = ts;
   if(running){ update(dt); updHUD(dt); saveT += dt; if(saveT > 5){ saveT = 0; save(); } }
   render();
+  if(running && panelKind==="map") drawMapPlayer($("wmap"));
   requestAnimationFrame(loop);
 }
 function boot(data){
@@ -3017,6 +3435,21 @@ function boot(data){
 }
 window.claude?.hot?.snapshot?.(()=>({save: running && S ? serialize() : null}));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+<button id="swupdate" hidden>Ny version av Rimfrost finns – tryck för att uppdatera</button>
+<script>
+// installable web app: register the service worker and offer updates
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if(reloading) return; reloading = true; location.reload(); });
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    const offer = w => { const b = document.getElementById("swupdate"); b.hidden = false; b.onclick = () => { try{ if(typeof save === "function" && typeof running !== "undefined" && running) save(true); }catch(_){} w.postMessage("skipWaiting"); }; };
+    if(reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
+    reg.addEventListener("updatefound", () => { const w = reg.installing; if(!w) return;
+      w.addEventListener("statechange", () => { if(w.state === "installed" && navigator.serviceWorker.controller) offer(w); }); });
+    setInterval(() => reg.update().catch(()=>{}), 30*60*1000);
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>

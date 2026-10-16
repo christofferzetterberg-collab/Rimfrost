@@ -6,6 +6,16 @@ Ett 2D-rollspel i webbläsaren, inspirerat av World of Warcraft.
 
 Öppna `index.html` i en webbläsare (dubbelklicka på filen), eller spela online via GitHub Pages.
 
+## Installera som app på mobilen
+
+Spelet är en installerbar webbapp (PWA) när det körs via GitHub Pages.
+
+1. Slå på GitHub Pages: repot på github.com → Settings → Pages → Branch: `main`, mapp `/ (root)` → Save.
+2. Öppna adressen (t.ex. `https://<användarnamn>.github.io/Rimfrost/`) på mobilen.
+3. iPhone: Safari → dela-knappen → "Lägg till på hemskärmen". Android: Chrome → menyn → "Installera app".
+
+Uppdateringar: pusha till GitHub som vanligt. Appen hämtar den nya versionen själv och visar "Ny version av Rimfrost finns – tryck för att uppdatera". Filen `sw.js` gör att spelet även fungerar utan internet.
+
 ## Kontroller
 
 - **W A S D** eller piltangenterna: gå
