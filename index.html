@@ -136,6 +136,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #cname{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 12px;font-size:16px;font-family:var(--body);width:min(320px,100%)}
 #preview{display:block;width:120px;height:120px;margin:0 auto}
 .chars{display:flex;flex-direction:column;gap:8px}
+.gico{display:inline-flex;align-items:center;justify-content:center;border:2px solid;border-radius:6px;background:#0d1419;margin-right:8px;flex:none;box-sizing:border-box}.gico img{width:78%;height:78%;image-rendering:pixelated}.gico.empty{border-color:var(--line);width:34px;height:34px;border-style:dashed}
+.eqgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.eqs{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}.eqs b{font-size:13px}.eqs .d{font-size:11.5px}.btn.sm{padding:4px 8px;font-size:12px;flex:none}
+@media (max-width:640px){.eqgrid{grid-template-columns:1fr}}
+#restbtn.on{border-color:var(--frost);color:var(--frost)}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.menu-grid .btn{text-align:left;padding:10px 12px}.btn.glowb{border-color:var(--coin);color:var(--coin)}
+.kbgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.kbrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.kbkey{min-width:64px;background:#0d1419;border:1px solid var(--line);color:var(--text);border-radius:5px;padding:4px 8px;font-weight:700;cursor:pointer}.kbkey.wait{border-color:var(--coin);color:var(--coin)}
+.barprev{display:flex;gap:4px;margin:10px 0;flex-wrap:wrap}.bp{width:40px;height:40px;border:1px solid var(--line);border-radius:5px;background:#0d1419;position:relative;overflow:hidden}.bp img{width:100%;height:100%}.bp span{position:absolute;left:2px;top:0;font-size:10px;font-weight:800;text-shadow:0 1px 2px #000}
+.abico{width:36px;height:36px;border-radius:5px;margin-right:10px;flex:none;border:1px solid var(--line)}.item.dim{opacity:.55}.item select{background:#0d1419;color:var(--text);border:1px solid var(--line);border-radius:5px;padding:5px;max-width:170px;flex:none}
+.smithgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px}.smithgrid .btn{font-size:12.5px;padding:6px 8px;text-align:left}.btn.dimb{opacity:.45}
+.slot.empty{opacity:.45;border-style:dashed}
+@media (max-width:640px){.menu-grid,.kbgrid{grid-template-columns:1fr}}
 .char{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;text-align:left;color:var(--text);width:100%}
 .char.sel{border-color:var(--frost);box-shadow:0 0 0 1px var(--frost) inset;background:#18262e}
 .char canvas{width:56px;height:56px;flex:none;image-rendering:pixelated}
@@ -198,13 +210,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
   <div id="cast" hidden><div class="bar"><i id="casti"></i><b id="castt"></b></div></div>
   <div id="hotbar"></div>
   <div id="xpbar"><i id="xpi"></i><b class="num" id="xpt"></b></div>
-  <div id="menu">
-    <button data-p="char">Karaktär<span class="key">C</span></button>
-    <button data-p="bag">Väska<span class="key">B</span></button>
-    <button data-p="talents" id="talbtn">Talanger<span class="key">N</span></button>
-    <button data-p="quests">Uppdrag<span class="key">L</span></button>
-    <button data-p="map">Karta<span class="key">M</span></button>
-    <button data-p="help">Hjälp<span class="key">H</span></button>
+  <div id="menu" hidden>
+    <button data-p="menu" id="talbtn">Meny</button>
   </div>
 </div>
 
@@ -265,32 +272,32 @@ const SCHOOL_COLOR = {fire:"#ff8a3a", frost:"#8fd8ff", arcane:"#d38cff", nature:
 const AB = {
   // ---- Mage
   fireball:{name:"Eldklot", lvl:1, cost:22, cast:2.0, range:300, school:"fire", icon:"orb", tgt:"enemy",
-    desc:()=>`Kastar ett eldklot som gör ${fmt(pow()*2.2)} eldskada.`,
-    run:t=>proj(t,"#ff8a3a",7,()=>hit(t,pow()*2.2,"fire","fireball"))},
+    desc:()=>`Kastar ett eldklot som gör ${fmt(spow()*2.2)} eldskada.`,
+    run:t=>proj(t,"#ff8a3a",7,()=>hit(t,spow()*2.2,"fire","fireball"))},
   frostbolt:{name:"Isspjut", lvl:2, cost:18, cast:1.7, range:300, school:"frost", icon:"shard", tgt:"enemy",
-    desc:()=>`${fmt(pow()*1.7)} frostskada och saktar ner målet med 50% i 5 sek.`,
-    run:t=>proj(t,"#8fd8ff",6,()=>{hit(t,pow()*1.7,"frost","frostbolt");slow(t,0.5,5);})},
+    desc:()=>`${fmt(spow()*1.7)} frostskada och saktar ner målet med 50% i 5 sek.`,
+    run:t=>proj(t,"#8fd8ff",6,()=>{hit(t,spow()*1.7,"frost","frostbolt");slow(t,0.5,5);})},
   fireblast:{name:"Glödstöt", lvl:4, cost:20, cd:8, range:220, school:"fire", icon:"burst", tgt:"enemy",
-    desc:()=>`Omedelbar eldstöt: ${fmt(pow()*1.5)} skada.`,
-    run:t=>{burst(t.x,t.y,"#ff8a3a",14);hit(t,pow()*1.5,"fire","fireblast");}},
+    desc:()=>`Omedelbar eldstöt: ${fmt(spow()*1.5)} skada.`,
+    run:t=>{burst(t.x,t.y,"#ff8a3a",14);hit(t,spow()*1.5,"fire","fireblast");}},
   frostnova:{name:"Frostring", lvl:6, cost:25, cd:20, range:0, school:"frost", icon:"nova", tgt:"self",
-    desc:()=>`Fryser alla fiender inom 100 till marken i 4 sek och gör ${fmt(pow()*0.5)} skada.`,
-    run:()=>{ring(P.x,P.y,100,"#bfe9ff");aoe(P.x,P.y,100,m=>{hit(m,pow()*0.5,"frost","frostnova");root(m,4);});}},
+    desc:()=>`Fryser alla fiender inom 100 till marken i 4 sek och gör ${fmt(spow()*0.5)} skada.`,
+    run:()=>{ring(P.x,P.y,100,"#bfe9ff");aoe(P.x,P.y,100,m=>{hit(m,spow()*0.5,"frost","frostnova");root(m,4);});}},
   blizzard:{name:"Snöstorm", lvl:10, cost:45, cd:12, range:300, school:"frost", icon:"storm", tgt:"enemy",
-    desc:()=>`Iskall storm vid målet i 4 sek. ${fmt(pow()*0.7)} skada per sekund och saktar ner.`,
-    run:t=>zone(t.x,t.y,90,4,pow()*0.7,"frost","blizzard",true)},
+    desc:()=>`Iskall storm vid målet i 4 sek. ${fmt(spow()*0.7)} skada per sekund och saktar ner.`,
+    run:t=>zone(t.x,t.y,90,4,spow()*0.7,"frost","blizzard",true)},
   pyroblast:{name:"Solbrand", lvl:14, cost:50, cd:10, cast:3.5, range:300, school:"fire", icon:"meteor", tgt:"enemy",
-    desc:()=>`Enorm eldkula: ${fmt(pow()*4.2)} skada plus ${fmt(pow()*1.0)} brännskada över 8 sek.`,
-    run:t=>proj(t,"#ffb347",11,()=>{hit(t,pow()*4.2,"fire","pyroblast");dot(t,"pyro",pow()*1.0,8,"fire");})},
+    desc:()=>`Enorm eldkula: ${fmt(spow()*4.2)} skada plus ${fmt(spow()*1.0)} brännskada över 8 sek.`,
+    run:t=>proj(t,"#ffb347",11,()=>{hit(t,spow()*4.2,"fire","pyroblast");dot(t,"pyro",spow()*1.0,8,"fire");})},
   sparkrain:{name:"Gnistregn", lvl:18, cost:35, cd:6, range:300, school:"arcane", icon:"spark", tgt:"enemy",
-    desc:()=>`Tre arkana gnistor som gör ${fmt(pow()*0.9)} skada var.`,
-    run:t=>{[560,480,400].forEach(sp=>proj(t,"#d38cff",5,()=>hit(t,pow()*0.9,"arcane","sparkrain"),"orb",sp));}},
+    desc:()=>`Tre arkana gnistor som gör ${fmt(spow()*0.9)} skada var.`,
+    run:t=>{[560,480,400].forEach(sp=>proj(t,"#d38cff",5,()=>hit(t,spow()*0.9,"arcane","sparkrain"),"orb",sp));}},
   icearmor:{name:"Ispansar", lvl:22, cost:40, cd:30, range:0, school:"frost", icon:"shield", tgt:"self",
     desc:()=>`Ett pansar av is som absorberar ${fmt(P.maxHp*0.35)} skada i 20 sek.`,
     run:()=>{P.shield=P.maxHp*0.35;P.shieldT=20;ring(P.x,P.y,30,"#bfe9ff");}},
   meteor:{name:"Meteorfall", lvl:26, cost:60, cd:20, cast:2.5, range:300, school:"fire", icon:"meteor", tgt:"enemy",
-    desc:()=>`En meteor slår ner vid målet: ${fmt(pow()*4.0)} skada på alla fiender inom 90.`,
-    run:t=>{const x=t.x,y=t.y;ring(x,y,90,"#ff8a3a");burst(x,y,"#ffb347",30);aoe(x,y,90,m=>hit(m,pow()*4.0,"fire","meteor"));}},
+    desc:()=>`En meteor slår ner vid målet: ${fmt(spow()*4.0)} skada på alla fiender inom 90.`,
+    run:t=>{const x=t.x,y=t.y;ring(x,y,90,"#ff8a3a");burst(x,y,"#ffb347",30);aoe(x,y,90,m=>hit(m,spow()*4.0,"fire","meteor"));}},
 
   // ---- Warrior
   heroic:{name:"Kraftigt hugg", lvl:1, cost:15, range:52, school:"phys", icon:"sword", tgt:"enemy",
@@ -327,11 +334,11 @@ const AB = {
     desc:()=>`Ett stadigt skott som gör ${fmt(pow()*1.3)} skada.`,
     run:t=>proj(t,"#e9e2c8",4,()=>hit(t,pow()*1.3,"phys","steady"),"arrow")},
   firearrow:{name:"Eldpil", lvl:2, cost:20, cd:6, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
-    desc:()=>`Brinnande pil: ${fmt(pow()*1.1)} skada och sätter eld på målet (${fmt(pow()*1.4)} över 6 sek).`,
-    run:t=>proj(t,"#ff7a2e",5,()=>{hit(t,pow()*1.1,"fire","firearrow");dot(t,"burn",pow()*1.4*(1+0.15*T("fireArrows")),6,"fire");},"arrow")},
+    desc:()=>`Brinnande pil: ${fmt(spow()*1.1)} skada och sätter eld på målet (${fmt(spow()*1.4)} över 6 sek).`,
+    run:t=>proj(t,"#ff7a2e",5,()=>{hit(t,spow()*1.1,"fire","firearrow");dot(t,"burn",spow()*1.4*(1+0.15*T("fireArrows")),6,"fire");},"arrow")},
   icearrow:{name:"Ispil", lvl:4, cost:20, cd:8, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
-    desc:()=>`Isande pil: ${fmt(pow()*1.4)} skada och saktar ner målet med 60% i ${6+T("iceArrows")} sek.`,
-    run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,pow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
+    desc:()=>`Isande pil: ${fmt(spow()*1.4)} skada och saktar ner målet med 60% i ${6+T("iceArrows")} sek.`,
+    run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,spow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
   disengage:{name:"Bakåtsprång", lvl:6, cost:0, cd:15, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
     desc:()=>`Hoppar snabbt bakåt, bort från ditt mål.`,
     run:()=>{const t=P.target&&!P.target.dead?P.target:null;let dx=-P.fx,dy=0;if(t){dx=P.x-t.x;dy=P.y-t.y;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
@@ -342,63 +349,63 @@ const AB = {
     desc:()=>`Noggrant siktat skott: ${fmt(pow()*4.0)} skada.`,
     run:t=>proj(t,"#fff3c4",6,()=>hit(t,pow()*4.0,"phys","aimed"),"arrow")},
   poison:{name:"Giftpil", lvl:18, cost:20, range:320, school:"nature", icon:"poison", tgt:"enemy",
-    desc:()=>`Förgiftad pil: ${fmt(pow()*2.6)} giftskada över 12 sek.`,
-    run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",pow()*2.6,12,"nature"),"arrow")},
+    desc:()=>`Förgiftad pil: ${fmt(spow()*2.6)} giftskada över 12 sek.`,
+    run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",spow()*2.6,12,"nature"),"arrow")},
   snare:{name:"Fotsnara", lvl:22, cost:15, cd:20, range:320, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Kastar en snara som håller fast målet i 6 sek.`,
     run:t=>{root(t,6);burst(t.x,t.y,"#c8a070",10);}},
   stormarrow:{name:"Stormpil", lvl:26, cost:40, cd:20, range:340, school:"nature", icon:"storm", tgt:"enemy",
-    desc:()=>`En pil laddad med blixtar: ${fmt(pow()*5.0)} skada.`,
-    run:t=>proj(t,"#e8f4ff",7,()=>{hit(t,pow()*5.0,"nature","stormarrow");burst(t.x,t.y,"#e8f4ff",18);},"arrow")},
+    desc:()=>`En pil laddad med blixtar: ${fmt(spow()*5.0)} skada.`,
+    run:t=>proj(t,"#e8f4ff",7,()=>{hit(t,spow()*5.0,"nature","stormarrow");burst(t.x,t.y,"#e8f4ff",18);},"arrow")},
 
   // ---- Priest
   smite:{name:"Ljusstraff", lvl:1, cost:15, cast:1.5, range:280, school:"holy", icon:"sun", tgt:"enemy",
-    desc:()=>`Heligt ljus slår ner på målet: ${fmt(pow()*1.6)} skada.`,
-    run:t=>{burst(t.x,t.y,"#ffe37a",12);hit(t,pow()*1.6,"holy","smite");}},
+    desc:()=>`Heligt ljus slår ner på målet: ${fmt(spow()*1.6)} skada.`,
+    run:t=>{burst(t.x,t.y,"#ffe37a",12);hit(t,spow()*1.6,"holy","smite");}},
   heal:{name:"Läkande ljus", lvl:2, cost:25, cast:2.0, range:0, school:"holy", icon:"cross", tgt:"self",
     desc:()=>`Helar dig med ${fmt(P.maxHp*0.35*(1+0.1*T("impHeal")))} hälsa.`,
     run:()=>{healP(P.maxHp*0.35*(1+0.1*T("impHeal")));burst(P.x,P.y,"#ffe9a0",12);}},
   swp:{name:"Skuggsmärta", lvl:4, cost:18, range:280, school:"shadow", icon:"skull", tgt:"enemy",
-    desc:()=>`Skuggsmärta: ${fmt(pow()*2.6)} skada över 12 sek.`,
-    run:t=>{burst(t.x,t.y,"#a77bff",8);dot(t,"swp",pow()*2.6*tmul("swp","shadow"),12,"shadow");}},
+    desc:()=>`Skuggsmärta: ${fmt(spow()*2.6)} skada över 12 sek.`,
+    run:t=>{burst(t.x,t.y,"#a77bff",8);dot(t,"swp",spow()*2.6*tmul("swp","shadow"),12,"shadow");}},
   pws:{name:"Ljusbarriär", lvl:6, cost:25, cd:12, range:0, school:"holy", icon:"shield", tgt:"self",
     desc:()=>`En barriär som absorberar ${fmt(P.maxHp*0.3*(1+0.15*T("impShield")))} skada i 20 sek.`,
     run:()=>{P.shield=P.maxHp*0.3*(1+0.15*T("impShield"));P.shieldT=20;ring(P.x,P.y,30,"#fff6d0");}},
   mindblast:{name:"Själsstöt", lvl:10, cost:30, cd:7, cast:1.5, range:280, school:"shadow", icon:"mind", tgt:"enemy",
-    desc:()=>`Skuggstöt mot sinnet: ${fmt(pow()*2.8)} skada.`,
-    run:t=>{burst(t.x,t.y,"#a77bff",14);hit(t,pow()*2.8,"shadow","mindblast");}},
+    desc:()=>`Skuggstöt mot sinnet: ${fmt(spow()*2.8)} skada.`,
+    run:t=>{burst(t.x,t.y,"#a77bff",14);hit(t,spow()*2.8,"shadow","mindblast");}},
   holynova:{name:"Helig våg", lvl:14, cost:35, cd:6, range:0, school:"holy", icon:"nova", tgt:"self",
-    desc:()=>`Heligt sken: ${fmt(pow()*1.1)} skada på fiender inom 110 och helar dig ${fmt(P.maxHp*0.12)}.`,
-    run:()=>{ring(P.x,P.y,110,"#ffe37a");aoe(P.x,P.y,110,m=>hit(m,pow()*1.1,"holy","holynova"));healP(P.maxHp*0.12*(1+0.1*T("impHeal")));}},
+    desc:()=>`Heligt sken: ${fmt(spow()*1.1)} skada på fiender inom 110 och helar dig ${fmt(P.maxHp*0.12)}.`,
+    run:()=>{ring(P.x,P.y,110,"#ffe37a");aoe(P.x,P.y,110,m=>hit(m,spow()*1.1,"holy","holynova"));healP(P.maxHp*0.12*(1+0.1*T("impHeal")));}},
   renew:{name:"Förnyelse", lvl:18, cost:25, range:0, school:"holy", icon:"bloom", tgt:"self",
     desc:()=>`Helar dig med ${fmt(P.maxHp*0.4*(1+0.1*T("impHeal")))} över 12 sek.`,
     run:()=>{hot("renew",P.maxHp*0.4*(1+0.1*T("impHeal")),12);burst(P.x,P.y,"#ffe9a0",10);}},
   darkpulse:{name:"Mörkerpuls", lvl:22, cost:35, cd:8, range:0, school:"shadow", icon:"nova", tgt:"self",
-    desc:()=>`En våg av skugga: ${fmt(pow()*1.5)} skada på alla fiender inom 110.`,
-    run:()=>{ring(P.x,P.y,110,"#a77bff");aoe(P.x,P.y,110,m=>hit(m,pow()*1.5,"shadow","darkpulse"));}},
+    desc:()=>`En våg av skugga: ${fmt(spow()*1.5)} skada på alla fiender inom 110.`,
+    run:()=>{ring(P.x,P.y,110,"#a77bff");aoe(P.x,P.y,110,m=>hit(m,spow()*1.5,"shadow","darkpulse"));}},
   judgment:{name:"Gudomlig dom", lvl:26, cost:45, cd:15, range:280, school:"holy", icon:"sun", tgt:"enemy",
-    desc:()=>`Himlen dömer målet: ${fmt(pow()*5.0)} skada.`,
-    run:t=>{burst(t.x,t.y,"#fff2b0",26);hit(t,pow()*5.0,"holy","judgment");}},
+    desc:()=>`Himlen dömer målet: ${fmt(spow()*5.0)} skada.`,
+    run:t=>{burst(t.x,t.y,"#fff2b0",26);hit(t,spow()*5.0,"holy","judgment");}},
 
   // ---- Druid caster
   wrath:{name:"Naturens vrede", lvl:1, cost:15, cast:1.5, range:290, school:"nature", icon:"leaf", tgt:"enemy",
-    desc:()=>`Naturens vrede: ${fmt(pow()*1.5)} naturskada.`,
-    run:t=>proj(t,"#7fdc5a",6,()=>hit(t,pow()*1.5,"nature","wrath"))},
+    desc:()=>`Naturens vrede: ${fmt(spow()*1.5)} naturskada.`,
+    run:t=>proj(t,"#7fdc5a",6,()=>hit(t,spow()*1.5,"nature","wrath"))},
   moonfire:{name:"Månsken", lvl:2, cost:18, range:290, school:"arcane", icon:"moon", tgt:"enemy",
-    desc:()=>`Månljus: ${fmt(pow()*0.8)} skada direkt och ${fmt(pow()*1.4)} över 9 sek.`,
-    run:t=>{burst(t.x,t.y,"#d38cff",10);hit(t,pow()*0.8,"arcane","moonfire");dot(t,"moonfire",pow()*1.4*tmul("moonfire","arcane"),9,"arcane");}},
+    desc:()=>`Månljus: ${fmt(spow()*0.8)} skada direkt och ${fmt(spow()*1.4)} över 9 sek.`,
+    run:t=>{burst(t.x,t.y,"#d38cff",10);hit(t,spow()*0.8,"arcane","moonfire");dot(t,"moonfire",spow()*1.4*tmul("moonfire","arcane"),9,"arcane");}},
   rejuv:{name:"Livsknopp", lvl:4, cost:22, range:0, school:"nature", icon:"bloom", tgt:"self",
     desc:()=>`Helar dig med ${fmt(P.maxHp*0.35*(1+0.1*T("impRejuv")))} över 12 sek.`,
     run:()=>{hot("rejuv",P.maxHp*0.35*(1+0.1*T("impRejuv")),12);burst(P.x,P.y,"#9cf07a",10);}},
   roots:{name:"Slingerrötter", lvl:6, cost:20, cast:1.2, range:290, school:"nature", icon:"roots", tgt:"enemy",
-    desc:()=>`Rötter håller fast målet i 8 sek och gör ${fmt(pow()*0.6)} skada.`,
-    run:t=>{root(t,8);dot(t,"roots",pow()*0.6,8,"nature");burst(t.x,t.y,"#6a9a3a",10);}},
+    desc:()=>`Rötter håller fast målet i 8 sek och gör ${fmt(spow()*0.6)} skada.`,
+    run:t=>{root(t,8);dot(t,"roots",spow()*0.6,8,"nature");burst(t.x,t.y,"#6a9a3a",10);}},
   starfire:{name:"Stjärnfall", lvl:12, cost:40, cast:3.0, range:300, school:"arcane", icon:"star", tgt:"enemy",
-    desc:()=>`En stjärna faller från himlen: ${fmt(pow()*3.8)} skada.`,
-    run:t=>{burst(t.x,t.y,"#e6b3ff",18);hit(t,pow()*3.8,"arcane","starfire");}},
+    desc:()=>`En stjärna faller från himlen: ${fmt(spow()*3.8)} skada.`,
+    run:t=>{burst(t.x,t.y,"#e6b3ff",18);hit(t,spow()*3.8,"arcane","starfire");}},
   hurricane:{name:"Ovädret", lvl:16, cost:50, cd:15, range:300, school:"nature", icon:"storm", tgt:"enemy",
-    desc:()=>`Ett oväder vid målet i 5 sek: ${fmt(pow()*0.6)} skada per sekund och saktar ner.`,
-    run:t=>zone(t.x,t.y,100,5,pow()*0.6,"nature","hurricane",true)},
+    desc:()=>`Ett oväder vid målet i 5 sek: ${fmt(spow()*0.6)} skada per sekund och saktar ner.`,
+    run:t=>zone(t.x,t.y,100,5,spow()*0.6,"nature","hurricane",true)},
   bark:{name:"Barkhud", lvl:18, cost:20, cd:45, range:0, school:"nature", icon:"shield", tgt:"self", offGcd:true,
     desc:()=>`Huden blir hård som bark: du tar 25% mindre skada i 12 sek.`,
     run:()=>{buff("bark",12);ring(P.x,P.y,30,"#a07a4a");}},
@@ -407,23 +414,23 @@ const AB = {
     run:()=>{healP(P.maxHp*0.4*(1+0.1*T("impRejuv")));burst(P.x,P.y,"#9cf07a",16);}},
   // ---- Paladin
   palstrike:{name:"Heligt hugg", lvl:1, cost:12, range:52, school:"holy", icon:"sword", tgt:"enemy",
-    desc:()=>`Ett hugg laddat med heligt ljus: ${fmt(pow()*1.5)} skada.`,
-    run:t=>{slash(t);hit(t,pow()*1.5,"holy","palstrike");}},
+    desc:()=>`Ett hugg laddat med heligt ljus: ${fmt(spow()*1.5)} skada.`,
+    run:t=>{slash(t);hit(t,spow()*1.5,"holy","palstrike");}},
   palheal:{name:"Ljusets helning", lvl:2, cost:25, cast:2.5, range:0, school:"holy", icon:"cross", tgt:"self",
     desc:()=>`Helar dig med ${fmt(P.maxHp*0.4*(1+0.1*T("palHeal")))} hälsa.`,
     run:()=>{healP(P.maxHp*0.4*(1+0.1*T("palHeal")));burst(P.x,P.y,"#ffe9a0",14);}},
   hammer:{name:"Domens hammare", lvl:4, cost:20, cd:15, range:220, school:"holy", icon:"fist", tgt:"enemy",
-    desc:()=>`Kastar en lysande hammare: ${fmt(pow()*1.2)} skada och bedövar målet i 2 sek.`,
-    run:t=>proj(t,"#ffe37a",7,()=>{hit(t,pow()*1.2,"holy","hammer");stun(t,2);})},
+    desc:()=>`Kastar en lysande hammare: ${fmt(spow()*1.2)} skada och bedövar målet i 2 sek.`,
+    run:t=>proj(t,"#ffe37a",7,()=>{hit(t,spow()*1.2,"holy","hammer");stun(t,2);})},
   holyshield:{name:"Helig sköld", lvl:6, cost:25, cd:20, range:0, school:"holy", icon:"shield", tgt:"self",
     desc:()=>`Skölden lyser och absorberar ${fmt(P.maxHp*0.25)} skada i 15 sek.`,
     run:()=>{P.shield=P.maxHp*0.25;P.shieldT=15;ring(P.x,P.y,30,"#ffe37a");}},
   crusader:{name:"Korsfararslag", lvl:10, cost:20, cd:6, range:52, school:"holy", icon:"axe", tgt:"enemy",
-    desc:()=>`Ett kraftfullt slag: ${fmt(pow()*2.2)} skada.`,
-    run:t=>{slash(t);hit(t,pow()*2.2,"holy","crusader");}},
+    desc:()=>`Ett kraftfullt slag: ${fmt(spow()*2.2)} skada.`,
+    run:t=>{slash(t);hit(t,spow()*2.2,"holy","crusader");}},
   consecrate:{name:"Vigd mark", lvl:14, cost:35, cd:12, range:0, school:"holy", icon:"nova", tgt:"self",
-    desc:()=>`Välsignar marken runt dig i 6 sek: ${fmt(pow()*0.6)} skada per sekund på fiender inom 90.`,
-    run:()=>{zone(P.x,P.y,90,6,pow()*0.6,"holy","consecrate",false);ring(P.x,P.y,90,"#ffe37a");}},
+    desc:()=>`Välsignar marken runt dig i 6 sek: ${fmt(spow()*0.6)} skada per sekund på fiender inom 90.`,
+    run:()=>{zone(P.x,P.y,90,6,spow()*0.6,"holy","consecrate",false);ring(P.x,P.y,90,"#ffe37a");}},
   avenging:{name:"Rättfärdig vrede", lvl:18, cost:0, cd:60, range:0, school:"holy", icon:"horn", tgt:"self", offGcd:true,
     desc:()=>`Du gör 20% mer skada i 15 sek.`,
     run:()=>{buff("avenging",15);ring(P.x,P.y,60,"#ffd36b");}},
@@ -431,8 +438,8 @@ const AB = {
     desc:()=>`Ett gyllene skydd: du kan inte skadas på 6 sek.`,
     run:()=>{buff("bubble",6);ring(P.x,P.y,40,"#fff2b0");}},
   judge:{name:"Himmelsk dom", lvl:26, cost:40, cd:15, range:220, school:"holy", icon:"sun", tgt:"enemy",
-    desc:()=>`Ljuset dömer målet: ${fmt(pow()*4.5)} skada.`,
-    run:t=>{burst(t.x,t.y,"#fff2b0",24);hit(t,pow()*4.5,"holy","judge");}},
+    desc:()=>`Ljuset dömer målet: ${fmt(spow()*4.5)} skada.`,
+    run:t=>{burst(t.x,t.y,"#fff2b0",24);hit(t,spow()*4.5,"holy","judge");}},
   bear:{name:"Björnhamn", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
     desc:()=>`Byter hamn till björn: +60% hälsa, mindre skada och använder ilska. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="bear"?null:"bear")},
@@ -566,6 +573,9 @@ const ITEMS = {
   potMana:{spr:["potions",12], name:"Manadryck", sell:3, kind:"use", desc:"Återställer 50% mana."},
   potMana2:{spr:["potions",26], name:"Stor manadryck", sell:20, kind:"use", desc:"Återställer all mana."},
   elixir:{spr:["potions",1], name:"Styrkeelixir", sell:10, kind:"use", desc:"+20% skada i 5 minuter."},
+  elixirIron:{spr:["potions",5], name:"Järnhudselixir", sell:8, kind:"use", desc:"Du tar 15% mindre skada i 10 minuter."},
+  elixirKeen:{spr:["potions",8], name:"Skärpeelixir", sell:14, kind:"use", desc:"+5% chans till kritisk träff i 10 minuter."},
+  elixirSage:{spr:["potions",17], name:"Visdomselixir", sell:18, kind:"use", desc:"+20% formelkraft (skada och helning med formler) i 10 minuter."},
   pelt:{name:"Vargskinn", sell:1, kind:"junk"}, tusk:{name:"Svinbete", sell:1, kind:"junk"}, silk:{name:"Spindelsilke", sell:3, kind:"junk"},
   ring:{name:"Stulen ring", sell:6, kind:"junk"}, tooth:{name:"Trolltand", sell:5, kind:"junk"}, rune:{name:"Runsten", sell:7, kind:"junk"},
   cloth:{name:"Ruttet tyg", sell:6, kind:"junk"}, dust:{name:"Vättestoft", sell:8, kind:"junk"}, crown:{name:"Draugkronan", sell:150, kind:"junk"},
@@ -1053,7 +1063,7 @@ let running = false, time = 0, curZone = null;
 const T = id => (S && S.talents[id]) || 0;
 
 function newSave(name, race, cls){
-  return {v:3, name, race, cls, level:1, xp:0, gold:5, weapon:0, bag:{potHp:3}, qbag:{}, skills:{mining: race==="dwarf"?25:1, herb:1}, talents:{}, quests:{}, learned:[BARS[cls][0]], x:null, y:null, t:Date.now()};
+  return {v:3, name, race, cls, level:1, xp:0, gold:5, weapon:0, bag:{potHp:3}, qbag:{}, gear:[], eq:{}, skills:{mining: race==="dwarf"?25:1, herb:1}, talents:{}, quests:{}, learned:[BARS[cls][0]], x:null, y:null, t:Date.now()};
 }
 
 function spawnAll(){
@@ -1106,7 +1116,9 @@ function respawnMob(m){ Object.assign(m, {dead:false, hp:m.maxHp, x:m.hx, y:m.hy
 function resType(){ return P.form==="bear"?"rage" : P.form==="cat"?"energy" : CLASSES[S.cls].res; }
 function maxRes(type){ return type==="mana" ? P.maxMana : 100; }
 function addRes(type, n){ P[type] = clamp(P[type]+n, 0, maxRes(type)); }
-function pow(){ return 6 + S.level*2.6 + S.weapon*2.5; }
+// attack power (weapons, arrows, physical abilities) and spell power (spells and healing)
+function pow(){ return 6 + S.level*2.6 + S.weapon*2.5 + gearStat("pow"); }
+function spow(){ return (6 + S.level*2.6 + S.weapon*2.5 + gearStat("sp")) * (P && P.buffs && P.buffs.sage ? 1.2 : 1); }
 function teff(k){ if(!S) return 0; let v=0; for(const t of TALENTS[S.cls]) if(t.eff&&t.eff[k]) v += t.eff[k]*T(t.id); return v; }
 function genMult(){ let m=1+teff("dmg"); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
 function tmul(ab, school){
@@ -1120,13 +1132,13 @@ function tmul(ab, school){
   return m;
 }
 function critChance(m, school){
-  let c = 0.05; if(S.race==="elf") c+=0.05;
+  let c = 0.05 + gearStat("crit")/100 + (P && P.buffs && P.buffs.keen ? 0.05 : 0); if(S.race==="elf") c+=0.05;
   c += 0.03*T("cruelty") + 0.03*T("lethal") + teff("crit");
   if(school==="holy") c += 0.03*T("holySpec");
   if(S.cls==="mage" && m && (m.slowT>0||m.rootT>0)) c += 0.12*T("shatter");
   return c;
 }
-function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.6*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); return m; }
+function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.6*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
 function costOf(id){ let c = AB[id].cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); return Math.round(c); }
 function castTime(id){ const a = AB[id]; let c = a.cast||0; if(!c) return 0;
   if(["fireball","frostbolt","pyroblast"].includes(id)) c -= 0.25*T("quickCast");
@@ -1140,13 +1152,13 @@ function talentPoints(){ return Math.max(0, S.level-9); }
 function talentsSpent(){ return Object.values(S.talents).reduce((a,b)=>a+b,0); }
 
 function recompute(full){
-  const c = CLASSES[S.cls]; let hp = (80+S.level*22)*c.hp;
+  const c = CLASSES[S.cls]; let hp = (80+S.level*22)*c.hp + gearStat("hp");
   if(S.race==="dwarf") hp*=1.15;
   hp *= 1 + 0.06*T("toughness") + 0.06*T("endurance") + 0.05*T("naturalist") + teff("hp");
   if(P.form==="bear") hp *= 1.6*(1+0.1*T("heartWild"));
   const pct = P.maxHp ? P.hp/P.maxHp : 1;
   P.maxHp = Math.round(hp); P.hp = full ? P.maxHp : Math.max(1, P.maxHp*pct);
-  let mana = 100 + S.level*22; if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
+  let mana = 100 + S.level*22 + gearStat("mana"); if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
   P.maxMana = Math.round(mana); P.mana = full ? P.maxMana : Math.min(P.mana, P.maxMana);
 }
 
@@ -1225,6 +1237,13 @@ function aoe(x, y, r, fn){ mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,
 function zone(x, y, r, dur, dmg, school, ab, slows){ zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
 function proj(t, color, size, onHit, kind, sp){ projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
 function buff(name, dur){ P.buffs[name] = dur; }
+// ---- resting: sit down out of combat (X) for faster health and mana regen
+const REST_DELAY = 5;
+function canRest(){ if(!P || P.dead) return "Du kan inte vila nu"; if(P.combatT > 0) return "Du kan inte vila i strid";
+  if(P.combatT > -REST_DELAY) return `Vänta ${Math.ceil(REST_DELAY + P.combatT)} sek efter striden`; if(P.form) return "Återgå till normal form för att vila"; return null; }
+function sitDown(){ const why = canRest(); if(why) return err(why); P.sitting = true;  P.sitFull = false; P.casting = null; P.autoTarget = null; floatText(P.x, P.y-56, "Vilar", "#9fd6e8"); }
+function standUp(){ P.sitting = false;  }
+function toggleRest(){ if(P.sitting) standUp(); else sitDown(); }
 function healP(n){ n = Math.round(n); const before = P.hp; P.hp = Math.min(P.maxHp, P.hp+n); const got = Math.round(P.hp-before); if(got>0) floatText(P.x, P.y-40, "+"+got, "#7be08a"); }
 function hot(key, total, dur){ P.hots = P.hots.filter(h=>h.key!==key); P.hots.push({key, per:total/dur, left:dur, tick:1}); }
 function addCP(){ P.cp = Math.min(5, P.cp+1); }
@@ -1250,6 +1269,7 @@ function killMob(m){
   for(const [it, ch] of (LOOT[m.type] || [[m.def.drop, m.elite ? 1 : 0.35]])) if(ITEMS[it] && Math.random() < ch){ addItem(it, 1); got.push(ITEMS[it].name); }
   if(m.elite && Math.random()<0.7){ addItem("potHp2",1); got.push("Stor läkedryck"); }
   log(got.length ? `${m.name} besegrad. Du plundrade ${got.join(", ")}.` : `${m.name} besegrad.`, "#d9e3e7");
+  mobGearDrop(m);
   burst(m.x, m.y, m.def.color, 16);
   if(T("bloodthirst")) healP(P.maxHp*0.15);
   if(xp>0) gainXP(xp);
@@ -1282,7 +1302,7 @@ function playerDamage(raw, src, kind){
   if(P.hp <= 0) die();
 }
 function die(){
-  P.dead = true; P.hp = 0; P.casting = null; P.dash = null; P.leap = null;
+  P.dead = true; P.hp = 0; P.casting = null; if(P.sitting) standUp(); P.dash = null; P.leap = null;
   for(const m of mobs) if(m.state==="chase") evade(m);
   document.getElementById("dead").hidden = false;
   log("Du har dött.", "#ff6b5e");
@@ -1375,6 +1395,9 @@ function useItem(k){
   else if(k==="potHp3") healP(P.maxHp);
   else if(k==="potMana"||k==="potMana2"){ P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(k==="potMana2"?1:0.5)); floatText(P.x, P.y-40, "+mana", "#7fb2ff"); }
   else if(k==="elixir"){ buff("elixir", 300); log("Styrkeelixiret ger dig +20% skada i 5 minuter.", "#ffd36b"); }
+  else if(k==="elixirIron"){ buff("ironskin", 600); log("Järnhudselixiret: du tar 15% mindre skada i 10 minuter.", "#c8c8d0"); }
+  else if(k==="elixirKeen"){ buff("keen", 600); log("Skärpeelixiret: +5% kritisk träff i 10 minuter.", "#ffb347"); }
+  else if(k==="elixirSage"){ buff("sage", 600); log("Visdomselixiret: +20% formelkraft i 10 minuter.", "#9fd6e8"); }
   else return;
   removeItem(k, 1); burst(P.x, P.y-10, "#ff6b8a", 8);
   if(panelKind==="bag") renderPanel();
@@ -1453,6 +1476,7 @@ function turnIn(id){
   const xp = qXP(q), gold = qGold(q);
   S.quests[id].state = "done"; S.gold += gold;
   if(q.items) for(const [k,n] of Object.entries(q.items)) addItem(k, n);
+  const qg = questGear(q); if(qg) gainGear(qg, "Uppdragsbelöning");
   log(`Uppdrag klart: ${q.name}. +${gold} guld.`, "#7be08a");
   gainXP(xp); refreshTracker(); save(true);
   if(id==="f7") showBanner("Rimfrosts hjälte", `${S.name} har besegrat Isjätten!`, 6);
@@ -1524,8 +1548,8 @@ function updPlayer(dt){
   for(const k in P.buffs){ P.buffs[k] -= dt; if(P.buffs[k] <= 0) delete P.buffs[k]; }
   if(P.shield>0){ P.shieldT -= dt; if(P.shieldT<=0) P.shield = 0; }
   let ix = 0, iy = 0;
-  if(keys.has("a")||keys.has("arrowleft")) ix -= 1; if(keys.has("d")||keys.has("arrowright")) ix += 1;
-  if(keys.has("w")||keys.has("arrowup")) iy -= 1; if(keys.has("s")||keys.has("arrowdown")) iy += 1;
+  if(keys.has("left")) ix -= 1; if(keys.has("right")) ix += 1;
+  if(keys.has("up")) iy -= 1; if(keys.has("down")) iy += 1;
   if(panelKind && panelKind!=="help") { /* movement still allowed */ }
   ix += joy.x; iy += joy.y;
   const il = Math.hypot(ix, iy); if(il > 1){ ix /= il; iy /= il; }
@@ -1545,12 +1569,14 @@ function updPlayer(dt){
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
   P.combatT -= dt; const inC = P.combatT > 0;
-  const rg = S.race==='undead' ? 1.5 : 1;
-  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05*rg)*dt);
+  if(P.sitting && (P.moving || P.casting || P.autoTarget || P.dash || P.leap || inC || P.dead)) standUp();
+  if(P.sitting && P.hp >= P.maxHp && P.mana >= P.maxMana && !P.sitFull){ P.sitFull = true; log("Du är fullt utvilad.", "#7be08a"); }
+  const rg = S.race==='undead' ? 1.5 : 1, rest = P.sitting ? 2.5 : 1;
+  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05*rg*rest)*dt);
   P.focus = Math.min(100, P.focus + (inC?7:15)*dt);
   P.energy = Math.min(100, P.energy + 12*dt);
   if(!inC) P.rage = Math.max(0, P.rage - 3*dt);
-  if(!inC && P.combatT < -1) P.hp = Math.min(P.maxHp, P.hp + P.maxHp*0.04*rg*dt);
+  if(!inC && (P.combatT < -1 || P.sitting)) P.hp = Math.min(P.maxHp, P.hp + P.maxHp*0.04*rg*rest*dt);
   for(const h of P.hots){ h.tick -= dt; if(h.tick <= 0){ h.tick += 1; h.left -= 1; healP(h.per); } }
   P.hots = P.hots.filter(h=>h.left>0);
 }
@@ -1600,6 +1626,178 @@ function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, b
 function burst(x, y, color, n){ const el = fxEl(color); if(el) sfx("explo", el, x, y, 30+n*2.2, 0.55); for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
 function ring(x, y, r, color){ const el = color!=="#ff5a40" && fxEl(color); if(el) sfx("ring", el, x, y, r*2.5, 0.75); for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; parts.push({x:x+Math.cos(a)*r*0.3, y:y+Math.sin(a)*r*0.3, vx:Math.cos(a)*r*1.6, vy:Math.sin(a)*r*1.6, life:0.42, max:0.42, color, size:3}); } }
 function slash(t){ if(!t) return; for(let i=0;i<8;i++){ const a = -0.8 + i*0.2; parts.push({x:t.x+Math.cos(a)*14, y:t.y-12+Math.sin(a)*14, vx:Math.cos(a+1.5)*60, vy:Math.sin(a+1.5)*60, life:0.22, max:0.22, color:"#ffffff", size:3}); } P.swing = 0.2; }
+</script>
+<script>
+// ======================= GEAR / EQUIPMENT =======================
+// quality 0..5: grå, vit, grön, blå, lila, orange
+const QUAL = [
+  {name:"Dålig",       color:"#9d9d9d", mult:0.5},
+  {name:"Vanlig",      color:"#ffffff", mult:0.8},
+  {name:"Ovanlig",     color:"#1eff00", mult:1.0},
+  {name:"Sällsynt",    color:"#0070dd", mult:1.25},
+  {name:"Episk",       color:"#a335ee", mult:1.55},
+  {name:"Legendarisk", color:"#ff8000", mult:1.9}
+];
+const SLOTS = {
+  head:{name:"Huvud", w:0.5}, shoulder:{name:"Axlar", w:0.4}, chest:{name:"Bröst", w:0.6}, hands:{name:"Händer", w:0.35},
+  legs:{name:"Ben", w:0.55}, feet:{name:"Fötter", w:0.35}, weapon:{name:"Vapen", w:1.0}, offhand:{name:"Andra handen", w:0.4},
+  neck:{name:"Halsband", w:0.3}, ring:{name:"Ring", w:0.3}
+};
+const SLOT_ORDER = ["head","neck","shoulder","chest","hands","legs","feet","ring","weapon","offhand"];
+// armor types and which classes may use them
+const ARMOR = {
+  cloth:{name:"Tyg", cls:["mage","priest"], def:0.10},
+  leather:{name:"Läder", cls:["hunter","druid"], def:0.20},
+  plate:{name:"Platta", cls:["warrior","paladin"], def:0.30}
+};
+const CLASS_ARMOR = {mage:"cloth", priest:"cloth", hunter:"leather", druid:"leather", warrior:"plate", paladin:"plate"};
+// weapon / offhand types
+const WTYPES = {
+  sword:{name:"Svärd", cls:["warrior","paladin"], icon:"sword", base:["Långsvärd","Bredsvärd","Klinga"]},
+  axe:{name:"Yxa", cls:["warrior"], icon:"axeDouble", base:["Stridsyxa","Klyvare","Bila"]},
+  mace:{name:"Hammare", cls:["paladin"], icon:"hammer", base:["Krigshammare","Klubba","Stridshammare"]},
+  bow:{name:"Båge", cls:["hunter"], icon:"bow", base:["Långbåge","Jaktbåge","Krigsbåge"]},
+  staff:{name:"Stav", cls:["mage","priest","druid"], icon:"upg_wand", base:["Stav","Vandringsstav","Runstav"]},
+  wand:{name:"Trollspö", cls:["mage","priest"], icon:"wand", base:["Trollspö","Spira"]},
+  shield:{name:"Sköld", cls:["warrior","paladin"], icon:"shield", base:["Sköld","Rundsköld","Tornsköld"], off:true},
+  tome:{name:"Bok", cls:["mage","priest","druid"], icon:"tome", base:["Bok","Formelbok","Grimoar"], off:true}
+};
+const CLASS_WEAP = {warrior:["sword","axe"], paladin:["sword","mace"], hunter:["bow"], mage:["staff","wand"], priest:["staff","wand"], druid:["staff"]};
+const CLASS_OFF = {warrior:["shield"], paladin:["shield"], mage:["tome"], priest:["tome"], druid:["tome"], hunter:[]};
+const ARMOR_BASE = {
+  cloth:{head:"Huva", shoulder:"Axelkappa", chest:"Klädnad", hands:"Handskar", legs:"Byxor", feet:"Tofflor"},
+  leather:{head:"Läderhuva", shoulder:"Läderaxlar", chest:"Läderväst", hands:"Läderhandskar", legs:"Läderbyxor", feet:"Läderstövlar"},
+  plate:{head:"Hjälm", shoulder:"Axelplåtar", chest:"Bröstharnesk", hands:"Järnhandskar", legs:"Benskenor", feet:"Sabatoner"}
+};
+const JEWEL_BASE = {neck:["Halsband","Amulett","Hänge"], ring:["Ring","Signetring","Band"]};
+const SLOT_ICON = {head:"helmet", shoulder:"upg_helmet", chest:"armor", hands:"upg_armor", legs:"armor", feet:"upg_armor", neck:"gemBlue", ring:"gemRed"};
+const STAT_NAME = {pow:"Attackkraft", sp:"Formelkraft", hp:"Hälsa", mana:"Mana", crit:"Kritisk träff", def:"Skydd"};
+const STAT_SUFFIX = {pow:"Kraften", sp:"Trolldomen", hp:"Uthålligheten", mana:"Visdomen", crit:"Precisionen", def:"Skyddet"};
+const PREFIX = [["Tiggarens","Trälens","Lärlingens"], [""], [""], ["Väktarens","Mästarens","Riddarens","Jägarmästarens"], ["Stormens","Nattens","Runsmedens","Vargkungens"], ["Rimfrostens","Isjättens","Draugkungens","Urtidens"]];
+const GEAR_MAX = 30;
+
+function mulberry(seed){ return ()=>{ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h; }
+const pickR = (arr, r) => arr[Math.floor(r()*arr.length)];
+
+// which classes can use an item
+function gearClasses(it){ if(it.arm) return ARMOR[it.arm].cls; if(it.wt) return WTYPES[it.wt].cls; return Object.keys(CLASSES); }
+function canWear(it){ return gearClasses(it).includes(S.cls); }
+function gearTypeName(it){ return it.arm ? ARMOR[it.arm].name : it.wt ? WTYPES[it.wt].name : "Smycke"; }
+
+// make one item. opts: {slot, cls, q, il, r}
+function makeGear(opts){
+  const r = opts.r || Math.random, q = opts.q, il = Math.max(1, Math.min(MAX_LVL, Math.round(opts.il)));
+  const cls = opts.cls || pickR(Object.keys(CLASSES), r);
+  let slot = opts.slot;
+  if(!slot){ const pool = SLOT_ORDER.filter(s=>s!=="offhand" || CLASS_OFF[cls].length); slot = pickR(pool, r); }
+  const it = {id:Math.random().toString(36).slice(2,10), slot, q, il, st:{}};
+  let base;
+  if(slot==="weapon"){ it.wt = pickR(CLASS_WEAP[cls], r); base = pickR(WTYPES[it.wt].base, r); }
+  else if(slot==="offhand"){ it.wt = pickR(CLASS_OFF[cls].length ? CLASS_OFF[cls] : ["shield"], r); base = pickR(WTYPES[it.wt].base, r); }
+  else if(slot==="neck"||slot==="ring"){ base = pickR(JEWEL_BASE[slot], r); }
+  else { it.arm = CLASS_ARMOR[cls]; base = ARMOR_BASE[it.arm][slot]; }
+  // stat budget
+  let pts = (4 + il*1.15) * QUAL[q].mult * SLOTS[slot].w * 2;
+  const role = ["warrior","hunter"].includes(cls) ? "phys" : ["mage","priest"].includes(cls) ? "caster" : "hybrid";
+  const add = (k, p) => { if(p <= 0) return; it.st[k] = (it.st[k]||0) + p; };
+  let defShare = it.arm ? ARMOR[it.arm].def : it.wt==="shield" ? 0.4 : 0;
+  add("def", pts*defShare); pts *= 1-defShare;
+  if(slot==="weapon"){ if(role==="phys") add("pow", pts*0.75); else if(role==="caster") add("sp", pts*0.75); else { add("pow", pts*0.4); add("sp", pts*0.35); } pts *= 0.25; }
+  else if(it.wt==="tome"){ add("sp", pts*0.5); pts *= 0.5; }
+  // spread the rest over 1-3 random stats (better items get more stats)
+  const pool = role==="phys" ? ["pow","hp","crit"] : role==="caster" ? ["sp","hp","mana","crit"] : ["pow","sp","hp","mana","crit"];
+  const n = q <= 1 ? 1 : q === 2 ? 2 : 3;
+  const chosen = []; while(chosen.length < Math.min(n, pool.length)){ const k = pickR(pool, r); if(!chosen.includes(k)) chosen.push(k); }
+  const weights = chosen.map(()=>0.5 + r()); const tot = weights.reduce((a,b)=>a+b,0);
+  chosen.forEach((k,i)=>add(k, pts*weights[i]/tot));
+  // points -> real numbers
+  const conv = {pow:0.17, sp:0.17, hp:2.4, mana:3, crit:0.07, def:0.1};
+  for(const k of Object.keys(it.st)){ let v = it.st[k]*conv[k]; v = (k==="crit"||k==="def") ? Math.round(v*10)/10 : Math.round(v); if(v <= 0) delete it.st[k]; else it.st[k] = v; }
+  // name
+  const pre = pickR(PREFIX[q], r);
+  const top = Object.keys(it.st).filter(k=>k!=="def").sort((a,b)=>it.st[b]*(b==="crit"?40:(b==="pow"||b==="sp")?10:1) - it.st[a]*(a==="crit"?40:(a==="pow"||a==="sp")?10:1))[0];
+  it.n = (pre ? pre+" " : "") + base.toLowerCase().replace(/^./, c=>pre ? c : c.toUpperCase()) + (q >= 2 && top ? " av " + STAT_SUFFIX[top] : "");
+  if(!pre) it.n = it.n.charAt(0).toUpperCase() + it.n.slice(1);
+  return it;
+}
+function gearPrice(it){ return Math.max(2, Math.round(Math.pow(it.il, 1.5) * QUAL[it.q].mult * SLOTS[it.slot].w * 3 + 3)); }
+function gearSell(it){ return Math.max(1, Math.round(gearPrice(it) / 5)); }
+function gearIcon(it){ return it.wt ? WTYPES[it.wt].icon : SLOT_ICON[it.slot]; }
+
+// total stats from what you wear
+function gearStat(k){ if(!S || !S.eq) return 0; let v = 0; for(const it of Object.values(S.eq)) if(it && it.st[k]) v += it.st[k]; return v; }
+
+// quality roll for drops
+function rollQuality(src){
+  const r = Math.random();
+  const table = src==="boss" ? [[3,0.70],[4,0.26],[5,0.04]] : src==="elite" ? [[2,0.55],[3,0.35],[4,0.09],[5,0.01]]
+    : [[0,0.45],[1,0.30],[2,0.20],[3,0.045],[4,0.0045],[5,0.0005]];
+  let acc = 0; for(const [q,p] of table){ acc += p; if(r < acc) return q; } return table[table.length-1][0];
+}
+function gainGear(it, how){
+  if(!S.gear) S.gear = [];
+  if(S.gear.length >= GEAR_MAX){ log(`Väskan är full – ${it.n} gick förlorad. Sälj något hos en handlare.`, "#ff6b5e"); return false; }
+  S.gear.push(it);
+  log(`${how||"Du fick"}: [${it.n}]`, QUAL[it.q].color);
+  if(it.q >= 4) showBanner(QUAL[it.q].name + " utrustning!", it.n, 4);
+  return true;
+}
+// gear drop when a monster dies
+function mobGearDrop(m){
+  if(BEASTS.has(m.type) || m.def.passive) return;
+  const src = m.def.boss ? "boss" : m.elite ? "elite" : "normal";
+  const chance = src==="boss" ? 1 : src==="elite" ? 0.6 : 0.08;
+  if(Math.random() >= chance) return;
+  const cls = Math.random() < 0.7 ? S.cls : null;
+  gainGear(makeGear({q:rollQuality(src), il:m.lvl, cls}), "Byte");
+  if(src==="boss" && Math.random() < 0.5) gainGear(makeGear({q:rollQuality("elite"), il:m.lvl, cls:S.cls}), "Byte");
+}
+// quest rewards: every third quest and every chain's last quest give gear
+function questGearQ(q){ const num = +q.id.replace(/\D/g,""); const last = !QUESTS.some(o=>o.id[0]===q.id[0] && +o.id.replace(/\D/g,"") > num); return last ? 3 : num % 3 === 0 ? 2 : -1; }
+function questGear(q){ const qq = questGearQ(q); if(qq < 0) return null; return makeGear({q:qq, il:q.lvl + 1, cls:S.cls}); }
+
+// vendor stock: stable per vendor, class and level band
+function vendorLevel(n){ const z = zinfo(zoneAtTile(Math.floor(n.x/TILE), Math.floor(n.y/TILE))); const max = z && z.lv ? z.lv[1] : 5; return Math.max(1, Math.min(max, Math.max(S.level, 3))); }
+function vendorStock(n){
+  const il = vendorLevel(n), r = mulberry(hashStr(n.id + S.cls + il));
+  const out = [];
+  for(const slot of SLOT_ORDER){ if(slot==="offhand" && !CLASS_OFF[S.cls].length) continue; out.push(makeGear({slot, cls:S.cls, q:1, il, r})); }
+  for(let i=0;i<3;i++) out.push(makeGear({cls:S.cls, q:2, il, r}));
+  out.forEach((it,i)=>it.id = "v_"+n.id+"_"+i);
+  return out;
+}
+
+// equip / unequip
+function equipGear(id){
+  const i = S.gear.findIndex(x=>x.id===id); if(i<0) return;
+  const it = S.gear[i];
+  if(!canWear(it)) return err(`${CLASSES[S.cls].name} kan inte använda ${gearTypeName(it).toLowerCase()}.`);
+  if(S.level < it.il) return err(`Kräver nivå ${it.il}.`);
+  S.gear.splice(i, 1);
+  const old = S.eq[it.slot]; if(old) S.gear.push(old);
+  S.eq[it.slot] = it; recompute(false); log(`Du tog på dig ${it.n}.`, QUAL[it.q].color); save();
+}
+function unequipGear(slot){
+  const it = S.eq[slot]; if(!it) return;
+  if(S.gear.length >= GEAR_MAX) return err("Väskan är full.");
+  delete S.eq[slot]; S.gear.push(it); recompute(false); save();
+}
+
+// html helpers
+function gearIco(it, px){ px = px||34; return `<span class="gico" style="width:${px}px;height:${px}px;border-color:${QUAL[it.q].color}"><img src="assets/weapons/${gearIcon(it)}.png" alt=""></span>`; }
+function statLines(it, cmp){
+  return Object.keys(STAT_NAME).filter(k=>it.st[k] || (cmp && cmp.st[k])).map(k=>{
+    const v = it.st[k]||0, unit = (k==="crit"||k==="def") ? "%" : "";
+    let diff = ""; if(cmp){ const d = Math.round((v - (cmp.st[k]||0))*10)/10; if(d) diff = ` <span style="color:${d>0?"#7be08a":"#ff6b5e"}">(${d>0?"+":""}${d}${unit})</span>`; }
+    return v ? `+${v}${unit} ${STAT_NAME[k]}${diff}` : `<span class="muted">${STAT_NAME[k]}${diff}</span>`; }).join(" · ");
+}
+function gearDesc(it, showCmp){
+  const ok = canWear(it), lvlOk = S.level >= it.il, cur = S.eq ? S.eq[it.slot] : null;
+  return `<b style="color:${QUAL[it.q].color}">${esc(it.n)}</b> <span class="muted">· ${QUAL[it.q].name} · ${SLOTS[it.slot].name} · ${gearTypeName(it)}</span>
+    <div class="d">${statLines(it, showCmp && cur && cur!==it ? cur : null)}</div>
+    <div class="d">${ok ? "" : `<span style="color:#ff6b5e">Kan inte användas av ${CLASSES[S.cls].name}. </span>`}<span style="color:${lvlOk?"var(--mute)":"#ff6b5e"}">Kräver nivå ${it.il}</span>${showCmp && cur && cur!==it ? ` <span class="muted">· jämfört med ${esc(cur.n)}</span>` : ""}</div>`;
+}
 </script>
 <script>
 // ======================= RENDER =======================
@@ -2021,6 +2219,7 @@ function dirOf(dx, dy){ return Math.abs(dx) > Math.abs(dy) ? (dx<0?1:3) : (dy<0?
 function setAct(e, anim){ if(anim) e.act = {anim, t:0, dur:ACT_DUR[anim]}; }
 function lpcState(e, moving){
   if(e.dead) return {anim:"hurt", frame:5, dir:0};
+  if(e.sitting) return {anim:"hurt", frame:3, dir:0};
   if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
   if(e.casting && e.casting.kind==="spell") return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2};
   if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir||2};
@@ -2195,6 +2394,144 @@ function drawSfx(c, dt){
 const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
 </script>
 <script>
+// ======================= ACTION BARS, KEYBINDINGS, MENU, SPELLBOOK, CRAFTING =======================
+// ---- action bars: 10 slots per bar, saved per character (druids have one bar per form)
+const BAR_SIZE = 10;
+function barKeyNow(){ return S.cls==="druid" && P && P.form ? P.form : "main"; }
+function barSource(key){ return S.cls==="druid" ? (key==="main" ? BARS.druid : BARS["druid_"+key]) : BARS[S.cls]; }
+function barKeys(){ return S.cls==="druid" ? ["main","bear","cat"] : ["main"]; }
+function ensureBars(){
+  if(!S.bars || typeof S.bars !== "object") S.bars = {};
+  for(const key of barKeys()){
+    let b = S.bars[key];
+    if(!Array.isArray(b) || b.length !== BAR_SIZE){ b = Array(BAR_SIZE).fill(null); barSource(key).filter(id=>S.learned.includes(id)).slice(0, BAR_SIZE).forEach((id,i)=>b[i]=id); }
+    S.bars[key] = b.map(id=>id && AB[id] && S.learned.includes(id) ? id : null);
+  }
+}
+// put a newly learned ability on the first free slot of the bars it belongs to
+function autoPlace(id){ ensureBars(); for(const key of barKeys()){ if(!barSource(key).includes(id)) continue; const b = S.bars[key]; if(b.includes(id)) continue; const i = b.indexOf(null); if(i >= 0) b[i] = id; } }
+function setBarSlot(key, id, slot){ ensureBars(); const b = S.bars[key]; for(let i=0;i<BAR_SIZE;i++) if(b[i]===id) b[i] = null; if(slot >= 0) b[slot] = id; buildHotbar(); save(); }
+
+// ---- keybindings (saved in this browser)
+const KB_KEY = "rimfrost-keys-v1";
+const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", interact:"e", potHp:"q", potMana:"r", rest:"x",
+  char:"c", bag:"b", spells:"p", talents:"n", quests:"l", map:"m", craft:"k", info:"h",
+  bar1:"1", bar2:"2", bar3:"3", bar4:"4", bar5:"5", bar6:"6", bar7:"7", bar8:"8", bar9:"9", bar10:"0"};
+const KB_LABEL = {up:"Gå framåt", left:"Gå vänster", down:"Gå bakåt", right:"Gå höger", target:"Välj närmaste mål", attack:"Börja attackera", interact:"Prata / samla",
+  potHp:"Läkedryck", potMana:"Manadryck", rest:"Sitt ner och vila", char:"Karaktär", bag:"Väska", spells:"Formelbok", talents:"Talanger", quests:"Uppdragslogg",
+  map:"Karta", craft:"Tillverkning", info:"Information"};
+const KB_GROUPS = [["Rörelse",["up","left","down","right"]], ["Strid",["target","attack","potHp","potMana","rest"]],
+  ["Fönster",["char","bag","spells","talents","quests","map","craft","info","interact"]], ["Formelknappar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
+let KB = Object.assign({}, KB_DEFAULT);
+try{ const s = JSON.parse(localStorage.getItem(KB_KEY)||"null"); if(s) for(const k of Object.keys(KB_DEFAULT)) if(typeof s[k]==="string") KB[k] = s[k]; }catch(_){}
+function saveKB(){ try{ localStorage.setItem(KB_KEY, JSON.stringify(KB)); }catch(_){} }
+function kbAction(k){ for(const a of Object.keys(KB)) if(KB[a]===k) return a; return null; }
+function keyName(k){ if(!k) return "–"; const m = {tab:"Tab", " ":"Mellanslag", arrowup:"↑", arrowdown:"↓", arrowleft:"←", arrowright:"→", enter:"Enter", shift:"Shift", control:"Ctrl", alt:"Alt", meta:"Cmd", backspace:"Backsteg"}; return m[k] || (k.length===1 ? k.toUpperCase() : k.charAt(0).toUpperCase()+k.slice(1)); }
+let rebinding = null;
+function startRebind(a){ rebinding = a; renderPanel(); }
+function finishRebind(k){
+  const a = rebinding; rebinding = null; if(!a) return;
+  if(k !== "escape"){ const other = kbAction(k); if(other && other !== a) KB[other] = KB[a]; KB[a] = k; saveKB(); buildHotbar(); }
+  renderPanel();
+}
+
+// ---- icons for the spellbook (cached data urls)
+const ABICO = {};
+function abIconURL(id){ if(ABICO[id]) return ABICO[id]; const a = AB[id], c = document.createElement("canvas"); c.width = c.height = 96;
+  drawIcon(c, a.icon, id==="firearrow"?"#ff7a2e":id==="icearrow"?"#6fc6f0":SCHOOL_COLOR[a.school]==="#f2f2f2"?"#8c939a":SCHOOL_COLOR[a.school]); return ABICO[id] = c.toDataURL(); }
+
+// ---- panels added by this file
+let spellTab = "main", craftTab = "alch";
+function menuHTML(){
+  const left = talentPoints() - talentsSpent();
+  return `<h2>Meny</h2><div class="menu-grid">
+    <button class="btn pri" data-act="close">Fortsätt spela</button>
+    <button class="btn" data-act="open" data-k="spells">Formelbok <span class="muted">${keyName(KB.spells)}</span></button>
+    <button class="btn" data-act="open" data-k="keys">Tangentbindningar</button>
+    <button class="btn" data-act="open" data-k="char">Karaktär <span class="muted">${keyName(KB.char)}</span></button>
+    <button class="btn" data-act="open" data-k="bag">Väska <span class="muted">${keyName(KB.bag)}</span></button>
+    <button class="btn ${left>0&&S.level>=10?"glowb":""}" data-act="open" data-k="talents">Talanger <span class="muted">${keyName(KB.talents)}</span>${left>0&&S.level>=10?` · ${left} poäng`:""}</button>
+    <button class="btn" data-act="open" data-k="quests">Uppdragslogg <span class="muted">${keyName(KB.quests)}</span></button>
+    <button class="btn" data-act="open" data-k="map">Karta <span class="muted">${keyName(KB.map)}</span></button>
+    <button class="btn" data-act="open" data-k="craft">Tillverkning <span class="muted">${keyName(KB.craft)}</span></button>
+    <button class="btn" data-act="rest">${P.sitting?"Res dig":"Sitt ner och vila"} <span class="muted">${keyName(KB.rest)}</span></button>
+    <button class="btn" data-act="open" data-k="help">Information <span class="muted">${keyName(KB.info)}</span></button>
+    <button class="btn" data-act="newchar">Byt karaktär</button>
+  </div>`;
+}
+function keysHTML(){
+  let h = `<h2>Tangentbindningar</h2><div class="muted">Klicka på en tangent för att byta den, och tryck sedan den nya tangenten. Esc avbryter. Piltangenterna går alltid att använda för att gå.</div>`;
+  for(const [title, list] of KB_GROUPS){
+    h += `<h3>${title}</h3><div class="kbgrid">`;
+    for(const a of list){
+      let label = KB_LABEL[a];
+      if(a.startsWith("bar")){ const i = +a.slice(3)-1, id = (S.bars && S.bars[barKeyNow()]||[])[i]; label = `Knapp ${i+1}: ${id ? AB[id].name : '<span class="muted">tom</span>'}`; }
+      h += `<div class="kbrow"><span>${label}</span><button class="kbkey ${rebinding===a?"wait":""}" data-act="rebind" data-k="${a}">${rebinding===a ? "Tryck en tangent…" : keyName(KB[a])}</button></div>`;
+    }
+    h += `</div>`;
+  }
+  h += `<div class="row" style="margin-top:10px"><button class="btn" data-act="kbreset">Återställ standard</button><button class="btn" data-act="open" data-k="spells">Byt formler på knapparna i Formelboken</button></div>`;
+  return h;
+}
+function spellsHTML(){
+  ensureBars();
+  const tabs = barKeys(), key = tabs.includes(spellTab) ? spellTab : "main", bar = S.bars[key];
+  const TAB_NAME = {main:S.cls==="druid"?"Normal form":"Formler", bear:"Björnform", cat:"Kattform"};
+  let h = `<h2>Formelbok</h2><div class="muted">Alla ${CLASSES[S.cls].name}-förmågor. Välj en knapp i listan för att lägga formeln där. Formler lär du dig hos din klass tränare.</div>`;
+  if(tabs.length > 1) h += `<div class="row" style="margin-top:8px">${tabs.map(t=>`<button class="btn ${t===key?"pri":""}" data-act="spelltab" data-k="${t}">${TAB_NAME[t]}</button>`).join("")}</div>`;
+  h += `<div class="barprev">${bar.map((id,i)=>`<div class="bp" title="${id?esc(AB[id].name):"Tom"}">${id?`<img src="${abIconURL(id)}" alt="">`:""}<span>${keyName(KB["bar"+(i+1)])}</span></div>`).join("")}</div>`;
+  const list = barSource(key);
+  h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id);
+    const meta = [ `nivå ${a.lvl}`, a.cost ? `${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}` : "", a.cast ? `${a.cast} sek kasttid` : "omedelbar", a.cd ? `${a.cd} sek nedkylning` : "", a.range ? `räckvidd ${a.range}` : "" ].filter(Boolean).join(" · ");
+    const sel = learned ? `<select data-act="bind" data-id="${id}" data-bar="${key}" aria-label="Knapp för ${esc(a.name)}"><option value="-1">Ingen knapp</option>${bar.map((_,i)=>`<option value="${i}" ${slot===i?"selected":""}>Knapp ${i+1} (${keyName(KB["bar"+(i+1)])})</option>`).join("")}</select>` : `<span class="muted" style="font-size:12px">${S.level >= a.lvl ? "Lär dig hos tränaren" : `Låses upp på nivå ${a.lvl}`}</span>`;
+    return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico" src="${abIconURL(id)}" alt=""><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${sel}</div>`; }).join("")}</div>`;
+  return h;
+}
+
+// ---- crafting: alchemy from herbs, smithing gear from ore
+const ALCH = [
+  {out:"potHp", n:1, need:{ang:2}, skill:1},
+  {out:"potMana", n:1, need:{ang:1, silver:1}, skill:1},
+  {out:"potHp2", n:1, need:{silver:2}, skill:20},
+  {out:"elixirIron", n:1, need:{silver:2, drake:1}, skill:40},
+  {out:"elixir", n:1, need:{drake:2}, skill:60},
+  {out:"elixirKeen", n:1, need:{drake:1, fireflower:1}, skill:90},
+  {out:"potHp3", n:1, need:{fireflower:2}, skill:100},
+  {out:"elixirSage", n:1, need:{fireflower:1, iceflower:1}, skill:120},
+  {out:"potMana2", n:1, need:{fireflower:1, iceflower:1}, skill:140}
+];
+const SMITH_TIERS = [
+  {ore:"copper", il:6, skill:1}, {ore:"iron", il:12, skill:20}, {ore:"goldore", il:18, skill:60},
+  {ore:"obsidian", il:24, skill:100}, {ore:"rimkr", il:30, skill:140}
+];
+function smithOre(slot){ return Math.round(3 + SLOTS[slot].w*8); }
+function smithGold(t, slot){ return Math.round(t.il*2*(0.6+SLOTS[slot].w)); }
+function craftHTML(){
+  let h = `<h2>Tillverkning</h2><div class="row" style="margin:6px 0 4px"><button class="btn ${craftTab==="alch"?"pri":""}" data-act="crafttab" data-k="alch">Alkemi (örter)</button><button class="btn ${craftTab==="smith"?"pri":""}" data-act="crafttab" data-k="smith">Smide (malm)</button></div>`;
+  if(craftTab==="alch"){
+    h += `<div class="muted">Blanda örter till drycker och elixir. Bättre recept kräver högre Örtplockning (du har ${S.skills.herb}).</div><div class="list">`;
+    ALCH.forEach((r,i)=>{ const it = ITEMS[r.out], skillOk = S.skills.herb >= r.skill, ok = skillOk && Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v);
+      h += `<div class="item ${skillOk?"":"dim"}"><div style="display:flex;align-items:center">${icoHTML(r.out)}<div><b>${it.name}</b> <span class="muted">· ${it.desc}</span><div class="d">${Object.entries(r.need).map(([k,v])=>`<span style="color:${(S.bag[k]||0)>=v?"var(--text)":"var(--bad)"}">${v} ${ITEMS[k].name} (har ${S.bag[k]||0})</span>`).join(" + ")}${skillOk?"":` · <span style="color:var(--bad)">Kräver Örtplockning ${r.skill}</span>`}</div></div></div><button class="btn ${ok?"pri":""}" data-act="alch" data-i="${i}" ${ok?"":"disabled"}>Brygg</button></div>`; });
+    h += `</div>`;
+  } else {
+    h += `<div class="muted">Smid ovanlig (grön) utrustning för din klass av malm – ibland blir den sällsynt (blå). Bättre malm ger bättre utrustning men kräver högre Gruvdrift (du har ${S.skills.mining}).</div>`;
+    const slots = SLOT_ORDER.filter(s=>s!=="offhand" || CLASS_OFF[S.cls].length);
+    for(const t of SMITH_TIERS){ const skillOk = S.skills.mining >= t.skill, have = S.bag[t.ore]||0;
+      h += `<h3>${ITEMS[t.ore].name} · nivå ${t.il}-utrustning <span class="muted" style="font-weight:400">· har ${have}${skillOk?"":` · <span style="color:var(--bad)">kräver Gruvdrift ${t.skill}</span>`}</span></h3><div class="smithgrid">`;
+      h += slots.map(s=>{ const n = smithOre(s), g = smithGold(t, s), ok = skillOk && have >= n && S.gold >= g && S.gear.length < GEAR_MAX;
+        return `<button class="btn ${ok?"":"dimb"}" data-act="smith" data-k="${t.ore}" data-s="${s}" ${ok?"":"disabled"} title="${n} ${ITEMS[t.ore].name} + ${g} guld">${SLOTS[s].name}<span class="muted"> · ${n} malm, ${g} g</span></button>`; }).join("");
+      h += `</div>`; }
+  }
+  return h;
+}
+function doAlch(i){ const r = ALCH[i]; if(!r || S.skills.herb < r.skill) return; if(!Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v)) return;
+  for(const [k,v] of Object.entries(r.need)) removeItem(k, v); addItem(r.out, r.n); log(`Du bryggde ${ITEMS[r.out].name}.`, "#9cf07a"); burst(P.x, P.y, "#9cf07a", 10); updHotbar(); save(); }
+function doSmith(ore, slot){ const t = SMITH_TIERS.find(x=>x.ore===ore); if(!t || S.skills.mining < t.skill) return;
+  const n = smithOre(slot), g = smithGold(t, slot); if((S.bag[ore]||0) < n || S.gold < g) return; if(S.gear.length >= GEAR_MAX) return err("Väskan är full");
+  removeItem(ore, n); S.gold -= g; const q = Math.random() < 0.15 ? 3 : 2;
+  gainGear(makeGear({slot, cls:S.cls, q, il:t.il}), "Du smidde"); burst(P.x, P.y, "#ffd36b", 14); save(); }
+</script>
+<script>
 // ======================= UI =======================
 const $ = id => document.getElementById(id);
 function setT(el, v){ if(el._v !== v){ el._v = v; el.textContent = v; } }
@@ -2262,20 +2599,20 @@ function drawIcon(cv, icon, color){
 
 // ---- hotbar
 let slotEls = [];
-function currentBar(){ return (S.cls==="druid" ? (P.form ? BARS["druid_"+P.form] : BARS.druid) : BARS[S.cls]).filter(id=>S.learned.includes(id)); }
+function currentBar(){ ensureBars(); return S.bars[barKeyNow()].map(id=>id && S.learned.includes(id) ? id : null); }
 function buildHotbar(){
   const hb = $("hotbar"); hb.innerHTML = ""; slotEls = [];
   currentBar().forEach((id, i)=>{
     const b = document.createElement("button"); b.className = "slot"; b.dataset.i = i;
-    if(!id){ b.style.visibility = "hidden"; hb.appendChild(b); slotEls.push(null); return; }
+    if(!id){ b.classList.add("empty"); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span>`); b.title = "Tom knapp – lägg en formel här i Formelboken"; b.addEventListener("click", ()=>openPanel("spells")); hb.appendChild(b); slotEls.push(null); return; }
     const a = AB[id]; const c = document.createElement("canvas"); c.width = c.height = 96; drawIcon(c, a.icon, id==="firearrow"?"#ff7a2e":id==="icearrow"?"#6fc6f0":SCHOOL_COLOR[a.school]==="#f2f2f2"?"#8c939a":SCHOOL_COLOR[a.school]);
-    b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${i<9?i+1:0}</span><span class="cd"></span>`);
+    b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span><span class="cd"></span>`);
     b.title = `${a.name} – ${a.desc()}`; b.setAttribute("aria-label", a.name);
     b.addEventListener("click", ()=>tryUse(id)); hb.appendChild(b); slotEls.push({b, id, cd:b.querySelector(".cd")});
   });
   const pots = [["hp","Q","potHp","#c03a52"]]; if(CLASSES[S.cls].res==="mana") pots.push(["mana","R","potMana","#3f86e0"]);
   pots.forEach(([kind, key, item, col])=>{ const b = document.createElement("button"); b.className = "slot pot"; const c = document.createElement("canvas"); c.width = c.height = 96; drawItemSprite(c, item, col); b.appendChild(c);
-    b.insertAdjacentHTML("beforeend", `<span class="k">${key}</span><span class="cd"></span><span class="cnt"></span>`); b.title = kind==="hp" ? "Läkedryck (Q)" : "Manadryck (R)";
+    b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB[kind==="hp"?"potHp":"potMana"])}</span><span class="cd"></span><span class="cnt"></span>`); b.title = kind==="hp" ? "Läkedryck" : "Manadryck";
     b.addEventListener("click", ()=>usePotion(kind)); hb.appendChild(b); slotEls.push({b, pot:kind, cd:b.querySelector(".cd"), cnt:b.querySelector(".cnt")}); });
 }
 function updHotbar(){
@@ -2299,7 +2636,7 @@ function updHUD(dt){
   setW($("phpi"), P.hp/P.maxHp); setW($("pshi"), P.shield/P.maxHp); setT($("phpt"), `${Math.ceil(P.hp)} / ${P.maxHp}`);
   const type = resType(), mr = maxRes(type); const ri = $("presi"); if(ri._c !== type){ ri._c = type; ri.style.background = RES_COLOR[type]; }
   setW(ri, P[type]/mr); setT($("prest"), `${RES_NAME[type]} ${Math.floor(P[type])} / ${mr}${P.form==="cat"&&P.cp?` · Kombo ${P.cp}`:""}`);
-  const bl = []; if(P.buffs.shout) bl.push("Stridsrop"); if(P.buffs.elixir) bl.push("Elixir"); if(P.buffs.dash) bl.push("Rusning"); if(P.buffs.hotstreak) bl.push("Het svit"); if(P.buffs.avenging) bl.push("Rättfärdig vrede"); if(P.buffs.bubble) bl.push("Gudomlig sköld"); if(P.hots.length) bl.push("Helas"); if(P.shield>0) bl.push("Sköld");
+  const bl = []; if(P.buffs.shout) bl.push("Stridsrop"); if(P.buffs.elixir) bl.push("Styrkeelixir"); if(P.buffs.ironskin) bl.push("Järnhud"); if(P.buffs.keen) bl.push("Skärpa"); if(P.buffs.sage) bl.push("Visdom"); if(P.sitting) bl.push("Vilar"); if(P.buffs.dash) bl.push("Rusning"); if(P.buffs.hotstreak) bl.push("Het svit"); if(P.buffs.avenging) bl.push("Rättfärdig vrede"); if(P.buffs.bubble) bl.push("Gudomlig sköld"); if(P.hots.length) bl.push("Helas"); if(P.shield>0) bl.push("Sköld");
   setT($("pbuffs"), bl.join(" · "));
   const t = P.target, tf = $("tframe");
   if(t && !t.dead){ tf.hidden = false; setT($("tname"), t.name); const tl = $("tlvl"); setT(tl, (t.elite?"Elit ":"")+"Nivå "+t.lvl); tl.className = "num "+lvlClass(t.lvl);
@@ -2311,7 +2648,7 @@ function updHUD(dt){
   const need = xpNeed(S.level); setW($("xpi"), S.level>=MAX_LVL ? 1 : S.xp/need); setT($("xpt"), S.level>=MAX_LVL ? "Maxnivå" : `${S.xp} / ${need} XP`);
   const cast = $("cast");
   if(P.casting){ cast.hidden = false; setW($("casti"), P.casting.el/P.casting.total); setT($("castt"), P.casting.label); } else cast.hidden = true;
-  $("talbtn").classList.toggle("glow", talentPoints() - talentsSpent() > 0);
+  const tb = $("talbtn"); if(tb) tb.classList.toggle("glow", talentPoints() - talentsSpent() > 0);
   if(bannerT > 0){ bannerT -= dt; if(bannerT < 0.6) $("banner").style.opacity = Math.max(0, bannerT/0.6); }
   updHotbar();
 }
@@ -2325,6 +2662,25 @@ function refreshTracker(){
 }
 
 // ---- panels
+function charEquipHTML(){
+  const slots = SLOT_ORDER.filter(s=>s!=="offhand" || CLASS_OFF[S.cls].length);
+  const tot = Object.keys(STAT_NAME).map(k=>[k, Math.round(gearStat(k)*10)/10]).filter(x=>x[1]);
+  return `<h3>Utrustning</h3>${tot.length?`<div class="muted" style="margin-bottom:6px">Från utrustning: ${tot.map(([k,v])=>`+${v}${k==="crit"||k==="def"?"%":""} ${STAT_NAME[k].toLowerCase()}`).join(", ")}</div>`:`<div class="muted" style="margin-bottom:6px">Du har ingen utrustning på dig. Tryck B för att se din väska.</div>`}
+  <div class="eqgrid">${slots.map(s=>{ const it = S.eq[s]; return `<div class="eqs">${it?gearIco(it,34):`<span class="gico empty"></span>`}<div style="min-width:0;flex:1"><div class="muted" style="font-size:11px">${SLOTS[s].name}</div>${it?`<b style="color:${QUAL[it.q].color}">${esc(it.n)}</b><div class="d">${statLines(it)}</div>`:`<span class="muted">Tomt</span>`}</div>${it?`<button class="btn sm" data-act="unequip" data-slot="${s}">Ta av</button>`:""}</div>`; }).join("")}</div>`;
+}
+function bagGearHTML(){
+  const list = (S.gear||[]).slice().sort((a,b)=>b.q-a.q || b.il-a.il);
+  let h = `<h3>Utrustning <span class="muted" style="font-weight:400">${list.length} / ${GEAR_MAX}</span></h3>`;
+  if(!list.length) return h + `<div class="muted">Ingen utrustning i väskan. Fiender kan släppa utrustning, och handlare säljer.</div>`;
+  return h + `<div class="list">${list.map(it=>{ const ok = canWear(it) && S.level >= it.il; return `<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)}</div></div><button class="btn ${ok?"pri":""}" data-act="equip" data-id="${it.id}" ${ok?"":"disabled"}>Ta på</button></div>`; }).join("")}</div>`;
+}
+function vendorGearHTML(n){
+  const stock = vendorStock(n);
+  let h = `<h3>Utrustning för ${CLASSES[S.cls].name} <span class="muted" style="font-weight:400">· nivå ${vendorLevel(n)}</span></h3><div class="list">${stock.map(it=>{ const p = gearPrice(it); return `<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)} <span class="coin">${p} guld</span></div></div><button class="btn" data-act="buygear" data-id="${it.id}" ${S.gold<p?"disabled":""}>Köp</button></div>`; }).join("")}</div>`;
+  const mine = (S.gear||[]).slice().sort((a,b)=>a.q-b.q);
+  if(mine.length) h += `<h3>Sälj utrustning</h3><div class="list">${mine.map(it=>`<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0"><b style="color:${QUAL[it.q].color}">${esc(it.n)}</b> <span class="muted">· nivå ${it.il}</span><div class="d">${statLines(it)}</div></div></div><button class="btn" data-act="sellgear" data-id="${it.id}">Sälj ${gearSell(it)} guld</button></div>`).join("")}</div>`;
+  return h;
+}
 let panelKind = null, panelArg = null;
 function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } panelKind = kind; panelArg = arg; renderPanel(); $("panel").hidden = false; }
 function closePanel(){ panelKind = null; $("panel").hidden = true; }
@@ -2335,16 +2691,17 @@ function renderPanel(){
     h += `<h2>${esc(S.name)}</h2><div class="muted">Nivå ${S.level} ${RACES[S.race].name} ${CLASSES[S.cls].name} · ${RACES[S.race].desc}</div>
     <div class="row" style="margin-top:8px"><button class="btn" data-act="newchar">Byt karaktär</button></div><h3>Egenskaper</h3><div class="stats">
       <div><span>Hälsa</span><span>${P.maxHp}</span></div><div><span>${RES_NAME[type]}</span><span>${type==="mana"?P.maxMana:100}</span></div>
-      <div><span>Kraft</span><span>${fmt(pow()*genMult())}</span></div><div><span>Kritisk träff</span><span>${(critChance(null,"phys")*100).toFixed(0)}%</span></div>
+      <div><span>Attackkraft</span><span>${fmt(pow()*genMult())}</span></div><div><span>Formelkraft</span><span>${fmt(spow()*genMult())}</span></div><div><span>Kritisk träff</span><span>${(critChance(null,"phys")*100).toFixed(0)}%</span></div>
       <div><span>Skada du tar</span><span>${Math.round(takenMult()*100)}%</span></div><div><span>Vapen</span><span>${wIco(WICON[S.cls],20)}${WEAPON_NAMES[S.cls]} +${S.weapon}</span></div>
       <div><span>Undvika</span><span>${(avoidChances().dodge*100).toFixed(0)}%</span></div><div><span>Parera</span><span>${(avoidChances().parry*100).toFixed(0)}%</span></div>
       <div><span>Gruvdrift</span><span>${S.skills.mining} / ${SKILL_MAX}</span></div><div><span>Örtplockning</span><span>${S.skills.herb} / ${SKILL_MAX}</span></div>
       <div><span>Guld</span><span>${S.gold}</span></div><div><span>Uppdrag klara</span><span>${Object.values(S.quests).filter(q=>q.state==="done").length} / ${QUESTS.length}</span></div></div>
-    <h3>Förmågor</h3><div class="list">${allBarIds().filter(id=>S.learned.includes(id)).map(id=>{ const a = AB[id]; return `<div class="item"><div><b>${a.name}</b> <span class="muted">${a.cost?`· ${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}`:""}${a.cast?` · ${a.cast} sek`:""}${a.cd?` · ${a.cd} sek nedkylning`:""}</span><div class="d">${esc(a.desc())}</div></div></div>`; }).join("")}</div>`;
+    ${charEquipHTML()}<h3>Förmågor</h3><div class="list">${allBarIds().filter(id=>S.learned.includes(id)).map(id=>{ const a = AB[id]; return `<div class="item"><div><b>${a.name}</b> <span class="muted">${a.cost?`· ${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}`:""}${a.cast?` · ${a.cast} sek`:""}${a.cd?` · ${a.cd} sek nedkylning`:""}</span><div class="d">${esc(a.desc())}</div></div></div>`; }).join("")}</div>`;
   } else if(panelKind==="bag"){
     const ks = Object.keys(S.bag).filter(k=>S.bag[k]>0);
     h += `<h2>Väska</h2><div class="muted"><span class="coin">${S.gold} guld</span> · Sälj saker hos en handlare i byarna och lägren.</div><h3>Föremål</h3>`;
     h += ks.length ? `<div class="list">${ks.map(k=>{ const it = ITEMS[k]; return `<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${it.name}</b> <span class="muted">× ${S.bag[k]}</span><div class="d">${it.desc || (it.kind==="ore"?"Malm – används hos smeden.":it.kind==="herb"?"Ört – används hos alkemisten.":"Skräp – sälj till handlaren.")}</div></div></div>${it.kind==="use"?`<button class="btn" data-act="use" data-k="${k}">Använd</button>`:""}</div>`; }).join("")}</div>` : `<div class="muted">Väskan är tom.</div>`;
+    h += bagGearHTML();
     const qk = Object.keys(S.qbag||{}).filter(k=>S.qbag[k]>0);
     if(qk.length) h += `<h3>Uppdragsföremål</h3><div class="list">${qk.map(k=>`<div class="item"><div><b>${QITEMS[k].name}</b> <span class="muted">× ${S.qbag[k]}</span></div></div>`).join("")}</div>`;
   } else if(panelKind==="talents"){
@@ -2361,7 +2718,7 @@ function renderPanel(){
   } else if(panelKind==="quests"){
     const act = QUESTS.filter(q=>S.quests[q.id]&&S.quests[q.id].state==="active");
     h += `<h2>Uppdragslogg</h2>`;
-    h += act.length ? `<div class="list">${act.map(q=>`<div class="item"><div><b>${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl} · ${npcName(q.npc)}</span><div class="d">${esc(q.text)}</div>${q.obj.map((o,i)=>`<div class="d" style="color:var(--text)">${esc(objName(o))}: ${qProg(q,i)}/${o[2]}</div>`).join("")}${q.to?`<div class="d" style="color:var(--text)">Lämna in hos ${esc(npcName(q.to))}</div>`:""}<div class="d">Belöning: ${qXP(q)} XP, ${qGold(q)} guld</div></div><button class="btn" data-act="abandon" data-id="${q.id}">Avbryt</button></div>`).join("")}</div>` : `<div class="muted">Du har inga aktiva uppdrag. Leta efter ett gult ! ovanför personer i byarna och lägren.</div>`;
+    h += act.length ? `<div class="list">${act.map(q=>`<div class="item"><div><b>${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl} · ${npcName(q.npc)}</span><div class="d">${esc(q.text)}</div>${q.obj.map((o,i)=>`<div class="d" style="color:var(--text)">${esc(objName(o))}: ${qProg(q,i)}/${o[2]}</div>`).join("")}${q.to?`<div class="d" style="color:var(--text)">Lämna in hos ${esc(npcName(q.to))}</div>`:""}<div class="d">Belöning: ${qXP(q)} XP, ${qGold(q)} guld${questGearQ(q)>=0?`, <span style="color:${QUAL[questGearQ(q)].color}">${QUAL[questGearQ(q)].name.toLowerCase()} utrustning</span>`:""}</div></div><button class="btn" data-act="abandon" data-id="${q.id}">Avbryt</button></div>`).join("")}</div>` : `<div class="muted">Du har inga aktiva uppdrag. Leta efter ett gult ! ovanför personer i byarna och lägren.</div>`;
     h += `<h3>Klara</h3><div class="muted">${QUESTS.filter(q=>S.quests[q.id]?.state==="done").map(q=>q.name).join(", ") || "Inga än."}</div>`;
   } else if(panelKind==="help"){
     h += `<h2>Så spelar du</h2><div class="list">
@@ -2373,18 +2730,24 @@ function renderPanel(){
       <div class="item"><div><b>Uppdrag</b><div class="d">Gult ! = uppdrag för din nivå. Grått ! = uppdraget är för lätt och ger mindre XP. Rött ! = du är för låg nivå för att ta det. ? = dags att lämna in. Du kan göra uppdrag i alla rasers startzoner.</div></div></div>
       <div class="item"><div><b>Karta</b><div class="d">Tryck M för att se hela världen, alla zoner och var dina uppdrag ska göras.</div></div></div>
       <div class="item"><div><b>Tränare</b><div class="d">Nya förmågor lär du dig hos din klass tränare. Det finns tränare i alla fyra hembyarna. De kostar guld. En blå ! över tränaren betyder att det finns något nytt att lära.</div></div></div>
+      <div class="item"><div><b>Vila</b><div class="d">Tryck X (eller välj det i Menyn) för att sätta dig ner. Då återhämtar du hälsa och mana 2,5 gånger snabbare. Det går bara utanför strid, när det gått minst 5 sekunder sedan striden tog slut. Du reser dig när du går, attackerar, använder en förmåga eller blir anfallen.</div></div></div>
+      <div class="item"><div><b>Utrustning</b><div class="d">Fiender kan släppa utrustning och vissa uppdrag ger utrustning som belöning. Handlare säljer vanlig och ovanlig utrustning för din klass. Tryck B och sedan "Ta på" för att använda den, och C för att se vad du har på dig. Kvaliteter från sämst till bäst: grå, vit, grön, blå, lila, orange. Lila och orange går inte att köpa – de måste hittas.</div></div></div>
       <div class="item"><div><b>Talanger</b><div class="d">Från nivå 10 får du talangpoäng (tryck N) som gör dina förmågor eller din hjälte starkare.</div></div></div>
       <div class="item"><div><b>Elitfiender</b><div class="d">Bossar och elitfiender gör attacker med en röd cirkel. Spring ut ur cirkeln innan den fylls.</div></div></div>
       <div class="item"><div><b>Sparning</b><div class="d">Spelet sparas automatiskt${cloud?" i ditt konto och":""} i webbläsaren.</div></div></div>
-      <div class="item"><div><b>Övrigt</b><div class="d">C karaktär, B väska, L uppdrag, Esc stänger fönster. Smeden förbättrar vapnet med malm, alkemisten gör drycker av örter.</div></div><button class="btn" data-act="newchar">Byt karaktär</button></div></div>`;
+      <div class="item"><div><b>Meny och tangenter</b><div class="d">Esc stänger öppna fönster, avbryter en formel eller tar bort målet – och öppnar Menyn när inget annat finns att stänga. I Menyn finns Tangentbindningar där du ser och byter alla tangenter.</div></div></div>
+      <div class="item"><div><b>Formelbok</b><div class="d">Tryck P. Där ser du alla din klass förmågor och vad de gör, och väljer vilken knapp (1–0) varje formel ska ligga på.</div></div></div>
+      <div class="item"><div><b>Attackkraft och formelkraft</b><div class="d">Attackkraft ökar skadan från vapen, pilar och fysiska förmågor. Formelkraft ökar skada och helning från formler (eld, is, helig, natur, skugga, arkan). Utrustning kan ge den ena, den andra eller båda.</div></div></div>
+      <div class="item"><div><b>Tillverkning</b><div class="d">Tryck K. Med örter brygger du drycker och elixir (Alkemi), med malm smider du utrustning för din klass (Smide). Högre Örtplockning och Gruvdrift låser upp bättre recept.</div></div></div>
+      <div class="item"><div><b>Övrigt</b><div class="d">Smeden kan också förbättra ditt vapen med malm, och alkemisten i byn kan brygga drycker åt dig.</div></div><button class="btn" data-act="newchar">Byt karaktär</button></div></div>`;
   } else if(panelKind==="npc"){
     const n = NPCS.find(x=>x.id===panelArg);
     h += `<h2>${n.name}</h2><div class="muted">&lt;${n.role}&gt;</div>`;
     const mine = QUESTS.filter(q=>q.npc===n.id);
     const ready = QUESTS.filter(q=>qTurnInNpc(q)===n.id && qReady(q)), avail = mine.filter(qAvailable), active = mine.filter(q=>S.quests[q.id]?.state==="active"&&!qReady(q)), soon = mine.filter(qSoon);
     if(ready.length||avail.length||active.length||soon.length){ h += `<h3>Uppdrag</h3><div class="list">`;
-      ready.forEach(q=>{ h += `<div class="item"><div><b style="color:var(--hp)">${esc(q.name)}</b><div class="d">${q.to&&q.npc!==n.id?`${esc(npcName(q.npc))} skickade dig hit. `:"Bra jobbat! "}Belöning: ${qXP(q)} XP, ${qGold(q)} guld${q.items?", "+Object.entries(q.items).map(([k,v])=>`${v} ${ITEMS[k].name}`).join(", "):""}.</div></div><button class="btn pri" data-act="turnin" data-id="${q.id}">Lämna in</button></div>`; });
-      avail.forEach(q=>{ const gray = qGray(q); h += `<div class="item"><div><b style="color:${gray?"var(--mute)":"var(--coin)"}">${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl}${gray?" · för lätt, ger mindre XP":""}</span><div class="d">${esc(q.text)}</div><div class="d">Belöning: ${qXP(q)} XP, ${qGold(q)} guld</div></div><button class="btn pri" data-act="accept" data-id="${q.id}">Acceptera</button></div>`; });
+      ready.forEach(q=>{ h += `<div class="item"><div><b style="color:var(--hp)">${esc(q.name)}</b><div class="d">${q.to&&q.npc!==n.id?`${esc(npcName(q.npc))} skickade dig hit. `:"Bra jobbat! "}Belöning: ${qXP(q)} XP, ${qGold(q)} guld${questGearQ(q)>=0?`, ${QUAL[questGearQ(q)].name.toLowerCase()} utrustning`:""}${q.items?", "+Object.entries(q.items).map(([k,v])=>`${v} ${ITEMS[k].name}`).join(", "):""}.</div></div><button class="btn pri" data-act="turnin" data-id="${q.id}">Lämna in</button></div>`; });
+      avail.forEach(q=>{ const gray = qGray(q); h += `<div class="item"><div><b style="color:${gray?"var(--mute)":"var(--coin)"}">${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl}${gray?" · för lätt, ger mindre XP":""}</span><div class="d">${esc(q.text)}</div><div class="d">Belöning: ${qXP(q)} XP, ${qGold(q)} guld${questGearQ(q)>=0?`, <span style="color:${QUAL[questGearQ(q)].color}">${QUAL[questGearQ(q)].name.toLowerCase()} utrustning</span>`:""}</div></div><button class="btn pri" data-act="accept" data-id="${q.id}">Acceptera</button></div>`; });
       active.forEach(q=>{ h += `<div class="item"><div><b>${esc(q.name)}</b><div class="d">${q.obj.map((o,i)=>`${esc(objName(o))}: ${qProg(q,i)}/${o[2]}`).join(" · ")}</div></div></div>`; });
       soon.forEach(q=>{ h += `<div class="item"><div><b style="color:var(--bad)">${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl}</span><div class="d">Du är för låg nivå. Kom tillbaka när du är nivå ${q.lvl}.</div></div><button class="btn" disabled>Acceptera</button></div>`; });
       h += `</div>`; }
@@ -2397,8 +2760,9 @@ function renderPanel(){
     }
     if(n.shop){
       h += `<h3>Köp</h3><div class="list">${SHOP.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} guld</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Köp</button></div>`).join("")}</div>`;
-      const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0);
+      const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0) + S.gear.filter(g=>g.q===0).reduce((a,g)=>a+gearSell(g),0);
       h += `<h3>Sälj</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sälj allt skräp (${junk} guld)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sälj 1 (${ITEMS[k].sell} guld)</button></div>`).join("") || `<div class="muted">Inget att sälja.</div>`}</div>`;
+      h += vendorGearHTML(n);
     }
     if(n.smith){ const c = smithCost(S.weapon);
       h += `<h3>Smedja</h3><div class="item"><div style="display:flex;align-items:center">${wIco(WICON[S.cls],40)}<div><b>${WEAPON_NAMES[S.cls]} +${S.weapon}</b><div class="d">${c ? `Förbättra till +${S.weapon+1} (mer skada): ${c.n} ${ITEMS[c.ore].name} och ${c.gold} guld. Du har ${S.bag[c.ore]||0} ${ITEMS[c.ore].name.toLowerCase()}.` : "Ditt vapen är fullt förbättrat."}</div></div></div>${c?`<button class="btn pri" data-act="upgrade" ${((S.bag[c.ore]||0)>=c.n && S.gold>=c.gold)?"":"disabled"}>Förbättra</button>`:""}</div>`; }
@@ -2413,20 +2777,39 @@ function renderPanel(){
   } else if(panelKind==="confirmnew"){
     h += `<h2>Ny karaktär?</h2><p class="muted">${esc(S.name)} (nivå ${S.level}) ersätts av en ny hjälte. Det går inte att ångra.</p><div class="row"><button class="btn" data-act="close">Avbryt</button><button class="btn pri" data-act="reallynew">Skapa ny karaktär</button></div>`;
   }
+  if(panelKind==="menu") h += menuHTML();
+  else if(panelKind==="keys") h += keysHTML();
+  else if(panelKind==="spells") h += spellsHTML();
+  else if(panelKind==="craft") h += craftHTML();
   el.innerHTML = h;
   if(panelKind==="map"){ el.style.width = "min(1100px, calc(100vw - 24px))"; drawWorldMap($("wmap")); } else el.style.width = "";
 }
+$("panel").addEventListener("change", e=>{ const s = e.target.closest("select[data-act=bind]"); if(!s) return; setBarSlot(s.dataset.bar, s.dataset.id, +s.value); renderPanel(); });
 $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
+  if(a==="bind") return;
+  if(a==="open"){ openPanel(k); return; }
+  if(a==="rest"){ closePanel(); toggleRest(); return; }
+  if(a==="rebind"){ startRebind(k); return; }
+  if(a==="kbreset"){ KB = Object.assign({}, KB_DEFAULT); saveKB(); buildHotbar(); }
+  if(a==="spelltab") spellTab = k;
+  if(a==="crafttab") craftTab = k;
+  if(a==="alch") doAlch(+b.dataset.i);
+  if(a==="smith") doSmith(k, b.dataset.s);
   if(a==="accept") acceptQuest(id);
   if(a==="turnin") turnIn(id);
-  if(a==="learn"){ const c = trainCost(id); if(S.gold>=c && !S.learned.includes(id)){ S.gold -= c; S.learned.push(id); log(`Du lärde dig ${AB[id].name}.`, "#9fd6e8"); burst(P.x,P.y,"#9fd6e8",16); buildHotbar(); save(true); } }
+  if(a==="learn"){ const c = trainCost(id); if(S.gold>=c && !S.learned.includes(id)){ S.gold -= c; S.learned.push(id); autoPlace(id); log(`Du lärde dig ${AB[id].name}.`, "#9fd6e8"); burst(P.x,P.y,"#9fd6e8",16); buildHotbar(); save(true); } }
   if(a==="abandon"){ delete S.quests[id]; refreshTracker(); }
   if(a==="use") useItem(k);
   if(a==="buy"){ const p = +b.dataset.p; if(S.gold>=p){ S.gold -= p; addItem(k,1); } }
   if(a==="sell"){ S.gold += ITEMS[k].sell; removeItem(k,1); refreshTracker(); }
-  if(a==="selljunk"){ for(const kk of Object.keys(S.bag)) if(ITEMS[kk].kind==="junk"){ S.gold += ITEMS[kk].sell*S.bag[kk]; delete S.bag[kk]; } }
+  if(a==="selljunk"){ for(const kk of Object.keys(S.bag)) if(ITEMS[kk].kind==="junk"){ S.gold += ITEMS[kk].sell*S.bag[kk]; delete S.bag[kk]; } for(const g of S.gear.filter(g=>g.q===0)) S.gold += gearSell(g); S.gear = S.gear.filter(g=>g.q!==0); }
+  if(a==="equip") equipGear(id);
+  if(a==="unequip") unequipGear(b.dataset.slot);
+  if(a==="sellgear"){ const i = S.gear.findIndex(g=>g.id===id); if(i>=0){ S.gold += gearSell(S.gear[i]); log(`Du sålde ${S.gear[i].n} för ${gearSell(S.gear[i])} guld.`, "#e6bd5c"); S.gear.splice(i,1); } }
+  if(a==="buygear"){ const n = NPCS.find(x=>x.id===panelArg), it = n && vendorStock(n).find(g=>g.id===id);
+    if(it){ const p = gearPrice(it); if(S.gold < p) err("Inte tillräckligt med guld"); else if(S.gear.length >= GEAR_MAX) err("Väskan är full"); else { S.gold -= p; it.id = newId(); gainGear(it, "Du köpte"); save(); } } }
   if(a==="upgrade"){ const c = smithCost(S.weapon); if(c && (S.bag[c.ore]||0)>=c.n && S.gold>=c.gold){ removeItem(c.ore, c.n); S.gold -= c.gold; S.weapon++; log(`Ditt vapen är nu +${S.weapon}.`, "#e6bd5c"); burst(P.x,P.y,"#ffd36b",16); save(true); } }
   if(a==="craft"){ const r = RECIPES[+b.dataset.i]; for(const [kk,v] of Object.entries(r.need)) removeItem(kk, v); addItem(r.out, r.n); log(`Du bryggde ${ITEMS[r.out].name}.`, "#9cf07a"); refreshTracker(); }
   if(a==="tal"){ const t = TALENTS[S.cls].find(x=>x.id===id); S.talents[id] = (S.talents[id]||0)+1; recompute(false); buildHotbar(); log(`Talang: ${t.name} ${S.talents[id]}/${t.max}`, "#e6bd5c"); save(); }
@@ -2453,17 +2836,30 @@ function renderCharList(){
   $("charcount").textContent = `${chars.length} av ${MAX_CHARS} karaktärer`;
   $("newcharbtn").disabled = chars.length >= MAX_CHARS; $("newcharbtn").title = chars.length >= MAX_CHARS ? "Du har redan 5 karaktärer. Radera en för att skapa en ny." : "";
   $("playbtn").disabled = !selChar;
+  drawCharPreviews(0);
+}
+// draw the little character portraits; retries only redraw the canvases (never rebuild the list, so clicks aren't lost)
+function drawCharPreviews(tries){
   let missing = false;
   document.querySelectorAll("[data-pv]").forEach(cv=>{ const c = chars.find(x=>x.id===cv.dataset.pv), g = cv.getContext("2d"); g.clearRect(0,0,64,64);
     const [sx,sy] = raceScale(c.race); if(!drawLPC(g, raceLook(`p_${c.cls}_${c.race}`, c.cls, c.race), 32, 62, {anim:"walk", frame:0, dir:2}, sx, sy)) missing = true; });
-  if(missing){ clearTimeout(renderCharList._t); renderCharList._t = setTimeout(()=>{ if(!running && !$("selbox").hidden) renderCharList(); }, 300); }
+  clearTimeout(drawCharPreviews._t);
+  if(missing && tries < 20) drawCharPreviews._t = setTimeout(()=>{ if(!running && !$("selbox").hidden) drawCharPreviews(tries+1); }, 300);
 }
 $("charlist").addEventListener("click", e=>{
   const d = e.target.closest("[data-del]");
   if(d){ const id = d.dataset.del; if(delArm === id){ chars = chars.filter(c=>c.id!==id); delArm = null; storeChars(true); if(!chars.length){ showNew(false); return; } } else delArm = id; renderCharList(); return; }
-  const c = e.target.closest("[data-cid]"); if(c){ selChar = c.dataset.cid; delArm = null; renderCharList(); }
+  const c = e.target.closest("[data-cid]"); if(!c) return;
+  const id = c.dataset.cid, now = performance.now();
+  // double click = two clicks on the same character within 450 ms (works even though the list is redrawn)
+  if(lastCharClick.id === id && now - lastCharClick.t < 600){ lastCharClick = {id:null, t:0}; const ch = chars.find(x=>x.id===id); if(ch && !running) startGame(ch); return; }
+  lastCharClick = {id, t:now};
+  selChar = id; if(delArm){ delArm = null; renderCharList(); return; }
+  document.querySelectorAll("#charlist [data-cid]").forEach(el=>el.classList.toggle("sel", el.dataset.cid===id)); $("playbtn").disabled = false;
 });
-$("charlist").addEventListener("dblclick", e=>{ const c = e.target.closest("[data-cid]"); if(c && !e.target.closest("[data-del]")) startGame(chars.find(x=>x.id===c.dataset.cid)); });
+let lastCharClick = {id:null, t:0};
+$("charlist").addEventListener("dblclick", e=>{ if(e.target.closest("[data-del]")) return; const c = e.target.closest("[data-cid]"); if(!c) return; const ch = chars.find(x=>x.id===c.dataset.cid); if(ch && !running) startGame(ch); });
+$("charlist").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const c = e.target.closest("[data-cid]"); if(c){ const ch = chars.find(x=>x.id===c.dataset.cid); if(ch) startGame(ch); } } });
 $("playbtn").addEventListener("click", ()=>{ const c = chars.find(x=>x.id===selChar); if(c) startGame(c); });
 $("newcharbtn").addEventListener("click", ()=>{ if(chars.length < MAX_CHARS) showNew(true); });
 $("backbtn").addEventListener("click", showSelect);
@@ -2488,10 +2884,10 @@ function startGame(sv, fresh){
   S = Object.assign(newSave(sv.name, sv.race, sv.cls), sv); if(!S.id){ S.id = newId(); }
   S.skills = Object.assign({mining:1, herb:1}, sv.skills||{});
   if(!Array.isArray(sv.learned)) S.learned = allBarIds().filter(id=>AB[id].lvl<=S.level && AB[id].lvl<=16);
-  S.learned = S.learned.filter(id=>AB[id]);
+  S.learned = S.learned.filter(id=>AB[id]); ensureBars();
   spawnAll();
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
-  S.qbag = S.qbag || {};
+  S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {};
   const home = HUBS[RACE_HUB[S.race]];
   P = {x:home.x*TILE+16, y:(home.y+2)*TILE+16, r:11, hp:1, maxHp:0, mana:0, maxMana:0, rage:0, focus:100, energy:100, cp:0, form:null, target:null, casting:null,
     gcd:0, cds:{}, buffs:{}, hots:[], shield:0, shieldT:0, autoT:0, combatT:0, potCd:0, fx:1, moving:false, dash:null, leap:null, dead:false};
@@ -2504,21 +2900,26 @@ function startGame(sv, fresh){
 }
 
 // ======================= INPUT =======================
+const ARROWS = {arrowup:"up", arrowdown:"down", arrowleft:"left", arrowright:"right"};
+function moveDir(k){ if(ARROWS[k]) return ARROWS[k]; const a = kbAction(k); return a==="up"||a==="down"||a==="left"||a==="right" ? a : null; }
 addEventListener("keydown", e=>{
-  if(!running || e.target.tagName==="INPUT") return;
+  if(!running || e.target.tagName==="INPUT" || e.target.tagName==="SELECT") return;
   const k = e.key.toLowerCase();
-  if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){ keys.add(k); e.preventDefault(); return; }
+  if(rebinding){ e.preventDefault(); if(!["shift","control","alt","meta"].includes(k)) finishRebind(k); return; }
+  const dir = moveDir(k); if(dir){ keys.add(dir); e.preventDefault(); return; }
   if(e.repeat) return;
-  if(k.length===1 && k>="0" && k<="9"){ tryUse(currentBar()[k==="0"?9:+k-1]); return; }
-  if(k==="tab"){ e.preventDefault(); cycleTarget(); return; }
-  if(k==="t"){ startAttack(); return; }
-  if(k==="e") return interact();
-  if(k==="q") return usePotion("hp");
-  if(k==="r") return usePotion("mana");
-  const pm = {c:"char", b:"bag", n:"talents", l:"quests", h:"help", m:"map"}; if(pm[k]) return openPanel(pm[k]);
-  if(k==="escape"){ if(panelKind) closePanel(); else if(P.casting) cancelCast(); else setTarget(null); }
+  if(k==="escape"){ if(panelKind) closePanel(); else if(P.casting) cancelCast(); else if(P.target) setTarget(null); else openPanel("menu"); return; }
+  const a = kbAction(k); if(!a) return;
+  if(a.startsWith("bar")){ const id = currentBar()[+a.slice(3)-1]; if(id) tryUse(id); return; }
+  if(a==="target"){ e.preventDefault(); cycleTarget(); return; }
+  if(a==="attack") return startAttack();
+  if(a==="interact") return interact();
+  if(a==="potHp") return usePotion("hp");
+  if(a==="potMana") return usePotion("mana");
+  if(a==="rest") return toggleRest();
+  const pm = {char:"char", bag:"bag", talents:"talents", quests:"quests", info:"help", map:"map", spells:"spells", craft:"craft"}; if(pm[a]){ e.preventDefault(); return openPanel(pm[a]); }
 });
-addEventListener("keyup", e=>keys.delete(e.key.toLowerCase()));
+addEventListener("keyup", e=>{ const d = moveDir(e.key.toLowerCase()); if(d) keys.delete(d); });
 addEventListener("blur", ()=>keys.clear());
 $("menu").addEventListener("click", e=>{ const b = e.target.closest("[data-p]"); if(b) openPanel(b.dataset.p); });
 $("revive").addEventListener("click", revive);
@@ -2541,7 +2942,7 @@ cv.addEventListener("pointerdown", e=>{
 });
 // touch joystick
 const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
-if(isTouch){ $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
+if(isTouch){ $("menu").hidden = false; $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
 (function(){ const j = $("joy"), k = j.querySelector("i"); let id = null;
   const mv = e=>{ const r = j.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const l = Math.hypot(dx,dy), mx = 45; if(l > mx){ dx = dx/l*mx; dy = dy/l*mx; } joy.x = dx/mx; joy.y = dy/mx; k.style.transform = `translate(${dx}px,${dy}px)`; };
   j.addEventListener("pointerdown", e=>{ id = e.pointerId; j.setPointerCapture(id); mv(e); });
@@ -2557,7 +2958,7 @@ $("atkbtn").addEventListener("click", ()=>startAttack());
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?Math.round(P.x):null, y:P?Math.round(P.y):null, t:Date.now()}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?Math.round(P.x):null, y:P?Math.round(P.y):null, t:Date.now()}; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
