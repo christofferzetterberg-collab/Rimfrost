@@ -574,7 +574,7 @@ const ITEMS = {
   fang:{name:"Vargtand", sell:2, kind:"junk"}, foxpelt:{name:"Rävskinn", sell:2, kind:"junk"}, jackalpelt:{name:"Schakalskinn", sell:2, kind:"junk"},
   harepelt:{name:"Harskinn", sell:1, kind:"junk"}, deerhide:{name:"Hjortskinn", sell:2, kind:"junk"}, antler:{name:"Hjorthorn", sell:4, kind:"junk"},
   bearfur:{name:"Björnfäll", sell:5, kind:"junk"}, stinger:{name:"Skorpiongadd", sell:2, kind:"junk"}, thornspike:{name:"Törntagg", sell:1, kind:"junk"},
-  glowdust:{name:"Irrblossdamm", sell:2, kind:"junk"}, candle:{name:"Koboldljus", sell:2, kind:"junk"}, shell:{name:"Stenbaggsskal", sell:2, kind:"junk"}, rattail:{name:"Råttsvans", sell:1, kind:"junk"}, heart:{name:"Jättens frusna hjärta", sell:300, kind:"junk"}
+  glowdust:{name:"Irrblossdamm", sell:2, kind:"junk"}, candle:{name:"Koboldljus", sell:2, kind:"junk"}, shell:{name:"Stenbaggsskal", sell:2, kind:"junk"}, rattail:{name:"Råttsvans", sell:1, kind:"junk"}, goblinear:{name:"Goblinöra", sell:6, kind:"junk"}, scale:{name:"Drakfjäll", sell:20, kind:"junk"}, stonewing:{name:"Stenvinge", sell:14, kind:"junk"}, heart:{name:"Jättens frusna hjärta", sell:300, kind:"junk"}
 };
 
 const NODES = {
@@ -706,10 +706,16 @@ const MOBS = {
   hare:{name:"Hare", lv:[1,2], color:"#a07850", r:7, sp:110, shape:"critter", passive:true, drop:"pelt"},
   deer:{name:"Kronhjort", lv:[3,6], color:"#7a5a40", r:13, sp:100, shape:"critter", passive:true, drop:"pelt"},
   // shared
+  orcwar:{name:"Järnklanskrigare", lv:[11,14], color:"#6a8a3a", r:12, sp:92, shape:"humanoid", drop:"ring"},
   troll:{name:"Bergstroll", lv:[10,13], color:"#4f7d63", r:14, sp:88, shape:"troll", drop:"tooth"},
   golem:{name:"Stengolem", lv:[12,15], color:"#878275", r:15, sp:70, shape:"golem", drop:"rune"},
   ghoul:{name:"Träskghoul", lv:[15,18], color:"#62744a", r:12, sp:100, shape:"ghoul", drop:"cloth"},
   wisp:{name:"Dimvätte", lv:[16,19], color:"#b4d6e4", glow:"160,210,230", r:10, sp:90, shape:"wisp", drop:"dust", ranged:220},
+  goblin:{name:"Träskgoblin", lv:[15,18], color:"#7a8a3a", r:10, sp:100, shape:"humanoid", drop:"goblinear"},
+  goblinshaman:{name:"Goblinschaman", lv:[16,19], color:"#a77bff", r:10, sp:92, shape:"humanoid", drop:"goblinear", ranged:200},
+  dragon:{name:"Träskdrake", lv:[19,20], color:"#3a8a4a", r:18, sp:88, shape:"troll", elite:2, drop:"scale",
+    special:{name:"Giftande", every:10, r:90, windup:1.4, mult:1.8}},
+  gargoyle:{name:"Askgargoyl", lv:[21,24], color:"#6a6a70", r:12, sp:100, shape:"humanoid", drop:"stonewing"},
   boss:{name:"Draugkungen", lv:[20,20], color:"#7cb3c4", r:20, sp:85, shape:"draug", elite:6, boss:true, drop:"crown",
     special:{name:"Gravslag", every:8, r:125, windup:1.6, mult:2.6}},
   hound:{name:"Askhund", lv:[20,23], color:"#8a3a2a", r:12, sp:105, shape:"wolf", drop:"ember"},
@@ -728,7 +734,7 @@ const LOOT = {
   lynx:[["foxpelt",0.4]], thorn:[["thornspike",0.4]], wisplight:[["glowdust",0.35]], shadewolf:[["pelt",0.35],["fang",0.2]], lostdruid:[["cloth",0.25]],
   rocksvin:[["tusk",0.35]], kobold:[["candle",0.3]], beetle:[["shell",0.4]], icebear:[["bearfur",0.4]], frostkobold:[["candle",0.3]],
   jackal:[["jackalpelt",0.4]], bristle:[["tusk",0.35]], scorpion:[["stinger",0.4]], raider:[["ring",0.25]], sandgolem:[["rune",0.3]],
-  troll:[["tooth",0.35]], golem:[["rune",0.35]], ghoul:[["cloth",0.35]], wisp:[["dust",0.35]], hound:[["ember",0.35]], elemental:[["cinder",0.35]],
+  orcwar:[["ring",0.2],["tooth",0.15]], goblin:[["goblinear",0.4],["ring",0.1]], goblinshaman:[["goblinear",0.4],["dust",0.15]], dragon:[["scale",0.9],["ring",0.4]], gargoyle:[["stonewing",0.35],["rune",0.15]], troll:[["tooth",0.35]], golem:[["rune",0.35]], ghoul:[["cloth",0.35]], wisp:[["dust",0.35]], hound:[["ember",0.35]], elemental:[["cinder",0.35]],
   frostwolf:[["fur",0.4]], icegolem:[["shard",0.35]], rimtroll:[["tooth",0.35]], hare:[["harepelt",0.35]], rat:[["rattail",0.35]], plaguewolf:[["pelt",0.35],["fang",0.15]], shambler:[["cloth",0.3]], robber:[["ring",0.25]], boneguard:[["rune",0.25]], plaguebear:[["bearfur",0.35]], deer:[["deerhide",0.35],["antler",0.15]]
 };
 // animals, spirits and golems carry no gold
@@ -745,9 +751,9 @@ const SPAWNS = [
   ["jackal",12,"rod"],["bristle",10,"rod"],["scorpion",9,"rod"],
   ["raider",11,"damm"],["sandgolem",9,"damm"],
   ["hare",5,"frostang"],["hare",5,"silver"],["hare",4,"koppar"],["hare",4,"rod"],["deer",4,"frostang"],["deer",5,"silver"],["deer",4,"skugg"],["deer",4,"manskog"],
-  ["troll",16,"jarn"],["golem",14,"jarn"],
-  ["ghoul",14,"dimma"],["wisp",10,"dimma"],
-  ["hound",14,"aska"],["elemental",10,"aska"],
+  ["troll",14,"jarn"],["golem",12,"jarn"],["orcwar",10,"jarn"],
+  ["ghoul",10,"dimma"],["wisp",7,"dimma"],["goblin",9,"dimma"],["goblinshaman",5,"dimma"],["dragon",3,"dimma"],
+  ["hound",11,"aska"],["elemental",8,"aska"],["gargoyle",10,"aska"],
   ["frostwolf",12,"frost"],["icegolem",12,"frost"],["rimtroll",12,"frost"],
   ["rat",12,"gravmark"],["plaguewolf",9,"gravmark"],["shambler",10,"gravmark"],["robber",10,"benfalt"],["boneguard",10,"benfalt"],["plaguebear",7,"benfalt"]
 ];
@@ -1591,8 +1597,8 @@ function updMob(m, dt){
 
 // ---- effects
 function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, big}); }
-function burst(x, y, color, n){ for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
-function ring(x, y, r, color){ for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; parts.push({x:x+Math.cos(a)*r*0.3, y:y+Math.sin(a)*r*0.3, vx:Math.cos(a)*r*1.6, vy:Math.sin(a)*r*1.6, life:0.42, max:0.42, color, size:3}); } }
+function burst(x, y, color, n){ const el = fxEl(color); if(el) sfx("explo", el, x, y, 30+n*2.2, 0.55); for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
+function ring(x, y, r, color){ const el = color!=="#ff5a40" && fxEl(color); if(el) sfx("ring", el, x, y, r*2.5, 0.75); for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; parts.push({x:x+Math.cos(a)*r*0.3, y:y+Math.sin(a)*r*0.3, vx:Math.cos(a)*r*1.6, vy:Math.sin(a)*r*1.6, life:0.42, max:0.42, color, size:3}); } }
 function slash(t){ if(!t) return; for(let i=0;i<8;i++){ const a = -0.8 + i*0.2; parts.push({x:t.x+Math.cos(a)*14, y:t.y-12+Math.sin(a)*14, vx:Math.cos(a+1.5)*60, vy:Math.sin(a+1.5)*60, life:0.22, max:0.22, color:"#ffffff", size:3}); } P.swing = 0.2; }
 </script>
 <script>
@@ -1735,6 +1741,7 @@ function drawBeast(c, x, y, form, fx){
 }
 function drawMob(c, m){
   if(BOSS_LOOK[m.type] && drawBoss(c, m)) return;
+  if(ORC_LOOK[m.type] && drawOrc(c, m)) return;
   const CL = CREATURE_LOOK[m.type]; if(CL){ const anim = m.swing>0 ? "run" : m.walk ? (m.state==="chase"||m.state==="return" ? "run" : "walk") : "idle";
     if(drawCreature(c, CL, m.x, m.y, anim, m.fx, m.ph, m.swing>0 ? m.swing*30 : 0)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 18, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.3)"; c.beginPath(); c.arc(m.x, m.y-14, 16, 0, 7); c.fill(); } return; } }
   const L = mobLook(m); if(L){ const sc = L.scale||1; if(drawLPC(c, L, m.x, m.y, lpcState(m, m.walk), sc, sc)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 14*sc, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.35)"; c.beginPath(); c.arc(m.x, m.y-26*sc, 16*sc, 0, 7); c.fill(); } return; } }
@@ -1839,12 +1846,13 @@ function render(){
     if(p.kind==="arrow"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang||0); ctx.strokeStyle = "#d8cfb4"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(4,0); ctx.stroke(); ctx.fillStyle = p.color; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(2,-3); ctx.lineTo(2,3); ctx.fill(); ctx.restore(); ctx.lineWidth = 1; }
     else { const g = ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,p.size*2.2); g.addColorStop(0,"#fff"); g.addColorStop(0.35,p.color); g.addColorStop(1,"rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*2.2,0,7); ctx.fill(); }
   }
+  drawSfx(ctx, Math.min(0.05, (performance.now() - (render._lt||performance.now()))/1000));
   drawBossFx(ctx, Math.min(0.05, (performance.now() - (render._lt||performance.now()))/1000)); render._lt = performance.now();
   for(const p of parts){ ctx.globalAlpha = Math.max(0, p.life/p.max); ctx.fillStyle = p.color; ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size); } ctx.globalAlpha = 1;
   // name plates
   ctx.textAlign = "center"; ctx.font = "700 11px 'Alegreya Sans', sans-serif";
   for(const m of mobs){ if(m.dead || !inView(m)) continue; const near = dist(m,P) < 230 || m===P.target; if(!near) continue;
-    const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
+    const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : ORC_LOOK[m.type] ? sideTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
     ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.elite?" Elit":""})`, m.x, top-6);
     if(m===P.autoTarget){ const sy = top-26 + Math.sin(time*6)*2; ctx.strokeStyle = "#ff5a4f"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(m.x-7, sy-7); ctx.lineTo(m.x+7, sy+7); ctx.moveTo(m.x+7, sy-7); ctx.lineTo(m.x-7, sy+7); ctx.stroke(); ctx.lineWidth = 1; ctx.lineCap = "butt"; } }
@@ -1949,7 +1957,7 @@ const OUTFITS = {
   hunter:["BEHIND_quiver","FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_shirt_white","TORSO_leather_armor_torso","TORSO_leather_armor_shoulders","TORSO_leather_armor_bracers","BELT_leather","HEAD_leather_armor_hat"],
   mage:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_robe_shirt_brown","BELT_rope","HEAD_robe_hood"],
   priest:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_chain_armor_torso","TORSO_chain_armor_jacket_purple","BELT_rope","HEAD_chain_armor_hood"],
-  druid:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_robe_shirt_brown","TORSO_leather_armor_shoulders","BELT_rope","HEAD_hair_blonde"],
+  druid:["FEET_shoes_brown","LEGS_robe_skirt#3f5a26","TORSO_robe_shirt_brown#4f7a2c","TORSO_leather_armor_shoulders#6b4a24","TORSO_leather_armor_bracers#6b4a24","BELT_rope","HEAD_robe_hood#355a22"],
   guard:["FEET_plate_armor_shoes","LEGS_pants_greenish","TORSO_chain_armor_torso","TORSO_chain_armor_jacket_purple","HEAD_chain_armor_helmet"],
   merchant:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_shirt_white","BELT_leather","HEAD_hair_blonde"],
   smith:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_torso","HANDS_plate_armor_gloves","BELT_leather"],
@@ -1971,7 +1979,7 @@ const SKINS = {
 const SKEL_TINT = {undead:[0.86,0.94,0.82], ghoul:[0.72,0.92,0.62], wraith:[0.75,0.7,1.0], frost:[0.8,0.92,1.05]};
 const IMGS = {};
 function sImg(p){ if(!IMGS[p]){ const i = new Image(); i.src = p; IMGS[p] = i; } return IMGS[p]; }
-function layerPath(anim, name){ const d = ANIMS[anim].dir, f = LPC_FILES[d] || {};
+function layerPath(anim, name){ name = name.split("#")[0]; const d = ANIMS[anim].dir, f = LPC_FILES[d] || {};
   if((f.characters||[]).includes(name)) return `assets/characters/${d}/${name}.png`;
   if((f["charactersV2/64x64"]||[]).includes(name)) return `assets/charactersV2/64x64/${d}/${name}.png`; return null; }
 function recolor(im, tint, skel){
@@ -1984,6 +1992,10 @@ function recolor(im, tint, skel){
       if(bi >= 0){ a[i] = ramp[bi][0]; a[i+1] = ramp[bi][1]; a[i+2] = ramp[bi][2]; } }
     g.putImageData(d,0,0); return c; }catch(_){ return im; }
 }
+// dye a clothing layer: keep its shading, replace hue/saturation
+function dyeLayer(im, col){ try{ const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation = "color"; g.fillStyle = col; g.fillRect(0,0,c.width,c.height);
+  g.globalCompositeOperation = "destination-in"; g.drawImage(im,0,0); return c; }catch(_){ return im; } }
 const SHEETS_LPC = {};
 function lpcSheet(look, anim){
   const key = look.key + "|" + anim; if(key in SHEETS_LPC) return SHEETS_LPC[key];
@@ -1996,7 +2008,7 @@ function lpcSheet(look, anim){
   if(imgs.some(([,i])=>!i.complete)) return null;
   if(imgs.some(([,i])=>!i.naturalWidth)){ SHEETS_LPC[key] = null; return null; }
   const cv = document.createElement("canvas"); cv.width = imgs[0][1].naturalWidth; cv.height = imgs[0][1].naturalHeight; const g = cv.getContext("2d");
-  for(const [n,i] of imgs) g.drawImage(n===bodyName && look.tint ? recolor(i, look.tint, skel) : i, 0, 0);
+  for(const [n,i] of imgs) g.drawImage(n===bodyName && look.tint ? recolor(i, look.tint, skel) : n.includes("#") ? dyeLayer(i, "#"+n.split("#")[1]) : i, 0, 0);
   SHEETS_LPC[key] = cv; return cv;
 }
 function dirOf(dx, dy){ return Math.abs(dx) > Math.abs(dy) ? (dx<0?1:3) : (dy<0?0:2); }
@@ -2029,7 +2041,7 @@ function npcLook(n){ const outfit = n.trains || (n.shop?"merchant" : n.smith?"sm
   return raceLook(`n_${outfit}_${n.race||"human"}`, outfit, n.race||"human", {weapons:CASTER_W}); }
 const MOB_LOOK = {
   thief:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}}, bandit:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}},
-  raider:{outfit:"bandit", tint:"orc", weapons:{slash:["WEAPON_dagger"]}}, leader:{outfit:"chief", big:BIG_SWORD, scale:1.2},
+  leader:{outfit:"chief", big:BIG_SWORD, scale:1.2},
   kobold:{outfit:"bandit", tint:"kobold", scale:0.78, weapons:{slash:["WEAPON_dagger"]}}, frostkobold:{outfit:"bandit", tint:"frost", scale:0.8, weapons:{slash:["WEAPON_dagger"]}},
   snorre:{outfit:"chief", tint:"kobold", scale:1.0, big:BIG_SWORD}, lostdruid:{outfit:"druid", tint:"elf", cast:true},
   ghoul:{outfit:"bones", body:"skeleton", tint:"ghoul"}, morvel:{outfit:"wraith", body:"skeleton", tint:"wraith", scale:1.2, cast:true},
@@ -2122,6 +2134,58 @@ function drawBossFx(c, dt){
 }
 function drawBullet(c, p){ const B = BSHEET.bullet, sh = bossSheet("bullet"); if(!sh) return false; const f = Math.floor(time*12) % 5;
   c.save(); c.imageSmoothingEnabled = false; c.drawImage(sh, f*B.w, 0, B.w, B.h, p.x - B.w, p.y - B.h, B.w*2, B.h*2); c.restore(); return true; }
+// ---- side-view monster sheets (frames face right): rows [row, frames]
+const SIDE = {
+  orc:{f:"assets/charactersV2/Orc/orc.png", w:32, h:32, idle:[0,10], walk:[2,10], attack:[3,10], foot:1, tall:31},
+  goblin:{f:"assets/monsters/goblin.png", w:64, h:64, idle:[0,1], walk:[1,8], attack:[2,3], foot:16, tall:29},
+  gargoyle:{f:"assets/monsters/gargoyle.png", w:72, h:72, idle:[0,4], walk:[1,4], attack:[2,3], foot:23, tall:29, fly:12},
+  dragon:{f:"assets/monsters/dragon.png", w:80, h:80, idle:[0,4], walk:[1,4], attack:[2,3], foot:15, tall:45, fly:8}
+};
+const SIDE_LOOK = { raider:{c:"orc", s:1.55}, orcwar:{c:"orc", s:1.75, tint:["#3a4a1a",0.25]},
+  goblin:{c:"goblin", s:1.3}, goblinshaman:{c:"goblin", s:1.25, tint:["#4a2a7a",0.22]}, gargoyle:{c:"gargoyle", s:1.4}, dragon:{c:"dragon", s:1.55} };
+const ORC_LOOK = SIDE_LOOK;
+const OSHEETS = {};
+function sideSheet(c, tint){ const key = c + (tint ? tint.join() : ""); if(OSHEETS[key]) return OSHEETS[key];
+  const im = sImg(SIDE[c].f); if(!im.complete || !im.naturalWidth) return null;
+  if(!tint){ OSHEETS[key] = im; return im; }
+  const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; const g = cv.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = tint[1]; g.fillStyle = tint[0]; g.fillRect(0,0,cv.width,cv.height);
+  OSHEETS[key] = cv; return cv; }
+function sideTop(m){ const L = SIDE_LOOK[m.type], S = SIDE[L.c]; return m.y - (S.tall + (S.fly||0))*L.s - 4; }
+function drawOrc(c, m){
+  const L = SIDE_LOOK[m.type], S = SIDE[L.c], sh = sideSheet(L.c, L.tint); if(!sh) return false;
+  const since = (m.atkSpd||1.5) - m.atkT, adur = S.attack[1]*0.08, atk = m.atkT > 0 && since < adur, sc = L.s;
+  const [row, n] = atk ? S.attack : m.walk ? S.walk : S.idle;
+  const f = atk ? Math.min(n-1, Math.floor(since/adur*n)) : Math.floor((time + m.ph)*(m.walk ? 12 : 6)) % n;
+  const lift = S.fly ? S.fly + Math.sin(time*3 + m.ph)*2.5 : 0;
+  c.save(); c.translate(m.x, m.y); c.fillStyle = "rgba(0,0,0,.28)"; ell(c, 0, 0, (S.fly?7:9)*sc*(L.c==="dragon"?2:1), 3.5);
+  c.translate(0, -lift*sc); c.scale(m.fx < 0 ? -sc : sc, sc); c.imageSmoothingEnabled = false;
+  c.drawImage(sh, f*S.w, row*S.h, S.w, S.h, -S.w/2, -S.h+S.foot, S.w, S.h);
+  if(m.flash > 0){ c.globalAlpha = 0.4; c.globalCompositeOperation = "lighter"; c.drawImage(sh, f*S.w, row*S.h, S.w, S.h, -S.w/2, -S.h+S.foot, S.w, S.h); }
+  c.restore();
+  if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 14, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; }
+  return true; }
+// ---- sprite effects (CC0 volumetric particles), strips of 80px frames in assets/fx
+const FX_COL = {"#ff8a3a":"fire","#ffb347":"fire","#ff7a2e":"fire","#ff8a5a":"fire","#bfe9ff":"frost","#8fd8ff":"frost","#e8f4ff":"frost","#9fd6e8":"frost",
+  "#d38cff":"magic","#a77bff":"magic","#e6b3ff":"magic","#c9a3ff":"magic","#ffe37a":"holy","#fff2b0":"holy","#fff6d0":"holy","#ffd36b":"holy","#ffe9a0":"holy","#fff3c4":"holy",
+  "#9cf07a":"nature","#7fdc5a":"nature","#6a9a3a":"nature","#c8a070":"dust","#c89a68":"dust","#d9b48a":"dust","#a07a4a":"dust"};
+const ZONE_FX = {frost:"frost", fire:"fire", holy:"holy", nature:"nature", shadow:"magic", arcane:"magic"};
+function fxEl(color){ return FX_COL[(color||"").toLowerCase()] || null; }
+let sfxs = [];
+function sfx(kind, el, x, y, size, dur){ if(sfxs.length < 60) sfxs.push({kind, el, x, y, size, dur, t:0}); }
+function fxSheet(kind, el){ const im = sImg(`assets/fx/${kind}_${el}.png`); return im.complete && im.naturalWidth ? im : null; }
+function fxDraw(c, kind, el, x, y, size, prog, alpha){
+  const sh = fxSheet(kind, el); if(!sh) return; const n = Math.floor(sh.naturalWidth/80), f = Math.min(n-1, Math.floor(prog*n));
+  c.globalAlpha = alpha; c.globalCompositeOperation = el==="dust" ? "source-over" : "lighter";
+  const h = kind==="ring" ? size*0.62 : size;
+  c.drawImage(sh, f*80, 0, 80, 80, x - size/2, kind==="explo" ? y - size*0.82 : y - h/2, size, h); }
+function drawSfx(c, dt){
+  c.save(); c.imageSmoothingEnabled = true;
+  for(const z of zones){ const el = ZONE_FX[z.school]; if(!el) continue; const a = Math.min(1, z.left*2);
+    for(let i=0;i<7;i++){ const ang = i/6*Math.PI*2 + i, rr = i===6 ? 0 : z.r*0.55, ph = (time*0.9 + i*0.37) % 1;
+      fxDraw(c, "flat", el, z.x + Math.cos(ang)*rr, z.y + Math.sin(ang)*rr*0.7, z.r*1.0, ph, 0.75*a); } }
+  for(const e of sfxs){ e.t += dt; fxDraw(c, e.kind, e.el, e.x, e.y, e.size, e.t/e.dur, Math.min(1, (e.dur-e.t)*6)); }
+  sfxs = sfxs.filter(e=>e.t < e.dur); c.restore(); }
 const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
 </script>
 <script>
@@ -2547,6 +2611,5 @@ function boot(data){
 window.claude?.hot?.snapshot?.(()=>({save: running && S ? serialize() : null}));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 </script>
-
 </body>
 </html>
