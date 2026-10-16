@@ -1218,9 +1218,9 @@ function dot(m, key, total, dur, school, raw){
   m.dots.push({key, per:total/dur, left:dur, tick:1, school});
   engage(m);
 }
-function slow(m, pct, dur){ if(!m||m.dead) return; m.slowPct = Math.max(pct, m.slowT>0?m.slowPct:0); m.slowT = Math.max(m.slowT, dur); }
-function root(m, dur){ if(!m||m.dead||m.def.boss) return; m.rootT = Math.max(m.rootT, dur); }
-function stun(m, dur){ if(!m||m.dead) return; m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
+function slow(m, pct, dur){ if(!m||m.dead) return; engage(m); anchor(m); m.slowPct = Math.max(pct, m.slowT>0?m.slowPct:0); m.slowT = Math.max(m.slowT, dur); }
+function root(m, dur){ if(!m||m.dead||m.def.boss) return; engage(m); anchor(m); m.rootT = Math.max(m.rootT, dur); }
+function stun(m, dur){ if(!m||m.dead) return; engage(m); anchor(m); m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
 function aoe(x, y, r, fn){ mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,m.y-y)<r+m.r).forEach(fn); }
 function zone(x, y, r, dur, dmg, school, ab, slows){ zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
 function proj(t, color, size, onHit, kind, sp){ projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
@@ -1319,7 +1319,7 @@ function tryUse(id){
   if(P[type] < cost) return err(`Inte tillräckligt med ${RES_NAME[type].toLowerCase()}`);
   const ct = castTime(id);
   if(!a.offGcd) P.gcd = 1.0;
-  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; if(t) engage(t); }
+  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; }
   else { P[type] -= cost; finishAbility(id, t); }
 }
 function finishAbility(id, t){
@@ -1329,7 +1329,7 @@ function finishAbility(id, t){
   a.run(t);
   if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? "bow" : null) : "cast"); }
   if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
-  if(t) engage(t);
+  if(t) P.combatT = 6;
   if(t && P.target !== t) setTarget(t);
 }
 function cancelCast(why){ if(!P.casting) return; if(why && P.casting.kind==="spell") err(why); P.casting = null; }
@@ -1359,7 +1359,7 @@ function autoAttack(dt){
   if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
   if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
   else { hit(t, pow()*ai.mult, "phys", "auto"); if(ai.rage) addRes("rage", ai.rage); }
-  engage(t);
+  P.combatT = 6;
 }
 function usePotion(kind){
   if(P.dead) return;
@@ -1572,7 +1572,7 @@ function updMob(m, dt){
   } else if(m.state === "chase"){
     if(P.dead){ evade(m); return; }
     if(m.lx === undefined) anchor(m);
-    if(Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || (time - m.lastHit > 12 && dp > 380)){ evade(m); log(`${m.name} ger upp och återvänder.`, "#93a4ad"); return; }
+    if(time - m.lastHit > 8 && (Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || dp > 380)){ evade(m); log(`${m.name} ger upp och återvänder.`, "#93a4ad"); return; }
     P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
