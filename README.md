@@ -10,7 +10,8 @@ Ett 2D-rollspel i webbläsaren, inspirerat av World of Warcraft.
 
 - **W A S D** eller piltangenterna: gå
 - **1–9, 0**: förmågor
-- **Tab**: välj närmaste fiende
+- **Vänsterklick / Tab**: välj fiende
+- **Högerklick / T**: börja attackera
 - **E**: prata med personer, bryt malm, plocka örter
 - **Q / R**: läkedryck / manadryck
 - **M**: karta

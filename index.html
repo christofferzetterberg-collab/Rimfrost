@@ -135,6 +135,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .pick .sw{width:18px;height:18px;border-radius:50%;display:inline-block;vertical-align:-3px;margin-right:6px;border:1px solid rgba(255,255,255,.3)}
 #cname{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 12px;font-size:16px;font-family:var(--body);width:min(320px,100%)}
 #preview{display:block;width:120px;height:120px;margin:0 auto}
+.chars{display:flex;flex-direction:column;gap:8px}
+.char{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;text-align:left;color:var(--text);width:100%}
+.char.sel{border-color:var(--frost);box-shadow:0 0 0 1px var(--frost) inset;background:#18262e}
+.char canvas{width:56px;height:56px;flex:none;image-rendering:pixelated}
+.char .ci{flex:1;min-width:0}
+.char .ci b{font-size:17px}
+.char .ci div{font-size:13px;color:var(--mute)}
+.char .del{background:none;border:1px solid var(--line);color:var(--mute);border-radius:6px;padding:5px 9px;font-size:12px;flex:none}
+.char .del.confirm{border-color:var(--bad);color:var(--bad);font-weight:800}
 .abl{font-size:13px;color:var(--mute)}
 .abl b{color:var(--text)}
 
@@ -147,6 +156,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #joy{position:fixed;z-index:6;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);touch-action:none}
 #joy i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(159,214,232,.35)}
 #interact{position:fixed;z-index:6;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;background:rgba(21,28,34,.9);border:1px solid var(--coin);color:var(--coin);font-weight:800;font-size:13px}
+#atkbtn{position:fixed;z-index:6;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(224px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:rgba(21,28,34,.9);border:1px solid var(--bad);color:var(--bad);font-weight:800;font-size:12px}
 #tabbtn{position:fixed;z-index:6;right:max(96px,calc(env(safe-area-inset-right,0px) + 96px));bottom:calc(150px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:rgba(21,28,34,.9);border:1px solid var(--line);color:var(--text);font-weight:800;font-size:12px}
 @media (max-width:640px){
   .frame{width:160px;padding:4px 6px}
@@ -203,12 +213,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 <div id="joy" hidden><i></i></div>
 <button id="interact" hidden>E</button>
 <button id="tabbtn" hidden>Mål</button>
+<button id="atkbtn" hidden>Slå</button>
 
 <div id="create">
   <div class="wrap">
     <h1>Rimfrost</h1>
-    <div id="contbox" class="row" style="justify-content:center"></div>
+    <div id="selbox" class="list" style="gap:12px" hidden>
+      <h3 class="muted" style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Välj karaktär</h3>
+      <div id="charlist" class="chars"></div>
+      <div class="row" style="justify-content:center;gap:10px"><button class="btn pri" id="playbtn" style="font-size:17px;padding:10px 26px">Spela</button><button class="btn" id="newcharbtn">Skapa ny karaktär</button></div>
+      <div class="muted" id="charcount" style="text-align:center;font-size:13px"></div>
+    </div>
     <div id="newbox" class="list" style="gap:14px">
+      <div class="row"><button class="btn" id="backbtn" hidden>← Tillbaka</button></div>
       <canvas id="preview" width="120" height="120"></canvas>
       <div class="row" style="justify-content:center"><input id="cname" maxlength="16" placeholder="Namn på din hjälte" value="Christoffer"></div>
       <h3 class="muted" style="margin:6px 0 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Ras</h3>
@@ -228,7 +245,8 @@ const RACES = {
   human:{name:"Människa", skin:"#e2b48e", desc:"+10% erfarenhet (XP) från allt du gör.", hair:"#5b3a22"},
   orc:{name:"Orc", skin:"#6f9a4a", desc:"+10% skada med alla attacker och trollformler.", hair:"#1e1e1e"},
   elf:{name:"Alv", skin:"#efd8c8", desc:"+5% chans till kritisk träff och +10% mana.", hair:"#e7dca0"},
-  dwarf:{name:"Dvärg", skin:"#d9a07c", desc:"+15% maxhälsa och börjar med Gruvdrift 25.", hair:"#a2462a"}
+  dwarf:{name:"Dvärg", skin:"#d9a07c", desc:"+15% maxhälsa och börjar med Gruvdrift 25.", hair:"#a2462a"},
+  undead:{name:"Odöd", skin:"#b8c4a8", desc:"Återhämtar hälsa och mana 50% snabbare utanför strid.", hair:"#3a3a3a"}
 };
 
 const CLASSES = {
@@ -236,7 +254,8 @@ const CLASSES = {
   warrior:{name:"Warrior", color:"#b0763a", res:"rage", hp:1.25, armor:0.85},
   hunter:{name:"Hunter", color:"#5f8f3e", res:"focus", hp:1.05, armor:0.92},
   priest:{name:"Priest", color:"#ecebe2", res:"mana", hp:0.95, armor:1},
-  druid:{name:"Druid", color:"#b8742f", res:"mana", hp:1.05, armor:0.95}
+  druid:{name:"Druid", color:"#b8742f", res:"mana", hp:1.05, armor:0.95},
+  paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 const RES_COLOR = {mana:"var(--mana)", rage:"var(--rage)", focus:"var(--focus)", energy:"var(--energy)"};
 const RES_NAME = {mana:"Mana", rage:"Ilska", focus:"Fokus", energy:"Energi"};
@@ -386,6 +405,34 @@ const AB = {
   bloom:{name:"Livsblomning", lvl:22, cost:35, cd:20, range:0, school:"nature", icon:"bloom", tgt:"self",
     desc:()=>`Helar dig direkt med ${fmt(P.maxHp*0.4*(1+0.1*T("impRejuv")))} hälsa.`,
     run:()=>{healP(P.maxHp*0.4*(1+0.1*T("impRejuv")));burst(P.x,P.y,"#9cf07a",16);}},
+  // ---- Paladin
+  palstrike:{name:"Heligt hugg", lvl:1, cost:12, range:52, school:"holy", icon:"sword", tgt:"enemy",
+    desc:()=>`Ett hugg laddat med heligt ljus: ${fmt(pow()*1.5)} skada.`,
+    run:t=>{slash(t);hit(t,pow()*1.5,"holy","palstrike");}},
+  palheal:{name:"Ljusets helning", lvl:2, cost:25, cast:2.5, range:0, school:"holy", icon:"cross", tgt:"self",
+    desc:()=>`Helar dig med ${fmt(P.maxHp*0.4*(1+0.1*T("palHeal")))} hälsa.`,
+    run:()=>{healP(P.maxHp*0.4*(1+0.1*T("palHeal")));burst(P.x,P.y,"#ffe9a0",14);}},
+  hammer:{name:"Domens hammare", lvl:4, cost:20, cd:15, range:220, school:"holy", icon:"fist", tgt:"enemy",
+    desc:()=>`Kastar en lysande hammare: ${fmt(pow()*1.2)} skada och bedövar målet i 2 sek.`,
+    run:t=>proj(t,"#ffe37a",7,()=>{hit(t,pow()*1.2,"holy","hammer");stun(t,2);})},
+  holyshield:{name:"Helig sköld", lvl:6, cost:25, cd:20, range:0, school:"holy", icon:"shield", tgt:"self",
+    desc:()=>`Skölden lyser och absorberar ${fmt(P.maxHp*0.25)} skada i 15 sek.`,
+    run:()=>{P.shield=P.maxHp*0.25;P.shieldT=15;ring(P.x,P.y,30,"#ffe37a");}},
+  crusader:{name:"Korsfararslag", lvl:10, cost:20, cd:6, range:52, school:"holy", icon:"axe", tgt:"enemy",
+    desc:()=>`Ett kraftfullt slag: ${fmt(pow()*2.2)} skada.`,
+    run:t=>{slash(t);hit(t,pow()*2.2,"holy","crusader");}},
+  consecrate:{name:"Vigd mark", lvl:14, cost:35, cd:12, range:0, school:"holy", icon:"nova", tgt:"self",
+    desc:()=>`Välsignar marken runt dig i 6 sek: ${fmt(pow()*0.6)} skada per sekund på fiender inom 90.`,
+    run:()=>{zone(P.x,P.y,90,6,pow()*0.6,"holy","consecrate",false);ring(P.x,P.y,90,"#ffe37a");}},
+  avenging:{name:"Rättfärdig vrede", lvl:18, cost:0, cd:60, range:0, school:"holy", icon:"horn", tgt:"self", offGcd:true,
+    desc:()=>`Du gör 20% mer skada i 15 sek.`,
+    run:()=>{buff("avenging",15);ring(P.x,P.y,60,"#ffd36b");}},
+  bubble:{name:"Gudomlig sköld", lvl:22, cost:30, cd:120, range:0, school:"holy", icon:"shield", tgt:"self", offGcd:true,
+    desc:()=>`Ett gyllene skydd: du kan inte skadas på 6 sek.`,
+    run:()=>{buff("bubble",6);ring(P.x,P.y,40,"#fff2b0");}},
+  judge:{name:"Himmelsk dom", lvl:26, cost:40, cd:15, range:220, school:"holy", icon:"sun", tgt:"enemy",
+    desc:()=>`Ljuset dömer målet: ${fmt(pow()*4.5)} skada.`,
+    run:t=>{burst(t.x,t.y,"#fff2b0",24);hit(t,pow()*4.5,"holy","judge");}},
   bear:{name:"Björnhamn", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
     desc:()=>`Byter hamn till björn: +60% hälsa, mindre skada och använder ilska. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="bear"?null:"bear")},
@@ -427,7 +474,8 @@ const BARS = {
   priest:["smite","heal","swp","pws","mindblast","holynova","renew","darkpulse","judgment"],
   druid:["wrath","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat"],
   druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat"],
-  druid_cat:["claw","rake","bite","dash","pounce","bear","cat"]
+  druid_cat:["claw","rake","bite","dash","pounce","bear","cat"],
+  paladin:["palstrike","palheal","hammer","holyshield","crusader","consecrate","avenging","bubble","judge"]
 };
 const trainCost = id => AB[id].lvl<=1 ? 0 : Math.round(AB[id].lvl*AB[id].lvl*1.2 + 4);
 
@@ -493,7 +541,18 @@ const TALENTS = {
     {id:"heartWild",tier:3,max:1,name:"Vildmarkens hjärta",d:()=>`+10% skada med allt och +10% hälsa i björnhamn.`},
     {id:"d_prim",tier:4,max:3,name:"Urkraft",eff:{dmg:0.04},d:r=>`+${4*r}% skada med allt.`},
     {id:"d_oak",tier:4,max:3,name:"Ekens styrka",eff:{hp:0.05},d:r=>`+${5*r}% maxhälsa.`},
-    {id:"d_grove",tier:5,max:1,name:"Lundens väktare",eff:{dmg:0.08,hp:0.08},d:()=>`+8% skada och +8% maxhälsa.`}]
+    {id:"d_grove",tier:5,max:1,name:"Lundens väktare",eff:{dmg:0.08,hp:0.08},d:()=>`+8% skada och +8% maxhälsa.`}],
+  paladin:[
+    {id:"palHoly",tier:1,max:3,name:"Ljusets kraft",d:r=>`Heliga attacker och trollformler gör +${8*r}% skada.`},
+    {id:"palTough",tier:1,max:3,name:"Härdad tro",eff:{hp:0.05},d:r=>`+${5*r}% maxhälsa.`},
+    {id:"palWis",tier:1,max:3,name:"Visdom",d:r=>`+${10*r}% maximal mana.`},
+    {id:"palHeal",tier:2,max:3,name:"Förbättrad helning",d:r=>`Ljusets helning är ${10*r}% starkare.`},
+    {id:"palQuick",tier:2,max:2,name:"Snabb bön",d:r=>`Ljusets helning kastas ${(0.3*r).toFixed(1)} sek snabbare.`},
+    {id:"pal_parry",tier:2,max:3,name:"Sköldvana",eff:{parry:0.01},d:r=>`+${r}% chans att parera attacker.`},
+    {id:"lightbringer",tier:3,max:1,name:"Ljusbringare",d:()=>`Kritiska heliga träffar helar dig för 30% av skadan.`},
+    {id:"pal_zeal",tier:4,max:3,name:"Heligt nit",eff:{dmg:0.04},d:r=>`+${4*r}% skada med allt.`},
+    {id:"pal_bastion",tier:4,max:3,name:"Bastion",eff:{def:0.03},d:r=>`Du tar ${3*r}% mindre skada.`},
+    {id:"pal_champ",tier:5,max:1,name:"Ljusets förkämpe",eff:{dmg:0.08,hp:0.08},d:()=>`+8% skada och +8% maxhälsa.`}]
 };
 
 const ITEMS = {
@@ -511,7 +570,11 @@ const ITEMS = {
   ring:{name:"Stulen ring", sell:6, kind:"junk"}, tooth:{name:"Trolltand", sell:5, kind:"junk"}, rune:{name:"Runsten", sell:7, kind:"junk"},
   cloth:{name:"Ruttet tyg", sell:6, kind:"junk"}, dust:{name:"Vättestoft", sell:8, kind:"junk"}, crown:{name:"Draugkronan", sell:150, kind:"junk"},
   ember:{name:"Glödande klo", sell:10, kind:"junk"}, cinder:{name:"Slaggsten", sell:12, kind:"junk"}, fur:{name:"Frostpäls", sell:14, kind:"junk"},
-  shard:{name:"Isskärva", sell:16, kind:"junk"}, heart:{name:"Jättens frusna hjärta", sell:300, kind:"junk"}
+  shard:{name:"Isskärva", sell:16, kind:"junk"},
+  fang:{name:"Vargtand", sell:2, kind:"junk"}, foxpelt:{name:"Rävskinn", sell:2, kind:"junk"}, jackalpelt:{name:"Schakalskinn", sell:2, kind:"junk"},
+  harepelt:{name:"Harskinn", sell:1, kind:"junk"}, deerhide:{name:"Hjortskinn", sell:2, kind:"junk"}, antler:{name:"Hjorthorn", sell:4, kind:"junk"},
+  bearfur:{name:"Björnfäll", sell:5, kind:"junk"}, stinger:{name:"Skorpiongadd", sell:2, kind:"junk"}, thornspike:{name:"Törntagg", sell:1, kind:"junk"},
+  glowdust:{name:"Irrblossdamm", sell:2, kind:"junk"}, candle:{name:"Koboldljus", sell:2, kind:"junk"}, shell:{name:"Stenbaggsskal", sell:2, kind:"junk"}, rattail:{name:"Råttsvans", sell:1, kind:"junk"}, heart:{name:"Jättens frusna hjärta", sell:300, kind:"junk"}
 };
 
 const NODES = {
@@ -541,12 +604,12 @@ function smithCost(w){ if(w>=15) return null; if(w<3) return {ore:"copper", n:4,
 // Sprite sheets (32x32 frames in one row). Loaded from the assets folder.
 const SHEETS = {potions:"assets/potions/potions.png"};
 const SHEET_IMG = {};
-const WEAPON_NAMES = {mage:"Stav", warrior:"Svärd", hunter:"Pilbåge", priest:"Stav", druid:"Stav"};
+const WEAPON_NAMES = {mage:"Stav", warrior:"Svärd", hunter:"Pilbåge", priest:"Stav", druid:"Stav", paladin:"Svärd"};
 
 </script>
 <script>
 // ======================= WORLD DATA =======================
-const MW = 220, MH = 150;
+const MW = 220, MH = 178;
 
 // Zones: Voronoi regions around c (tile coords). w = weight (bigger area). t = terrain.
 const ZONES = {
@@ -561,7 +624,9 @@ const ZONES = {
   jarn:{name:"Järnkammen", lv:[10,15], c:[102,84], w:8, t:"rock"},
   dimma:{name:"Dimträsket", lv:[15,20], c:[140,124], w:6, t:"swamp"},
   aska:{name:"Askfälten", lv:[20,25], c:[152,40], w:8, t:"ash"},
-  frost:{name:"Frostkronan", lv:[25,30], c:[192,92], w:10, t:"snow"}
+  frost:{name:"Frostkronan", lv:[25,30], c:[192,92], w:10, t:"snow"},
+  gravmark:{name:"Gravmarken", lv:[1,5], c:[50,164], w:0, t:"blight", race:"undead"},
+  benfalt:{name:"Benfälten", lv:[5,10], c:[92,152], w:0, t:"gloom", race:"undead"}
 };
 // Towns and camps. Safe areas. kind town = cobble village, camp = small camp.
 const HUBS = {
@@ -576,19 +641,23 @@ const HUBS = {
   jarnfastet:{name:"Järnfästet", x:102, y:84, r:6, kind:"camp"},
   traskvakten:{name:"Träskvakten", x:138, y:118, r:5, kind:"camp"},
   askvakten:{name:"Askvakten", x:150, y:44, r:5, kind:"camp"},
-  isporten:{name:"Isporten", x:188, y:90, r:5, kind:"camp"}
+  isporten:{name:"Isporten", x:188, y:90, r:5, kind:"camp"},
+  bleksted:{name:"Bleksted", x:50, y:164, r:7, kind:"town", race:"undead"},
+  benvakten:{name:"Benvakten", x:92, y:152, r:4, kind:"camp"}
 };
-const RACE_HUB = {human:"frostvik", elf:"lovhem", dwarf:"bergsdal", orc:"brannmark"};
+const RACE_HUB = {human:"frostvik", elf:"lovhem", dwarf:"bergsdal", orc:"brannmark", undead:"bleksted"};
 const ROADS = [["frostvik","holgerstuga"],["lovhem","manglanta"],["bergsdal","snostugan"],["brannmark","kanjonlagret"],
   ["holgerstuga","jarnfastet"],["manglanta","jarnfastet"],["snostugan","jarnfastet"],["kanjonlagret","jarnfastet"],
   ["frostvik","lovhem"],["frostvik","brannmark"],["lovhem","bergsdal"],["manglanta","snostugan"],["holgerstuga","kanjonlagret"],
-  ["jarnfastet","traskvakten"],["jarnfastet","askvakten"],["askvakten","isporten"],["traskvakten","isporten"],["bergsdal","askvakten"]];
+  ["jarnfastet","traskvakten"],["jarnfastet","askvakten"],["askvakten","isporten"],["traskvakten","isporten"],["bergsdal","askvakten"],
+  ["bleksted","benvakten"],["bleksted","brannmark"],["benvakten","kanjonlagret"],["benvakten","traskvakten"],["benvakten","jarnfastet"]];
 // Lairs: cleared spots for elites/bosses (tile coords) with a road from a hub.
 const LAIRS = {
   banditcamp:{x:42, y:96, r:6, from:"holgerstuga"}, morvel:{x:68, y:32, r:4, from:"manglanta"}, snorre:{x:86, y:54, r:4, from:"snostugan"},
-  garuk:{x:74, y:124, r:4, from:"kanjonlagret"}, magma:{x:160, y:14, r:5, from:"askvakten"}, giant:{x:206, y:112, r:6, from:"isporten"}
+  garuk:{x:74, y:124, r:4, from:"kanjonlagret"}, magma:{x:160, y:14, r:5, from:"askvakten"}, giant:{x:206, y:112, r:6, from:"isporten"},
+  vex:{x:112, y:166, r:4, from:"benvakten"}
 };
-const CRYPT = {x0:132, x1:148, y0:136, boss:{x:140, y:143}};
+const CRYPT = {x0:132, x1:148, y0:136, y1:148, boss:{x:140, y:143}};
 
 const MOBS = {
   // human
@@ -624,6 +693,15 @@ const MOBS = {
   sandgolem:{name:"Sandgolem", lv:[6,9], color:"#c8a870", r:14, sp:72, shape:"golem", drop:"rune"},
   garuk:{name:"Krigsherre Garuk", lv:[10,10], color:"#5a7a3a", r:15, sp:92, shape:"troll", elite:4, drop:"tooth",
     special:{name:"Krigsstamp", every:9, r:100, windup:1.4, mult:2.2}},
+  // undead start zone
+  rat:{name:"Gravråtta", lv:[1,3], color:"#5a5a5a", r:8, sp:105, shape:"critter", drop:"rattail"},
+  plaguewolf:{name:"Pestvarg", lv:[2,4], color:"#7a9a40", r:11, sp:100, shape:"wolf", drop:"pelt"},
+  shambler:{name:"Vandrande benrangel", lv:[3,5], color:"#c8c8b0", r:11, sp:80, shape:"humanoid", drop:"cloth"},
+  robber:{name:"Gravplundrare", lv:[5,8], color:"#6a5a4a", r:11, sp:92, shape:"humanoid", drop:"ring"},
+  boneguard:{name:"Benväktare", lv:[6,9], color:"#d8d8c8", r:12, sp:85, shape:"humanoid", drop:"rune"},
+  plaguebear:{name:"Pestbjörn", lv:[6,9], color:"#6a8a40", r:14, sp:90, shape:"boar", drop:"bearfur"},
+  vex:{name:"Nekromantikern Vex", lv:[10,10], color:"#7a5aa0", r:15, sp:88, shape:"humanoid", elite:4, drop:"dust", ranged:200,
+    special:{name:"Dödsvåg", every:9, r:100, windup:1.4, mult:2.2}},
   // critters (neutral: only fight back)
   hare:{name:"Hare", lv:[1,2], color:"#a07850", r:7, sp:110, shape:"critter", passive:true, drop:"pelt"},
   deer:{name:"Kronhjort", lv:[3,6], color:"#7a5a40", r:13, sp:100, shape:"critter", passive:true, drop:"pelt"},
@@ -644,6 +722,18 @@ const MOBS = {
   giant:{name:"Isjätten Hrimgar", lv:[30,30], color:"#a8d8ec", r:22, sp:85, shape:"troll", elite:7, boss:true, drop:"heart",
     special:{name:"Glaciärkross", every:7, r:135, windup:1.5, mult:2.6}}
 };
+// Loot: [item, chance]. Monsters without an entry drop their def.drop (35%, elites always).
+const LOOT = {
+  wolf:[["pelt",0.4],["fang",0.15]], oldgray:[["pelt",1],["fang",1]], boar:[["tusk",0.4]], thief:[["ring",0.2]], spider:[["silk",0.4]], bandit:[["ring",0.25]],
+  lynx:[["foxpelt",0.4]], thorn:[["thornspike",0.4]], wisplight:[["glowdust",0.35]], shadewolf:[["pelt",0.35],["fang",0.2]], lostdruid:[["cloth",0.25]],
+  rocksvin:[["tusk",0.35]], kobold:[["candle",0.3]], beetle:[["shell",0.4]], icebear:[["bearfur",0.4]], frostkobold:[["candle",0.3]],
+  jackal:[["jackalpelt",0.4]], bristle:[["tusk",0.35]], scorpion:[["stinger",0.4]], raider:[["ring",0.25]], sandgolem:[["rune",0.3]],
+  troll:[["tooth",0.35]], golem:[["rune",0.35]], ghoul:[["cloth",0.35]], wisp:[["dust",0.35]], hound:[["ember",0.35]], elemental:[["cinder",0.35]],
+  frostwolf:[["fur",0.4]], icegolem:[["shard",0.35]], rimtroll:[["tooth",0.35]], hare:[["harepelt",0.35]], rat:[["rattail",0.35]], plaguewolf:[["pelt",0.35],["fang",0.15]], shambler:[["cloth",0.3]], robber:[["ring",0.25]], boneguard:[["rune",0.25]], plaguebear:[["bearfur",0.35]], deer:[["deerhide",0.35],["antler",0.15]]
+};
+// animals, spirits and golems carry no gold
+const BEASTS = new Set(["wolf","oldgray","boar","lynx","thorn","wisplight","shadewolf","rocksvin","beetle","icebear","jackal","bristle","scorpion","spider",
+  "hare","deer","rat","plaguewolf","shambler","boneguard","plaguebear","hound","frostwolf","golem","sandgolem","icegolem","elemental","wisp","magma"]);
 // [type, count, zone, extra filter]
 const SPAWNS = [
   ["wolf",12,"frostang"],["boar",10,"frostang"],["thief",9,"frostang"],
@@ -658,16 +748,18 @@ const SPAWNS = [
   ["troll",16,"jarn"],["golem",14,"jarn"],
   ["ghoul",14,"dimma"],["wisp",10,"dimma"],
   ["hound",14,"aska"],["elemental",10,"aska"],
-  ["frostwolf",12,"frost"],["icegolem",12,"frost"],["rimtroll",12,"frost"]
+  ["frostwolf",12,"frost"],["icegolem",12,"frost"],["rimtroll",12,"frost"],
+  ["rat",12,"gravmark"],["plaguewolf",9,"gravmark"],["shambler",10,"gravmark"],["robber",10,"benfalt"],["boneguard",10,"benfalt"],["plaguebear",7,"benfalt"]
 ];
 const FIXED_MOBS = [["oldgray",{zone:"frostang",far:"frostvik",d:16}],["leader",{lair:"banditcamp"}],["morvel",{lair:"morvel"}],["snorre",{lair:"snorre"}],
-  ["garuk",{lair:"garuk"}],["boss",{crypt:true}],["magma",{lair:"magma"}],["giant",{lair:"giant"}]];
+  ["garuk",{lair:"garuk"}],["boss",{crypt:true}],["magma",{lair:"magma"}],["giant",{lair:"giant"}],["vex",{lair:"vex"}]];
 // [node kind, count, zone]
 const NODE_SPAWNS = [
   ["copper",6,"frostang"],["ang",8,"frostang"],["copper",6,"silver"],["ang",8,"silver"],["copper",8,"koppar"],["ang",6,"koppar"],["copper",6,"rod"],["ang",8,"rod"],
   ["iron",4,"skugg"],["silver",7,"skugg"],["iron",4,"manskog"],["silver",8,"manskog"],["iron",7,"snodal"],["silver",5,"snodal"],["iron",5,"damm"],["silver",6,"damm"],
   ["iron",8,"jarn"],["goldore",6,"jarn"],["drake",4,"jarn"],["goldore",5,"dimma"],["drake",8,"dimma"],
-  ["obsidian",10,"aska"],["fireflower",9,"aska"],["rimkr",9,"frost"],["iceflower",9,"frost"]
+  ["obsidian",10,"aska"],["fireflower",9,"aska"],["rimkr",9,"frost"],["iceflower",9,"frost"],
+  ["copper",6,"gravmark"],["ang",6,"gravmark"],["iron",5,"benfalt"],["silver",6,"benfalt"]
 ];
 
 // Quest items. Collect items are objects in the world (zone + count); loot items drop from monsters.
@@ -695,29 +787,38 @@ const QITEMS = {
   wispdust:{name:"Glimmande vättestoft"},
   gravename:{name:"Namnplatta", look:"stone", zone:"dimma", count:8},
   magmacore:{name:"Magmakärna"},
-  pilgrimpack:{name:"Pilgrimspacke", look:"sack", zone:"frost", count:8}
+  pilgrimpack:{name:"Pilgrimspacke", look:"sack", zone:"frost", count:8},
+  graveflower:{name:"Gravblomma", look:"glow", zone:"gravmark", count:9},
+  bonedust:{name:"Benmjöl"},
+  plaguegland:{name:"Pestkörtel"},
+  gravegift:{name:"Gravgåva", look:"chest", zone:"gravmark", count:7},
+  urn:{name:"Stulen urna", look:"crate", zone:"benfalt", count:8}
 };
 
 // NPCs. hub = where they stand. trains = class trainer. shop/smith/alch = services.
 const NPCS = [];
 (function(){
   const add = (hub, list) => list.forEach(n => NPCS.push({...n, hub}));
-  const trainers = (hub, race, names) => add(hub, ["mage","warrior","hunter","priest","druid"].map((c,i)=>({id:hub+"_t_"+c, name:names[i], role:CLASSES[c].name+"tränare", color:CLASSES[c].color, trains:c, race})));
+  const trainers = (hub, race, names) => add(hub, ["mage","warrior","hunter","priest","druid","paladin"].map((c,i)=>({id:hub+"_t_"+c, name:names[i], role:CLASSES[c].name+"tränare", color:CLASSES[c].color, trains:c, race})));
   add("frostvik", [{id:"edda", name:"Kapten Edda", role:"Uppdrag", color:"#7b8fa8", race:"human"},{id:"linnea", name:"Örtkvinnan Linnea", role:"Alkemist", color:"#6aa06a", alch:true, race:"human"},
     {id:"bror", name:"Smeden Bror", role:"Smed", color:"#a0683a", smith:true, race:"human"},{id:"olle", name:"Handlaren Olle", role:"Handlare", color:"#c09a40", shop:true, race:"human"}]);
-  trainers("frostvik","human",["Ärkemagiker Vidar","Vapenmästare Gunhild","Jägmästare Arne","Prästinnan Sigrid","Druiden Ask"]);
+  trainers("frostvik","human",["Ärkemagiker Vidar","Vapenmästare Gunhild","Jägmästare Arne","Prästinnan Sigrid","Druiden Ask","Riddaren Holmfrid"]);
   add("holgerstuga", [{id:"holger", name:"Skogvaktaren Holger", role:"Uppdrag", color:"#4f7a3a", race:"human"}]);
   add("lovhem", [{id:"ilsa", name:"Väktarinnan Ilsa", role:"Uppdrag", color:"#7aa0b8", race:"elf"},{id:"faelin", name:"Örtmästare Faelin", role:"Alkemist", color:"#6ab08a", alch:true, race:"elf"},
     {id:"elvar", name:"Smeden Elvar", role:"Smed", color:"#9a8a6a", smith:true, race:"elf"},{id:"mirel", name:"Handlerskan Mirel", role:"Handlare", color:"#b89ad0", shop:true, race:"elf"}]);
-  trainers("lovhem","elf",["Magistern Aelin","Klingdansaren Sylva","Bågmästare Eiron","Månprästinnan Ylva","Lundväktaren Thal"]);
+  trainers("lovhem","elf",["Magistern Aelin","Klingdansaren Sylva","Bågmästare Eiron","Månprästinnan Ylva","Lundväktaren Thal","Ljusriddaren Aerin"]);
   add("manglanta", [{id:"lyra", name:"Spejaren Lyra", role:"Uppdrag", color:"#5a6aa0", race:"elf"}]);
   add("bergsdal", [{id:"hjalmar", name:"Förman Hjalmar", role:"Uppdrag", color:"#8a6a4a", race:"dwarf"},{id:"ingrid", name:"Bryggaren Ingrid", role:"Alkemist", color:"#b08a4a", alch:true, race:"dwarf"},
     {id:"torvald", name:"Smeden Torvald", role:"Smed", color:"#6a5a50", smith:true, race:"dwarf"},{id:"bodil", name:"Handlaren Bodil", role:"Handlare", color:"#c09a40", shop:true, race:"dwarf"}]);
-  trainers("bergsdal","dwarf",["Runmästare Kalle","Sköldbrodern Ragnvald","Jägaren Ebba","Prästen Gunnar","Stenvisa Hulda"]);
+  trainers("bergsdal","dwarf",["Runmästare Kalle","Sköldbrodern Ragnvald","Jägaren Ebba","Prästen Gunnar","Stenvisa Hulda","Sköldfadern Brage"]);
   add("snostugan", [{id:"sune", name:"Jägaren Sune", role:"Uppdrag", color:"#7a8ea0", race:"dwarf"}]);
   add("brannmark", [{id:"ragna", name:"Hövding Ragna", role:"Uppdrag", color:"#8a3a2a", race:"orc"},{id:"urk", name:"Schamanen Urk", role:"Alkemist", color:"#6a8a4a", alch:true, race:"orc"},
     {id:"grosh", name:"Smeden Grosh", role:"Smed", color:"#5a4a40", smith:true, race:"orc"},{id:"zaga", name:"Handlaren Zaga", role:"Handlare", color:"#c09a40", shop:true, race:"orc"}]);
-  trainers("brannmark","orc",["Eldtalaren Morg","Blodkämpen Thra","Spåraren Vash","Andetalaren Neka","Jordmor Grunda"]);
+  trainers("brannmark","orc",["Eldtalaren Morg","Blodkämpen Thra","Spåraren Vash","Andetalaren Neka","Jordmor Grunda","Solkrigaren Grak"]);
+  add("bleksted", [{id:"morten", name:"Dödgrävaren Morten", role:"Uppdrag", color:"#5a5a6a", race:"undead"},{id:"hilde", name:"Apotekaren Hilde", role:"Alkemist", color:"#6a7a5a", alch:true, race:"undead"},
+    {id:"knota", name:"Smeden Knota", role:"Smed", color:"#4a4a4a", smith:true, race:"undead"},{id:"sorgsen", name:"Handlaren Sorgsen", role:"Handlare", color:"#8a7a6a", shop:true, race:"undead"}]);
+  trainers("bleksted","undead",["Gravmagikern Selma","Benkrigaren Rolf","Skuggjägaren Vira","Skuggprästen Mård","Druiden Mossa","Den fallne riddaren Ture"]);
+  add("benvakten", [{id:"ulvar", name:"Vaktmästaren Ulvar", role:"Uppdrag", color:"#6a6a7a", race:"undead"}]);
   add("kanjonlagret", [{id:"kruk", name:"Spåraren Kruk", role:"Uppdrag", color:"#7a5a3a", race:"orc"}]);
   add("jarnfastet", [{id:"halvard", name:"Kommendant Halvard", role:"Uppdrag", color:"#6a7a8a", race:"human"},{id:"arvid", name:"Kvartermästare Arvid", role:"Handlare", color:"#c09a40", shop:true, race:"dwarf"}]);
   add("traskvakten", [{id:"sigvard", name:"Häxjägaren Sigvard", role:"Uppdrag", color:"#4a5a4a", race:"human"},{id:"mora", name:"Gamla Mora", role:"Handlare", color:"#8a8a6a", shop:true, race:"orc"}]);
@@ -788,6 +889,21 @@ const QUESTS = [
   {id:"o11", npc:"kruk", lvl:8, name:"Krigsfanan", text:"Rövarna bär en krigsfana som visar vem de tjänar. Ta den från en av dem.", obj:[["loot","warbanner",1,"raider",0.25]]},
   {id:"o12", npc:"kruk", lvl:9, req:["o10"], name:"Krigsherre Garuk", text:"Fanan bär Garuks märke. Han kan stampa så marken skakar – gå undan från cirkeln! Besegra honom.", obj:[["kill","garuk",1]], mult:2, items:{potHp2:2}},
   {id:"o13", npc:"kruk", lvl:10, req:["o12"], to:"halvard", name:"Till Järnfästet", text:"Kommendant Halvard i Järnfästet samlar starka krigare. Gå dit.", obj:[], mult:0.4},
+  // ---- Odöd: Gravmarken (1–5)
+  {id:"u1", npc:"morten", lvl:1, name:"Råttorna i kryptorna", text:"Gravråttorna gnager på allt, även på oss. Döda 6 innan de förökar sig ännu mer.", obj:[["kill","rat",6]]},
+  {id:"u2", npc:"hilde", lvl:1, name:"Gravblommor", text:"Bleka gravblommor växer där de döda vilar. Plocka 6 åt mig, de håller våra kroppar samman.", obj:[["collect","graveflower",6]], items:{potHp:2}},
+  {id:"u3", npc:"knota", lvl:2, name:"Benmjöl", text:"Benrangel som vandrar utan vilja ger det finaste benmjölet till min ässja. Ta med 5 nävar.", obj:[["loot","bonedust",5,"shambler",0.6]]},
+  {id:"u4", npc:"morten", lvl:3, req:["u1"], name:"De vandrande", text:"Inte alla som vaknade fick sitt förstånd tillbaka. Ge de vandrande benranglen ro – fäll 8.", obj:[["kill","shambler",8]]},
+  {id:"u5", npc:"hilde", lvl:4, req:["u2"], name:"Pestens källa", text:"Pestvargarna sprider smittan. Skär ut 5 pestkörtlar så att jag kan brygga ett motmedel.", obj:[["loot","plaguegland",5,"plaguewolf",0.5]]},
+  {id:"u6", npc:"sorgsen", lvl:4, name:"Förlorade gravgåvor", text:"Gåvor som lades i gravarna har spridits över marken. Hitta 5 och för dem tillbaka.", obj:[["collect","gravegift",5]]},
+  {id:"u7", npc:"morten", lvl:5, req:["u4"], to:"ulvar", name:"Bud till Benvakten", text:"Vaktmästaren Ulvar på Benfälten österut behöver hjälp. Gå till hans läger.", obj:[], mult:0.4},
+  // ---- Odöd: Benfälten (5–10)
+  {id:"u8", npc:"ulvar", lvl:5, req:["u7"], name:"Gravplundrarna", text:"Levande gravplundrare gräver upp våra döda. Driv bort dem – döda 8.", obj:[["kill","robber",8]]},
+  {id:"u9", npc:"ulvar", lvl:6, name:"Stulna urnor", text:"Plundrarna har gömt stulna urnor ute på fälten. Hämta 5 tillbaka.", obj:[["collect","urn",5]]},
+  {id:"u10", npc:"ulvar", lvl:7, req:["u8"], name:"Benväktarna", text:"Någon har väckt de gamla benväktarna och vänt dem mot oss. Krossa 8.", obj:[["kill","boneguard",8]]},
+  {id:"u11", npc:"ulvar", lvl:8, name:"Pestbjörnarna", text:"Pesten har nått björnarna. De är farliga och sjuka – fäll 6.", obj:[["kill","plaguebear",6]]},
+  {id:"u12", npc:"ulvar", lvl:9, req:["u10"], name:"Nekromantikern Vex", text:"Bakom allt står Nekromantikern Vex i sydost. Hans dödsvåg träffar allt runt honom – spring ut ur cirkeln! Besegra honom.", obj:[["kill","vex",1]], mult:2, items:{potHp2:2}},
+  {id:"u13", npc:"ulvar", lvl:10, req:["u12"], to:"halvard", name:"Vägen till Järnfästet", text:"Kommendant Halvard i Järnfästet tar emot alla som kan slåss, även oss odöda. Gå dit.", obj:[], mult:0.4},
   // ---- Järnkammen (10–15)
   {id:"j1", npc:"halvard", lvl:10, name:"Trollen i Järnkammen", text:"Bergstrollen plundrar våra karavaner. Döda 10.", obj:[["kill","troll",10]]},
   {id:"j2", npc:"halvard", lvl:11, name:"Järn till fästet", text:"Fästet behöver järn till nya portar. Bryt 6 järnmalm.", obj:[["gather","iron",6]]},
@@ -825,7 +941,7 @@ const QUESTS = [
 <script>
 // ======================= WORLD =======================
 const T_GRASS=0,T_FOREST=1,T_WATER=2,T_ROCK=3,T_CLIFF=4,T_TREE=5,T_PATH=6,T_SWAMP=7,T_COBBLE=8,T_HOUSE=9,T_DEAD=10,T_BOULDER=11,T_CRYPT=12,T_CWALL=13,T_PINE=14,T_ASH=15,T_LAVA=16,T_SNOW=17,T_ICE=18,T_SPINE=19,T_OBSID=20,
-  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28;
+  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28,T_BLIGHT=29,T_GLOOM=30;
 const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T_PINE,T_LAVA,T_ICE,T_SPINE,T_OBSID,T_BIRCH,T_VTREE,T_RCLIFF,T_CACTUS]);
 const TERRAIN = {
   meadow:(n,m)=> n>0.74?T_TREE : m>0.88?T_BOULDER : T_GRASS,
@@ -839,10 +955,12 @@ const TERRAIN = {
   rock:(n,m)=> n>0.62?T_CLIFF : m>0.82?T_PINE : m<0.1?T_BOULDER : T_ROCK,
   swamp:(n,m)=> n>0.6?T_WATER : m>0.83?T_DEAD : T_SWAMP,
   ash:(n,m)=> n>0.62?T_LAVA : m>0.82?T_OBSID : T_ASH,
-  snow:(n,m)=> n>0.6?T_ICE : m>0.8?T_SPINE : T_SNOW
+  snow:(n,m)=> n>0.6?T_ICE : m>0.8?T_SPINE : T_SNOW,
+  blight:(n,m)=> n>0.68?T_DEAD : m>0.87?T_BOULDER : T_BLIGHT,
+  gloom:(n,m)=> n>0.6?T_DEAD : m>0.86?T_WATER : T_GLOOM
 };
-const BORDER = {meadow:T_TREE, forest:T_TREE, elfwood:T_BIRCH, moonwood:T_VTREE, highland:T_CLIFF, snowhigh:T_CLIFF, steppe:T_RCLIFF, canyon:T_RCLIFF, rock:T_CLIFF, swamp:T_DEAD, ash:T_LAVA, snow:T_ICE};
-const FLOOR = {meadow:T_GRASS, forest:T_FOREST, elfwood:T_ELFGRASS, moonwood:T_MOSS, highland:T_ROCK, snowhigh:T_SNOW, steppe:T_STEPPE, canyon:T_SAND, rock:T_ROCK, swamp:T_SWAMP, ash:T_ASH, snow:T_SNOW};
+const BORDER = {blight:T_DEAD, gloom:T_DEAD, meadow:T_TREE, forest:T_TREE, elfwood:T_BIRCH, moonwood:T_VTREE, highland:T_CLIFF, snowhigh:T_CLIFF, steppe:T_RCLIFF, canyon:T_RCLIFF, rock:T_CLIFF, swamp:T_DEAD, ash:T_LAVA, snow:T_ICE};
+const FLOOR = {blight:T_BLIGHT, gloom:T_GLOOM, meadow:T_GRASS, forest:T_FOREST, elfwood:T_ELFGRASS, moonwood:T_MOSS, highland:T_ROCK, snowhigh:T_SNOW, steppe:T_STEPPE, canyon:T_SAND, rock:T_ROCK, swamp:T_SWAMP, ash:T_ASH, snow:T_SNOW};
 let map, zmap, reach, deco = [];
 const fmt = n => Math.round(n);
 const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
@@ -891,7 +1009,7 @@ function genWorld(){
   for(const [id,l] of Object.entries(LAIRS)){ road(HUBS[l.from].x,HUBS[l.from].y,l.x,l.y,id.length); clear(l.x,l.y,l.r); }
   road(HUBS.traskvakten.x,HUBS.traskvakten.y,(CRYPT.x0+CRYPT.x1)/2|0,CRYPT.y0-2,1.3);
   // crypt
-  for(let y=CRYPT.y0;y<MH;y++) for(let x=CRYPT.x0;x<=CRYPT.x1;x++){ const edge = y===CRYPT.y0||x===CRYPT.x0||x===CRYPT.x1||y>=MH-2; map[y*MW+x] = edge?T_CWALL:T_CRYPT; zmap[y*MW+x] = "dimma"; }
+  for(let y=CRYPT.y0;y<=CRYPT.y1;y++) for(let x=CRYPT.x0;x<=CRYPT.x1;x++){ const edge = y===CRYPT.y0||x===CRYPT.x0||x===CRYPT.x1||y===CRYPT.y1; map[y*MW+x] = edge?T_CWALL:T_CRYPT; zmap[y*MW+x] = "dimma"; }
   const mid = (CRYPT.x0+CRYPT.x1)/2|0; for(let x=mid-1;x<=mid+1;x++){ map[CRYPT.y0*MW+x]=T_CRYPT; map[(CRYPT.y0-1)*MW+x]=T_PATH; }
   // hubs: cobble discs, houses, decorations
   deco = [];
@@ -935,7 +1053,7 @@ function newSave(name, race, cls){
 function spawnAll(){
   mobs = []; nodes = []; npcs = []; qobjs = [];
   const used = new Set();
-  const free = (x,y,t) => !used.has(y*MW+x) && !(t===T_PATH && R()<0.7) && !nearHub(x,y,5) && !(y>=CRYPT.y0-1 && x>=CRYPT.x0-1 && x<=CRYPT.x1+1);
+  const free = (x,y,t) => !used.has(y*MW+x) && !(t===T_PATH && R()<0.7) && !nearHub(x,y,5) && !(y>=CRYPT.y0-1 && y<=CRYPT.y1+1 && x>=CRYPT.x0-1 && x<=CRYPT.x1+1);
   const mark = p => { for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++) used.add((p.y+oy)*MW+p.x+ox); };
   for(const [type, count, zone, opt] of SPAWNS){
     const d = MOBS[type];
@@ -984,13 +1102,14 @@ function maxRes(type){ return type==="mana" ? P.maxMana : 100; }
 function addRes(type, n){ P[type] = clamp(P[type]+n, 0, maxRes(type)); }
 function pow(){ return 6 + S.level*2.6 + S.weapon*2.5; }
 function teff(k){ if(!S) return 0; let v=0; for(const t of TALENTS[S.cls]) if(t.eff&&t.eff[k]) v += t.eff[k]*T(t.id); return v; }
-function genMult(){ let m=1+teff("dmg"); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
+function genMult(){ let m=1+teff("dmg"); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
 function tmul(ab, school){
   let m = 1;
   if(S.cls==="mage"){ if(school==="fire") m*=1+0.08*T("impFire"); if(school==="frost") m*=1+0.08*T("iceShards"); }
   if(S.cls==="warrior"){ if(ab==="heroic") m*=1+0.1*T("impHS"); if(ab==="whirlwind"||ab==="execute") m*=1+0.1*T("bloodFury"); }
   if(S.cls==="hunter"){ if(ab==="firearrow") m*=1+0.15*T("fireArrows"); if(ab==="icearrow") m*=1+0.15*T("iceArrows"); }
   if(S.cls==="priest"){ if(ab==="swp") m*=1+0.1*T("impSWP"); if(school==="shadow") m*=(1+0.06*T("shadowWeave"))*(T("shadowform")?1.15:1); }
+  if(S.cls==="paladin" && school==="holy") m*=1+0.08*T("palHoly");
   if(S.cls==="druid"){ if(["wrath","moonfire","starfire"].includes(ab)) m*=1+0.08*T("moonfury"); if(P.form) m*=1+0.08*T("feral"); }
   return m;
 }
@@ -1007,6 +1126,7 @@ function castTime(id){ const a = AB[id]; let c = a.cast||0; if(!c) return 0;
   if(["fireball","frostbolt","pyroblast"].includes(id)) c -= 0.25*T("quickCast");
   if(["wrath","starfire"].includes(id)) c -= 0.15*T("naturesGrace");
   if(id==="aimed"&&T("trueshot")) c -= 1;
+  if(id==="palheal") c -= 0.3*T("palQuick");
   if(id==="pyroblast"&&P.buffs.hotstreak) c = 0;
   return Math.max(0,c); }
 function xpNeed(l){ return Math.round((100 + l*l*12 + l*40)*2); }
@@ -1020,7 +1140,7 @@ function recompute(full){
   if(P.form==="bear") hp *= 1.6*(1+0.1*T("heartWild"));
   const pct = P.maxHp ? P.hp/P.maxHp : 1;
   P.maxHp = Math.round(hp); P.hp = full ? P.maxHp : Math.max(1, P.maxHp*pct);
-  let mana = 100 + S.level*22; if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual");
+  let mana = 100 + S.level*22; if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
   P.maxMana = Math.round(mana); P.mana = full ? P.maxMana : Math.min(P.mana, P.maxMana);
 }
 
@@ -1069,6 +1189,7 @@ function hit(m, base, school, ab){
   amt = Math.max(1, Math.round(amt));
   damageMob(m, amt, crit, school);
   if(crit){
+    if(school==="holy" && T("lightbringer")) healP(amt*0.3);
     if(school==="fire" && T("ignite")) dot(m, "ignite", amt*0.15*T("ignite"), 4, "fire", true);
     if(S.cls==="warrior" && school==="phys" && T("deepWounds")) dot(m, "deep", amt*0.15*T("deepWounds"), 4, "phys", true);
     if(T("hotStreak") && (ab==="fireball"||ab==="fireblast")){ buff("hotstreak", 15); log("Het svit! Nästa Pyroblast är omedelbar.", "#ffb347"); }
@@ -1118,12 +1239,11 @@ function killMob(m){
   const diff = m.lvl - S.level;
   let xp = 0;
   if(diff > -5){ xp = (18 + m.lvl*9) * (m.elite ? 4 : 1) * clamp(1 + diff*0.1, 0.3, 1.5); }
-  const gold = Math.max(1, Math.round((1 + m.lvl*0.8) * (m.elite?6:1) * rand(0.7,1.3)));
-  S.gold += gold;
-  let loot = `${gold} guld`;
-  if(m.def.boss || Math.random() < 0.45){ addItem(m.def.drop, 1); loot += ` och ${ITEMS[m.def.drop].name}`; }
-  if(m.elite && Math.random()<0.7){ addItem("potHp2",1); loot += " och Stor läkedryck"; }
-  log(`${m.name} besegrad. Du plundrade ${loot}.`, "#d9e3e7");
+  const got = [];
+  if(!BEASTS.has(m.type)){ const gold = Math.max(1, Math.round((1 + m.lvl*0.8) * (m.elite?6:1) * rand(0.7,1.3))); S.gold += gold; got.push(`${gold} guld`); }
+  for(const [it, ch] of (LOOT[m.type] || [[m.def.drop, m.elite ? 1 : 0.35]])) if(ITEMS[it] && Math.random() < ch){ addItem(it, 1); got.push(ITEMS[it].name); }
+  if(m.elite && Math.random()<0.7){ addItem("potHp2",1); got.push("Stor läkedryck"); }
+  log(got.length ? `${m.name} besegrad. Du plundrade ${got.join(", ")}.` : `${m.name} besegrad.`, "#d9e3e7");
   burst(m.x, m.y, m.def.color, 16);
   if(T("bloodthirst")) healP(P.maxHp*0.15);
   if(xp>0) gainXP(xp);
@@ -1132,7 +1252,7 @@ function killMob(m){
 }
 
 function avoidChances(){
-  const pb = S.cls==="warrior" ? 0.04 : S.cls==="hunter" ? 0.02 : (S.cls==="druid" && P.form==="bear") ? 0.02 : 0;
+  const pb = (S.cls==="warrior"||S.cls==="paladin") ? 0.04 : S.cls==="hunter" ? 0.02 : (S.cls==="druid" && P.form==="bear") ? 0.02 : 0;
   const dodge = 0.04 + teff("dodge") + (P.form==="cat" ? 0.03 : 0) + (S.race==="elf" ? 0.01 : 0);
   const parry = pb > 0 ? pb + teff("parry") : 0;
   return {dodge:Math.min(dodge, 0.1), parry:Math.min(parry, 0.09)};
@@ -1140,6 +1260,7 @@ function avoidChances(){
 function mobMiss(m){ return m ? clamp(0.05 + (S.level - m.lvl)*0.01, 0.01, 0.1) : 0.05; }
 function playerDamage(raw, src, kind){
   if(P.dead) return;
+  if(P.buffs.bubble){ floatText(P.x, P.y-44, "Immun", "#fff2b0"); return; }
   if(kind){ const av = avoidChances(), r = Math.random(); let txt = null;
     if(r < mobMiss(src)) txt = "Miss";
     else if(r < mobMiss(src) + av.dodge) txt = "Undvek";
@@ -1200,7 +1321,7 @@ function finishAbility(id, t){
   if(a.cd) P.cds[id] = a.cd;
   if(id==="pyroblast" && P.buffs.hotstreak) delete P.buffs.hotstreak;
   a.run(t);
-  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? "bow" : null) : "cast"); }
+  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? "bow" : null) : "cast"); }
   if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
   if(t) engage(t);
   if(t && P.target !== t) setTarget(t);
@@ -1220,14 +1341,16 @@ function autoInfo(){
   if(P.form==="cat") return {range:52, spd:1.1, mult:0.55};
   if(S.cls==="warrior") return {range:52, spd:2.2, mult:1.0, rage:9};
   if(S.cls==="hunter") return {range:320, spd:2.0, mult:0.85, ranged:true};
+  if(S.cls==="paladin") return {range:52, spd:2.4, mult:1.0};
   return {range:52, spd:2.4, mult:0.6};
 }
 function autoAttack(dt){
   const ai = autoInfo(); P.autoT = Math.max(0, P.autoT - dt);
-  const t = P.target; if(!ai || !t || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
+  const t = P.target; if(P.autoTarget && (P.autoTarget!==t || P.autoTarget.dead)) P.autoTarget = null;
+  if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
   P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
-  if(!P.form) setAct(P, S.cls==="warrior" ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
+  if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
   if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
   else { hit(t, pow()*ai.mult, "phys", "auto"); if(ai.rage) addRes("rage", ai.rage); }
   engage(t);
@@ -1416,11 +1539,12 @@ function updPlayer(dt){
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
   P.combatT -= dt; const inC = P.combatT > 0;
-  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05)*dt);
+  const rg = S.race==='undead' ? 1.5 : 1;
+  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05*rg)*dt);
   P.focus = Math.min(100, P.focus + (inC?7:15)*dt);
   P.energy = Math.min(100, P.energy + 12*dt);
   if(!inC) P.rage = Math.max(0, P.rage - 3*dt);
-  if(!inC && P.combatT < -1) P.hp = Math.min(P.maxHp, P.hp + P.maxHp*0.04*dt);
+  if(!inC && P.combatT < -1) P.hp = Math.min(P.maxHp, P.hp + P.maxHp*0.04*rg*dt);
   for(const h of P.hots){ h.tick -= dt; if(h.tick <= 0){ h.tick += 1; h.left -= 1; healP(h.per); } }
   P.hots = P.hots.filter(h=>h.left>0);
 }
@@ -1446,7 +1570,7 @@ function updMob(m, dt){
     P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
-      if(m.tele.t <= 0){ const sp = m.def.special; if(Math.hypot(P.x-m.tele.x, P.y-m.tele.y) < m.tele.r + P.r) playerDamage(m.dmg*sp.mult, m); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
+      if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; if(Math.hypot(P.x-m.tele.x, P.y-m.tele.y) < m.tele.r + P.r) playerDamage(m.dmg*sp.mult, m); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
       return; }
     if(m.def.special){ m.specT -= dt; if(m.specT <= 0 && dp < 240){ const sp = m.def.special; m.specT = sp.every; m.tele = {x:m.x, y:m.y, r:sp.r, t:sp.windup, max:sp.windup}; floatText(m.x, m.y-m.r-30, sp.name+"!", "#ff8a5a", true); log(`${m.name} förbereder ${sp.name} – spring ut ur cirkeln!`, "#ff8a5a"); return; } }
     const reach = m.def.ranged || (m.r + P.r + 8);
@@ -1455,7 +1579,7 @@ function updMob(m, dt){
     else m.fx = P.x<m.x?-1:1;
     m.atkT -= dt;
     if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(P.x-m.x, P.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
-      if(m.def.ranged) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300});
+      if(m.def.ranged) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300, bullet:!!(BOSS_LOOK[m.type]&&BOSS_LOOK[m.type].bullet)});
       else playerDamage(m.dmg, m, "melee"); }
   } else if(m.state === "return"){
     const dx = m.hx-m.x, dy = m.hy-m.y, d = Math.hypot(dx,dy);
@@ -1528,14 +1652,16 @@ function makeTilesInner(){
     g.fillStyle = "#3a2a6a"; g.beginPath(); g.arc(16,13,13,0,7); g.fill(); g.fillStyle = "#5a3f9a"; g.beginPath(); g.arc(12+r()*4,10,8,0,7); g.fill(); g.fillStyle = "#a0e0ff"; g.fillRect(8+r()*14,6+r()*10,2,2); g.fillRect(8+r()*14,6+r()*10,2,2); });
   tileSprites[T_RCLIFF] = mk((g, r) => { g.fillStyle = "#8a4a2e"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#b0603a"; g.fillRect(0,0,TILE,9); g.fillStyle = "#6a3620"; g.fillRect(0,26,TILE,6); g.fillStyle = "#9a5636"; g.fillRect(0,15,TILE,3); });
   tileSprites[T_CACTUS] = mk((g, r) => { sand(g, r); g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(16,28,8,3,0,0,7); g.fill(); g.fillStyle = "#4f7a3a"; g.beginPath(); g.roundRect(13,6,6,22,3); g.fill(); g.beginPath(); g.roundRect(6,12,5,9,2); g.fill(); g.beginPath(); g.roundRect(21,9,5,9,2); g.fill(); g.fillRect(9,18,5,3); g.fillRect(18,15,4,3); });
+  tileSprites[T_BLIGHT] = mk((g, r) => { g.fillStyle = "#5a5a48"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#6a6a52","#4a4a3c","#7a6a5a"], 2); });
+  tileSprites[T_GLOOM] = mk((g, r) => { g.fillStyle = "#3a3a40"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#48484e","#2c2c32","#5a4a5a"], 2); });
   tileSprites[T_CWALL] = mk((g, r) => { g.fillStyle = "#1f2227"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#3a3f47"; g.fillRect(0,0,TILE,8); g.strokeStyle = "#2a2e34"; g.strokeRect(0.5,8.5,15,11); g.strokeRect(16.5,8.5,15,11); g.strokeRect(8.5,20.5,15,11); });
 }
 // ground textures (CC0, Screaming Brain Studios) drawn continuously across tiles; objects drawn on top
-const GROUND_ORDER = ["grass","forest","elfgrass","moss","steppe","sand","path","rock","snow","swamp","ash","lava","water"];
+const GROUND_ORDER = ["grass","forest","elfgrass","moss","steppe","sand","path","rock","snow","swamp","ash","lava","water","blight","gloom"];
 const GIDX = Object.fromEntries(GROUND_ORDER.map((k,i)=>[k,i]));
 const GSCALE = {rock:2, snow:2, lava:2, ash:2};
 let GTEX = null, OBJECT_T = null;
-function groundTex(t){ if(!GTEX){ GTEX = {[T_GRASS]:"grass",[T_FOREST]:"forest",[T_ELFGRASS]:"elfgrass",[T_MOSS]:"moss",[T_STEPPE]:"steppe",[T_SAND]:"sand",[T_PATH]:"path",[T_ROCK]:"rock",[T_SNOW]:"snow",[T_SWAMP]:"swamp",[T_ASH]:"ash",[T_LAVA]:"lava",[T_WATER]:"water"};
+function groundTex(t){ if(!GTEX){ GTEX = {[T_GRASS]:"grass",[T_FOREST]:"forest",[T_ELFGRASS]:"elfgrass",[T_MOSS]:"moss",[T_STEPPE]:"steppe",[T_SAND]:"sand",[T_PATH]:"path",[T_ROCK]:"rock",[T_SNOW]:"snow",[T_SWAMP]:"swamp",[T_ASH]:"ash",[T_LAVA]:"lava",[T_WATER]:"water",[T_BLIGHT]:"blight",[T_GLOOM]:"gloom"};
   OBJECT_T = new Set([T_TREE,T_PINE,T_BIRCH,T_VTREE,T_DEAD,T_BOULDER,T_CACTUS,T_OBSID,T_SPINE]); } return GTEX[t]; }
 function drawTile(c, x, y){
   const t = map[y*MW+x], g = sImg("assets/environment/ground.png");
@@ -1556,7 +1682,7 @@ function tileSprite(t, x, y){
 
 // minimap base
 const mmBase = document.createElement("canvas"); mmBase.width = MW; mmBase.height = MH;
-const MM_COL = {[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40"};
+const MM_COL = {[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40",[T_BLIGHT]:"#6a6a54",[T_GLOOM]:"#44444c"};
 function makeMinimap(){ const mm = document.getElementById("mm"); mm.width = 120; mm.height = 80; const g = mmBase.getContext("2d"); for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){ g.fillStyle = MM_COL[map[y*MW+x]]; g.fillRect(x,y,1,1); } }
 
 function shade(hex, f){ const n = parseInt(hex.slice(1),16); let r=n>>16, g=(n>>8)&255, b=n&255; r=clamp(Math.round(r*f),0,255); g=clamp(Math.round(g*f),0,255); b=clamp(Math.round(b*f),0,255); return `rgb(${r},${g},${b})`; }
@@ -1608,6 +1734,7 @@ function drawBeast(c, x, y, form, fx){
   c.restore();
 }
 function drawMob(c, m){
+  if(BOSS_LOOK[m.type] && drawBoss(c, m)) return;
   const CL = CREATURE_LOOK[m.type]; if(CL){ const anim = m.swing>0 ? "run" : m.walk ? (m.state==="chase"||m.state==="return" ? "run" : "walk") : "idle";
     if(drawCreature(c, CL, m.x, m.y, anim, m.fx, m.ph, m.swing>0 ? m.swing*30 : 0)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 18, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.3)"; c.beginPath(); c.arc(m.x, m.y-14, 16, 0, 7); c.fill(); } return; } }
   const L = mobLook(m); if(L){ const sc = L.scale||1; if(drawLPC(c, L, m.x, m.y, lpcState(m, m.walk), sc, sc)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 14*sc, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.35)"; c.beginPath(); c.arc(m.x, m.y-26*sc, 16*sc, 0, 7); c.fill(); } return; } }
@@ -1684,16 +1811,22 @@ function render(){
   for(const n of nodes) if(n.active && inView(n)) drawNode(ctx, n);
   for(const n of qobjs) if(n.active && inView(n) && needsQItem(n.qitem)) drawQObj(ctx, n);
   // ground effects and telegraphs
-  for(const z of zones){ ctx.fillStyle = z.school==="frost" ? "rgba(150,210,255,.18)" : "rgba(140,220,110,.16)"; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, 7); ctx.fill(); ctx.strokeStyle = z.school==="frost" ? "rgba(190,230,255,.5)" : "rgba(170,240,140,.5)"; ctx.stroke(); }
+  for(const z of zones){ ctx.fillStyle = z.school==="frost" ? "rgba(150,210,255,.18)" : z.school==="holy" ? "rgba(255,225,120,.18)" : "rgba(140,220,110,.16)"; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, 7); ctx.fill(); ctx.strokeStyle = z.school==="frost" ? "rgba(190,230,255,.5)" : z.school==="holy" ? "rgba(255,235,150,.6)" : "rgba(170,240,140,.5)"; ctx.stroke(); }
   for(const m of mobs) if(m.tele){ const p = 1 - m.tele.t/m.tele.max; ctx.fillStyle = "rgba(255,60,40,.14)"; ctx.beginPath(); ctx.arc(m.tele.x, m.tele.y, m.tele.r, 0, 7); ctx.fill(); ctx.fillStyle = "rgba(255,60,40,.3)"; ctx.beginPath(); ctx.arc(m.tele.x, m.tele.y, m.tele.r*p, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(255,90,60,.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(m.tele.x, m.tele.y, m.tele.r, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
   // target ring
-  if(P.target && !P.target.dead){ const t = P.target; ctx.strokeStyle = t.state==="chase" ? "#ff5a4f" : "#f3dc55"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(t.x, t.y, t.r*1.3, t.r*0.5, 0, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
+  if(P.target && !P.target.dead){ const t = P.target, atk = P.autoTarget===t, CLk = CREATURE_LOOK[t.type];
+    const rw = CLk ? CREATURES[CLk.c].w*0.36*(CLk.s||1) : Math.max(t.r*1.4, 16), rh = Math.max(6, rw*0.38);
+    if(atk){ const pulse = 0.55 + Math.sin(time*8)*0.45; ctx.fillStyle = `rgba(255,60,50,${0.12+pulse*0.12})`; ctx.beginPath(); ctx.ellipse(t.x, t.y, rw+4, rh+3, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = `rgba(255,70,60,${0.5+pulse*0.5})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(t.x, t.y, rw+4, rh+3, 0, 0, 7); ctx.stroke(); }
+    else { ctx.strokeStyle = t.state==="chase" ? "#ff8a5a" : "#f3dc55"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(t.x, t.y, rw, rh, 0, 0, 7); ctx.stroke(); }
+    ctx.lineWidth = 1; }
   // y-sorted entities
   const ents = [];
   for(const m of mobs) if(!m.dead && inView(m)) ents.push({y:m.y, f:()=>drawMob(ctx, m)});
   for(const n of npcs) if(inView(n)) ents.push({y:n.y, f:()=>{ const [sx,sy] = raceScale(n.race); if(!drawLPC(ctx, npcLook(n), n.x, n.y, {anim:"walk", frame:0, dir:2}, sx, sy)) drawHero(ctx, n.x, n.y, {race:n.race, skin:RACES[n.race||"human"].skin, body:n.color, fx:n.fx, hair:RACES[n.race||"human"].hair, ph:n.x}); }});
   for(const d of deco) if((d.k==="fire"||d.k==="brazier") && inView(d,90)) ents.push({y:d.y, f:()=>drawDeco(ctx, d)});
   if(!P.dead || true) ents.push({y:P.y, f:()=>{ ctx.globalAlpha = P.dead ? 0.35 : 1;
+    if(P.buffs.bubble){ ctx.fillStyle = `rgba(255,230,140,${0.18+Math.sin(time*6)*0.06})`; ctx.strokeStyle = "rgba(255,240,170,.85)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(P.x, P.y-24, 30, 0, 7); ctx.fill(); ctx.stroke(); ctx.lineWidth = 1; }
     if(P.shield>0){ ctx.strokeStyle = "rgba(255,246,208,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(P.x, P.y-16, 22, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
     const [psx, psy] = raceScale(S.race);
     if(P.form) drawBeast(ctx, P.x, P.y, P.form, P.fx); else if(!drawLPC(ctx, playerLook(), P.x, P.y, lpcState(P, P.moving), psx, psy)) drawHero(ctx, P.x, P.y, {race:S.race, cls:S.cls, skin:RACES[S.race].skin, hair:RACES[S.race].hair, body:CLASSES[S.cls].color, fx:P.fx, moving:P.moving, swing:P.swing});
@@ -1702,16 +1835,19 @@ function render(){
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
   for(const p of projs){
+    if(p.bullet && drawBullet(ctx, p)) continue;
     if(p.kind==="arrow"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang||0); ctx.strokeStyle = "#d8cfb4"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(4,0); ctx.stroke(); ctx.fillStyle = p.color; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(2,-3); ctx.lineTo(2,3); ctx.fill(); ctx.restore(); ctx.lineWidth = 1; }
     else { const g = ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,p.size*2.2); g.addColorStop(0,"#fff"); g.addColorStop(0.35,p.color); g.addColorStop(1,"rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*2.2,0,7); ctx.fill(); }
   }
+  drawBossFx(ctx, Math.min(0.05, (performance.now() - (render._lt||performance.now()))/1000)); render._lt = performance.now();
   for(const p of parts){ ctx.globalAlpha = Math.max(0, p.life/p.max); ctx.fillStyle = p.color; ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size); } ctx.globalAlpha = 1;
   // name plates
   ctx.textAlign = "center"; ctx.font = "700 11px 'Alegreya Sans', sans-serif";
   for(const m of mobs){ if(m.dead || !inView(m)) continue; const near = dist(m,P) < 230 || m===P.target; if(!near) continue;
-    const CLk = CREATURE_LOOK[m.type]; const top = CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
+    const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
-    ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.elite?" Elit":""})`, m.x, top-6); }
+    ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.elite?" Elit":""})`, m.x, top-6);
+    if(m===P.autoTarget){ const sy = top-26 + Math.sin(time*6)*2; ctx.strokeStyle = "#ff5a4f"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(m.x-7, sy-7); ctx.lineTo(m.x+7, sy+7); ctx.moveTo(m.x+7, sy-7); ctx.lineTo(m.x-7, sy+7); ctx.stroke(); ctx.lineWidth = 1; ctx.lineCap = "butt"; } }
   for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-62); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
     const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
   // interaction hint
@@ -1724,7 +1860,7 @@ function render(){
   ctx.globalAlpha = 1; ctx.lineWidth = 1;
   // ambient tint by zone
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  const tint = {swamp:"rgba(70,110,70,.16)", rock:"rgba(150,180,230,.06)", forest:"rgba(10,30,10,.15)", ash:"rgba(140,40,10,.14)", snow:"rgba(190,225,255,.12)", moonwood:"rgba(30,20,70,.2)", snowhigh:"rgba(190,215,240,.08)", canyon:"rgba(220,130,40,.06)"}[(ZONES[parentZone(curZone)]||{}).t];
+  const tint = {swamp:"rgba(70,110,70,.16)", rock:"rgba(150,180,230,.06)", forest:"rgba(10,30,10,.15)", ash:"rgba(140,40,10,.14)", snow:"rgba(190,225,255,.12)", moonwood:"rgba(30,20,70,.2)", snowhigh:"rgba(190,215,240,.08)", canyon:"rgba(220,130,40,.06)", blight:"rgba(70,60,90,.14)", gloom:"rgba(50,40,80,.2)"}[(ZONES[parentZone(curZone)]||{}).t];
   if(tint){ ctx.fillStyle = tint; ctx.fillRect(0,0,W,H); }
   const vg = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75); vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,.45)"); ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
   drawMinimap();
@@ -1820,6 +1956,8 @@ const OUTFITS = {
   alch:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_robe_shirt_brown","BELT_rope","HEAD_hair_blonde"],
   bandit:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_torso","BELT_leather","HEAD_chain_armor_hood"],
   chief:["FEET_plate_armor_shoes","LEGS_plate_armor_pants","TORSO_leather_armor_torso","TORSO_plate_armor_arms_shoulders","HEAD_chain_armor_helmet"],
+  paladin:["FEET_plate_armor_shoes","LEGS_plate_armor_pants","TORSO_plate_armor_torso","TORSO_chain_armor_jacket_purple","TORSO_plate_armor_arms_shoulders","HANDS_plate_armor_gloves","HEAD_chain_armor_helmet"],
+  rags:["LEGS_pants_greenish","TORSO_robe_shirt_brown"], necro:["LEGS_robe_skirt","TORSO_chain_armor_jacket_purple","BELT_rope","HEAD_robe_hood"],
   bones:[], draug:["TORSO_chain_armor_torso","HEAD_plate_armor_helmet"], wraith:["LEGS_robe_skirt","TORSO_robe_shirt_brown","HEAD_robe_hood"]
 };
 const BIG_SWORD = "assets/charactersV2/192x192/slash/WEAPON_longsword.png";
@@ -1830,7 +1968,7 @@ const SKINS = {
   dwarf:[[246,192,160],[226,146,106],[198,112,80],[140,56,46]], kobold:[[240,204,104],[214,170,72],[184,140,52],[128,90,32]],
   frost:[[206,228,242],[164,198,222],[128,162,196],[82,106,142]]
 };
-const SKEL_TINT = {ghoul:[0.72,0.92,0.62], wraith:[0.75,0.7,1.0], frost:[0.8,0.92,1.05]};
+const SKEL_TINT = {undead:[0.86,0.94,0.82], ghoul:[0.72,0.92,0.62], wraith:[0.75,0.7,1.0], frost:[0.8,0.92,1.05]};
 const IMGS = {};
 function sImg(p){ if(!IMGS[p]){ const i = new Image(); i.src = p; IMGS[p] = i; } return IMGS[p]; }
 function layerPath(anim, name){ const d = ANIMS[anim].dir, f = LPC_FILES[d] || {};
@@ -1882,18 +2020,21 @@ function drawLPC(c, look, x, y, st, sx, sy){
   c.restore(); return true;
 }
 const CASTER_W = {thrust:["WEAPON_staff"]};
+function raceLook(key, outfit, race, extra){ return Object.assign({key, outfit, tint:race==="human"?null:race, body:race==="undead"?"skeleton":null}, extra||{}); }
 function playerLook(){ const cls = S.cls, race = S.race;
-  const w = cls==="warrior" ? {walk:["WEAPON_shield_cutout_body"], slash:["WEAPON_shield_cutout_body"], thrust:["WEAPON_shield_cutout_body"]} : cls==="hunter" ? {bow:["WEAPON_bow","WEAPON_arrow"]} : CASTER_W;
-  return {key:`p_${cls}_${race}`, outfit:cls, tint:race==="human"?null:race, weapons:w, big:cls==="warrior"?BIG_SWORD:null}; }
+  const w = (cls==="warrior"||cls==="paladin") ? {walk:["WEAPON_shield_cutout_body"], slash:["WEAPON_shield_cutout_body"], thrust:["WEAPON_shield_cutout_body"]} : cls==="hunter" ? {bow:["WEAPON_bow","WEAPON_arrow"]} : CASTER_W;
+  return raceLook(`p_${cls}_${race}`, cls, race, {weapons:w, big:(cls==="warrior"||cls==="paladin")?BIG_SWORD:null}); }
 function raceScale(race){ return race==="dwarf" ? [1.1, 0.86] : race==="orc" ? [1.06, 1.04] : [1, 1]; }
 function npcLook(n){ const outfit = n.trains || (n.shop?"merchant" : n.smith?"smith" : n.alch?"alch" : "guard");
-  return {key:`n_${outfit}_${n.race||"human"}`, outfit, tint:(n.race&&n.race!=="human")?n.race:null, weapons:CASTER_W}; }
+  return raceLook(`n_${outfit}_${n.race||"human"}`, outfit, n.race||"human", {weapons:CASTER_W}); }
 const MOB_LOOK = {
   thief:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}}, bandit:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}},
   raider:{outfit:"bandit", tint:"orc", weapons:{slash:["WEAPON_dagger"]}}, leader:{outfit:"chief", big:BIG_SWORD, scale:1.2},
   kobold:{outfit:"bandit", tint:"kobold", scale:0.78, weapons:{slash:["WEAPON_dagger"]}}, frostkobold:{outfit:"bandit", tint:"frost", scale:0.8, weapons:{slash:["WEAPON_dagger"]}},
   snorre:{outfit:"chief", tint:"kobold", scale:1.0, big:BIG_SWORD}, lostdruid:{outfit:"druid", tint:"elf", cast:true},
   ghoul:{outfit:"bones", body:"skeleton", tint:"ghoul"}, morvel:{outfit:"wraith", body:"skeleton", tint:"wraith", scale:1.2, cast:true},
+  shambler:{outfit:"rags", body:"skeleton", tint:"undead"}, robber:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}},
+  boneguard:{outfit:"draug", body:"skeleton", tint:"undead", scale:1.05, weapons:{slash:["WEAPON_dagger"]}}, vex:{outfit:"necro", body:"skeleton", tint:"wraith", scale:1.15, cast:true},
   boss:{outfit:"draug", body:"skeleton", tint:"frost", scale:1.45, big:BIG_SWORD}
 };
 function mobLook(m){ const L = MOB_LOOK[m.type]; if(!L) return null; return {key:"m_"+m.type, ...L}; }
@@ -1910,7 +2051,7 @@ const CREATURE_LOOK = {
   wolf:{c:"Wolf"}, oldgray:{c:"Wolf", tint:["#ffffff",0.55], s:1.25}, boar:{c:"Boar"}, lynx:{c:"Fox", tint:["#d8b070",0.35], s:1.1},
   shadewolf:{c:"Wolf", tint:["#6a4aa0",0.35]}, rocksvin:{c:"Boar", tint:["#9aa0a8",0.5]}, icebear:{c:"Bear", tint:["#ffffff",0.6], s:1.1},
   jackal:{c:"Fox", tint:["#e0c080",0.4]}, bristle:{c:"Boar", tint:["#2a1a10",0.3]}, hound:{c:"Wolf", tint:["#d0441a",0.4], s:1.1},
-  frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}
+  frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}, rat:{c:"Rabbit", tint:["#4a4a50",0.6], s:0.85}, plaguewolf:{c:"Wolf", tint:["#7a9a40",0.4]}, plaguebear:{c:"Bear", tint:["#6a8a40",0.35], s:1.1}
 };
 const CSHEETS = {};
 function creatureSheet(c, file, tint){
@@ -1928,6 +2069,59 @@ function drawCreature(c, look, x, y, anim, fx, ph, lunge){
   c.scale(fx>0 ? -sc : sc, sc); c.imageSmoothingEnabled = false;
   c.drawImage(sh, f*C.w, 0, C.w, C.h, -C.w/2, -C.h+2, C.w, C.h); c.restore(); return true;
 }
+// ---- boss sprites (front-facing sheets, used only for bosses)
+const BSHEET = {
+  gnu:{f:"gnu-120x100", w:120, h:100, foot:9}, shadow:{f:"shadow-80x70", w:80, h:70, foot:0}, disciple:{f:"disciple-45x51", w:45, h:51, foot:0},
+  andro:{f:"andromalius-57x88", w:57, h:88, foot:2}, mage1:{f:"mage-1-85x94", w:85, h:94, foot:2}, mage2:{f:"mage-2-122x110", w:122, h:110, foot:2},
+  mage3:{f:"mage-3-87x110", w:87, h:110, foot:2}, tent:{f:"tentacles-25x90", w:25, h:90, foot:0}, acid:{f:"acid2-14x67", w:14, h:67, foot:0},
+  flame:{f:"flameball-32x32", w:32, h:32, foot:0}, bullet:{f:"mage-bullet-13x13", w:13, h:13, foot:0}
+};
+// idle/attack: [sheet, row, frames]
+const BOSS_LOOK = {
+  leader:{idle:["gnu",0,5], attack:["gnu",1,5], s:0.95, fx:"acid"},
+  morvel:{idle:["shadow",4,4], attack:["shadow",4,4], s:1.25, fx:"tent", tint:["#4a3a8a",0.25]},
+  snorre:{idle:["disciple",0,4], attack:["disciple",1,4], s:1.5, fx:"acid", tint:["#d0a040",0.35]},
+  garuk:{idle:["gnu",0,5], attack:["gnu",1,5], s:1.05, fx:"acid", tint:["#4a7a2a",0.3]},
+  vex:{idle:["mage1",0,4], attack:["mage2",0,4], s:0.95, fx:"tent", bullet:true},
+  boss:{idle:["mage3",0,4], attack:["mage3",1,4], s:1.5, fx:"tent", tint:["#7ab0c8",0.2]},
+  magma:{idle:["andro",0,8], attack:["andro",1,8], s:1.5, fx:"flame", tint:["#ff5a10",0.4]},
+  giant:{idle:["gnu",0,5], attack:["gnu",1,5], s:1.4, fx:"acid", tint:["#bfe6ff",0.45]}
+};
+const BS_CACHE = {};
+function bossSheet(key, tint){
+  const ck = key + (tint ? tint.join() : ""); if(BS_CACHE[ck]) return BS_CACHE[ck];
+  const im = sImg(`assets/bosses/${BSHEET[key].f}.png`); if(!im.complete || !im.naturalWidth) return null;
+  if(!tint){ BS_CACHE[ck] = im; return im; }
+  const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; const g = cv.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = tint[1]; g.fillStyle = tint[0]; g.fillRect(0,0,cv.width,cv.height);
+  BS_CACHE[ck] = cv; return cv;
+}
+function drawBoss(c, m){
+  const L = BOSS_LOOK[m.type]; if(!L) return false;
+  const attacking = m.swing > 0 || m.tele || (m.act && m.act.t < m.act.dur);
+  const [key, row, n] = attacking ? L.attack : L.idle, B = BSHEET[key], sh = bossSheet(key, L.tint); if(!sh) return false;
+  const f = Math.floor((time + m.ph) * (attacking ? 9 : 6)) % n, sc = L.s;
+  c.save(); c.translate(m.x, m.y); c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 0, B.w*0.3*sc, 6*sc);
+  c.scale(m.fx < 0 ? -sc : sc, sc); c.imageSmoothingEnabled = false;
+  c.drawImage(sh, f*B.w, row*B.h, B.w, B.h, -B.w/2, -B.h + B.foot, B.w, B.h);
+  if(m.flash > 0){ c.globalAlpha = 0.35; c.globalCompositeOperation = "lighter"; c.drawImage(sh, f*B.w, row*B.h, B.w, B.h, -B.w/2, -B.h + B.foot, B.w, B.h); }
+  c.restore(); return true;
+}
+function bossTop(m){ const L = BOSS_LOOK[m.type], B = BSHEET[L.idle[0]]; return m.y - (B.h - B.foot)*L.s - 2; }
+// one-shot effect sprites (boss specials)
+let bfx = [];
+function spawnBossFx(m){ const L = BOSS_LOOK[m.type]; if(!L || !L.fx || !m.tele) return; const n = 10, r = m.tele.r;
+  for(let i=0;i<n;i++){ const a = i/n*Math.PI*2; bfx.push({k:L.fx, x:m.tele.x + Math.cos(a)*r*0.75, y:m.tele.y + Math.sin(a)*r*0.75, t:0, dur:0.9}); }
+  bfx.push({k:L.fx, x:m.tele.x, y:m.tele.y, t:0, dur:0.9}); }
+function drawBossFx(c, dt){
+  for(const e of bfx){ e.t += dt; const B = BSHEET[e.k], sh = bossSheet(e.k); if(!sh) continue;
+    const rows = Math.floor(sh.height / B.h), cols = Math.floor(sh.width / B.w), total = rows*cols, i = Math.min(total-1, Math.floor(e.t/e.dur*total));
+    const sc = e.k==="flame" ? 1.4 : 1; c.save(); c.globalAlpha = Math.min(1, (e.dur - e.t)*4); c.imageSmoothingEnabled = false;
+    c.drawImage(sh, (i%cols)*B.w, Math.floor(i/cols)*B.h, B.w, B.h, e.x - B.w*sc/2, e.y - B.h*sc, B.w*sc, B.h*sc); c.restore(); }
+  bfx = bfx.filter(e=>e.t < e.dur);
+}
+function drawBullet(c, p){ const B = BSHEET.bullet, sh = bossSheet("bullet"); if(!sh) return false; const f = Math.floor(time*12) % 5;
+  c.save(); c.imageSmoothingEnabled = false; c.drawImage(sh, f*B.w, 0, B.w, B.h, p.x - B.w, p.y - B.h, B.w*2, B.h*2); c.restore(); return true; }
 const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
 </script>
 <script>
@@ -1942,7 +2136,7 @@ function drawItemSprite(cv, k, fallbackCol){ const it = ITEMS[k], img = it && it
     g.imageSmoothingEnabled = false; const s = Math.floor(cv.width/32); const o = (cv.width-32*s)/2; g.drawImage(img, it.spr[1]*32, 0, 32, 32, o, o, 32*s, 32*s); }
   else drawIcon(cv, "flask", fallbackCol); }
 for(const [k,src] of Object.entries(SHEETS)){ const im = new Image(); im.onload = ()=>{ if(running) buildHotbar(); }; im.src = src; SHEET_IMG[k] = im; }
-const WICON = {warrior:"sword", hunter:"bow", mage:"wand", priest:"tome", druid:"upg_wand"};
+const WICON = {warrior:"sword", hunter:"bow", mage:"wand", priest:"tome", druid:"upg_wand", paladin:"hammer"};
 const wIco = (name, px) => `<img src="assets/weapons/${name}.png" alt="" style="width:${px}px;height:${px}px;image-rendering:pixelated;vertical-align:middle;margin-right:6px;flex:none">`;
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 let lastErr = 0;
@@ -2035,13 +2229,13 @@ function updHUD(dt){
   setW($("phpi"), P.hp/P.maxHp); setW($("pshi"), P.shield/P.maxHp); setT($("phpt"), `${Math.ceil(P.hp)} / ${P.maxHp}`);
   const type = resType(), mr = maxRes(type); const ri = $("presi"); if(ri._c !== type){ ri._c = type; ri.style.background = RES_COLOR[type]; }
   setW(ri, P[type]/mr); setT($("prest"), `${RES_NAME[type]} ${Math.floor(P[type])} / ${mr}${P.form==="cat"&&P.cp?` · Kombo ${P.cp}`:""}`);
-  const bl = []; if(P.buffs.shout) bl.push("Stridsrop"); if(P.buffs.elixir) bl.push("Elixir"); if(P.buffs.dash) bl.push("Rusning"); if(P.buffs.hotstreak) bl.push("Het svit"); if(P.hots.length) bl.push("Helas"); if(P.shield>0) bl.push("Sköld");
+  const bl = []; if(P.buffs.shout) bl.push("Stridsrop"); if(P.buffs.elixir) bl.push("Elixir"); if(P.buffs.dash) bl.push("Rusning"); if(P.buffs.hotstreak) bl.push("Het svit"); if(P.buffs.avenging) bl.push("Rättfärdig vrede"); if(P.buffs.bubble) bl.push("Gudomlig sköld"); if(P.hots.length) bl.push("Helas"); if(P.shield>0) bl.push("Sköld");
   setT($("pbuffs"), bl.join(" · "));
   const t = P.target, tf = $("tframe");
   if(t && !t.dead){ tf.hidden = false; setT($("tname"), t.name); const tl = $("tlvl"); setT(tl, (t.elite?"Elit ":"")+"Nivå "+t.lvl); tl.className = "num "+lvlClass(t.lvl);
     setW($("thpi"), t.hp/t.maxHp); setT($("thpt"), `${Math.max(0,Math.ceil(t.hp))} / ${t.maxHp}`);
     const st = []; if(t.evading) st.push("Undviker"); if(t.stunT>0) st.push("Bedövad"); if(t.rootT>0) st.push("Fastfrusen"); if(t.slowT>0) st.push("Nedsaktad"); if(t.dots.length) st.push(t.dots.length+" effekt"+(t.dots.length>1?"er":""));
-    setT($("tdesc"), st.join(" · ") || (t.state==="chase"?"I strid":"Lugn")); }
+    if(P.autoTarget===t) st.unshift(dist(P,t)-t.r > (autoInfo()||{range:52}).range ? "Attackerar – gå närmare" : "Attackerar"); setT($("tdesc"), st.join(" · ") || (t.state==="chase"?"I strid":"Lugn")); }
   else tf.hidden = true;
   setT($("zone"), ZONES[curZone]?.name || ""); setT($("gold"), `${S.gold} guld`);
   const need = xpNeed(S.level); setW($("xpi"), S.level>=MAX_LVL ? 1 : S.xp/need); setT($("xpt"), S.level>=MAX_LVL ? "Maxnivå" : `${S.xp} / ${need} XP`);
@@ -2069,7 +2263,7 @@ function renderPanel(){
   if(panelKind==="char"){
     const type = CLASSES[S.cls].res;
     h += `<h2>${esc(S.name)}</h2><div class="muted">Nivå ${S.level} ${RACES[S.race].name} ${CLASSES[S.cls].name} · ${RACES[S.race].desc}</div>
-    <h3>Egenskaper</h3><div class="stats">
+    <div class="row" style="margin-top:8px"><button class="btn" data-act="newchar">Byt karaktär</button></div><h3>Egenskaper</h3><div class="stats">
       <div><span>Hälsa</span><span>${P.maxHp}</span></div><div><span>${RES_NAME[type]}</span><span>${type==="mana"?P.maxMana:100}</span></div>
       <div><span>Kraft</span><span>${fmt(pow()*genMult())}</span></div><div><span>Kritisk träff</span><span>${(critChance(null,"phys")*100).toFixed(0)}%</span></div>
       <div><span>Skada du tar</span><span>${Math.round(takenMult()*100)}%</span></div><div><span>Vapen</span><span>${wIco(WICON[S.cls],20)}${WEAPON_NAMES[S.cls]} +${S.weapon}</span></div>
@@ -2102,7 +2296,7 @@ function renderPanel(){
   } else if(panelKind==="help"){
     h += `<h2>Så spelar du</h2><div class="list">
       <div class="item"><div><b>Gå</b><div class="d">W A S D eller piltangenterna. På mobil: styrspaken nere till vänster.</div></div></div>
-      <div class="item"><div><b>Välj mål</b><div class="d">Klicka eller tryck på en fiende, eller tryck Tab för närmaste. Färgen på nivån visar hur svår den är: grön lätt, gul jämn, röd farlig.</div></div></div>
+      <div class="item"><div><b>Välj mål och attackera</b><div class="d">Vänsterklicka på en fiende för att markera den, eller tryck Tab för närmaste. Högerklicka, Ctrl+klicka, dubbelklicka eller tryck T för att börja attackera – då slår eller skjuter gubben automatiskt tills målet dör eller du byter mål. Esc avbryter. Färgen på nivån visar hur svår den är: grön lätt, gul jämn, röd farlig.</div></div></div>
       <div class="item"><div><b>Förmågor</b><div class="d">Tangent 1–9 och 0 eller klicka på knapparna längst ner. Trollformler med kasttid avbryts om du går. Q dricker läkedryck, R manadryck.</div></div></div>
       <div class="item"><div><b>Prata och samla</b><div class="d">Tryck E nära en person, en malmåder eller en ört. Personer med gult ! har uppdrag åt dig.</div></div></div>
       <div class="item"><div><b>Erfarenhet</b><div class="d">Du går upp i nivå genom att döda monster, klara uppdrag och samla malm och örter. Max är nivå 30. Monster som är 5 nivåer under dig ger ingen XP, och monster över din nivå är svårare att träffa och slår hårdare.</div></div></div>
@@ -2112,7 +2306,7 @@ function renderPanel(){
       <div class="item"><div><b>Talanger</b><div class="d">Från nivå 10 får du talangpoäng (tryck N) som gör dina förmågor eller din hjälte starkare.</div></div></div>
       <div class="item"><div><b>Elitfiender</b><div class="d">Bossar och elitfiender gör attacker med en röd cirkel. Spring ut ur cirkeln innan den fylls.</div></div></div>
       <div class="item"><div><b>Sparning</b><div class="d">Spelet sparas automatiskt${cloud?" i ditt konto och":""} i webbläsaren.</div></div></div>
-      <div class="item"><div><b>Övrigt</b><div class="d">C karaktär, B väska, L uppdrag, Esc stänger fönster. Smeden förbättrar vapnet med malm, alkemisten gör drycker av örter.</div></div><button class="btn" data-act="newchar">Ny karaktär</button></div></div>`;
+      <div class="item"><div><b>Övrigt</b><div class="d">C karaktär, B väska, L uppdrag, Esc stänger fönster. Smeden förbättrar vapnet med malm, alkemisten gör drycker av örter.</div></div><button class="btn" data-act="newchar">Byt karaktär</button></div></div>`;
   } else if(panelKind==="npc"){
     const n = NPCS.find(x=>x.id===panelArg);
     h += `<h2>${n.name}</h2><div class="muted">&lt;${n.role}&gt;</div>`;
@@ -2167,41 +2361,61 @@ $("panel").addEventListener("click", e=>{
   if(a==="craft"){ const r = RECIPES[+b.dataset.i]; for(const [kk,v] of Object.entries(r.need)) removeItem(kk, v); addItem(r.out, r.n); log(`Du bryggde ${ITEMS[r.out].name}.`, "#9cf07a"); refreshTracker(); }
   if(a==="tal"){ const t = TALENTS[S.cls].find(x=>x.id===id); S.talents[id] = (S.talents[id]||0)+1; recompute(false); buildHotbar(); log(`Talang: ${t.name} ${S.talents[id]}/${t.max}`, "#e6bd5c"); save(); }
   if(a==="respec"){ S.talents = {}; recompute(false); buildHotbar(); }
-  if(a==="newchar"){ panelKind = "confirmnew"; }
-  if(a==="reallynew"){ closePanel(); running = false; S = null; try{ localStorage.removeItem(LS_KEY); }catch(_){} localSave = null; showCreate(); return; }
+  if(a==="newchar"){ save(true); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
   renderPanel();
 });
 
-// ======================= CREATION =======================
-let pick = {race:"human", cls:"mage"}, localSave = null;
+// ======================= CREATION / CHARACTER SELECT =======================
+const MAX_CHARS = 5;
+let pick = {race:"human", cls:"mage"}, localSave = null, chars = [], selChar = null, delArm = null;
+const newId = () => Math.random().toString(36).slice(2,10);
 function showCreate(){
-  $("create").hidden = false; renderPicks(); renderCont();
+  $("create").hidden = false; delArm = null;
+  if(chars.length){ showSelect(); } else showNew(false);
 }
-function renderCont(){
-  const s = localSave, box = $("contbox");
-  box.innerHTML = s ? `<button class="btn pri" id="cont" style="font-size:17px;padding:10px 22px">Fortsätt som ${esc(s.name)} · nivå ${s.level} ${RACES[s.race].name} ${CLASSES[s.cls].name}</button>` : "";
-  if(s) $("cont").onclick = ()=>startGame(s);
-  $("start").textContent = s ? "Skapa ny karaktär" : "Börja äventyret";
+function showSelect(){ $("selbox").hidden = false; $("newbox").hidden = true; if(!chars.find(c=>c.id===selChar)) selChar = chars[0] && chars[0].id; renderCharList(); }
+function showNew(back){ $("selbox").hidden = true; $("newbox").hidden = false; $("backbtn").hidden = !back; $("start").textContent = "Börja äventyret"; renderPicks(); }
+function renderCont(){ if(!running && !$("create").hidden){ if(chars.length && $("newbox").hidden) showSelect(); else if(chars.length && $("backbtn").hidden) showSelect(); } }
+function charPlace(c){ if(c.x==null) return HUBS[RACE_HUB[c.race]].name; const z = zinfo(zoneAtTile(Math.floor(c.x/TILE), Math.floor(c.y/TILE))); return z ? z.name : ""; }
+function renderCharList(){
+  chars.sort((a,b)=>(b.t||0)-(a.t||0));
+  $("charlist").innerHTML = chars.map(c=>`<div class="char ${c.id===selChar?"sel":""}" data-cid="${c.id}" role="button" tabindex="0"><canvas width="64" height="64" data-pv="${c.id}"></canvas><div class="ci"><b>${esc(c.name)}</b><div>Nivå ${c.level} ${RACES[c.race].name} ${CLASSES[c.cls].name} · ${esc(charPlace(c))}</div></div><button class="del ${delArm===c.id?"confirm":""}" data-del="${c.id}">${delArm===c.id?"Radera – är du säker?":"Radera"}</button></div>`).join("");
+  $("charcount").textContent = `${chars.length} av ${MAX_CHARS} karaktärer`;
+  $("newcharbtn").disabled = chars.length >= MAX_CHARS; $("newcharbtn").title = chars.length >= MAX_CHARS ? "Du har redan 5 karaktärer. Radera en för att skapa en ny." : "";
+  $("playbtn").disabled = !selChar;
+  let missing = false;
+  document.querySelectorAll("[data-pv]").forEach(cv=>{ const c = chars.find(x=>x.id===cv.dataset.pv), g = cv.getContext("2d"); g.clearRect(0,0,64,64);
+    const [sx,sy] = raceScale(c.race); if(!drawLPC(g, raceLook(`p_${c.cls}_${c.race}`, c.cls, c.race), 32, 62, {anim:"walk", frame:0, dir:2}, sx, sy)) missing = true; });
+  if(missing){ clearTimeout(renderCharList._t); renderCharList._t = setTimeout(()=>{ if(!running && !$("selbox").hidden) renderCharList(); }, 300); }
 }
+$("charlist").addEventListener("click", e=>{
+  const d = e.target.closest("[data-del]");
+  if(d){ const id = d.dataset.del; if(delArm === id){ chars = chars.filter(c=>c.id!==id); delArm = null; storeChars(true); if(!chars.length){ showNew(false); return; } } else delArm = id; renderCharList(); return; }
+  const c = e.target.closest("[data-cid]"); if(c){ selChar = c.dataset.cid; delArm = null; renderCharList(); }
+});
+$("charlist").addEventListener("dblclick", e=>{ const c = e.target.closest("[data-cid]"); if(c && !e.target.closest("[data-del]")) startGame(chars.find(x=>x.id===c.dataset.cid)); });
+$("playbtn").addEventListener("click", ()=>{ const c = chars.find(x=>x.id===selChar); if(c) startGame(c); });
+$("newcharbtn").addEventListener("click", ()=>{ if(chars.length < MAX_CHARS) showNew(true); });
+$("backbtn").addEventListener("click", showSelect);
 function renderPicks(){
   $("races").innerHTML = Object.entries(RACES).map(([k,r])=>`<button class="pick ${pick.race===k?"sel":""}" data-race="${k}"><b><i class="sw" style="background:${r.skin}"></i>${r.name}</b><span>${r.desc}</span></button>`).join("");
   $("classes").innerHTML = Object.entries(CLASSES).map(([k,c])=>`<button class="pick ${pick.cls===k?"sel":""}" data-cls="${k}"><b><i class="sw" style="background:${c.color}"></i>${c.name}</b></button>`).join("");
   const pv = $("preview").getContext("2d"); pv.setTransform(1,0,0,1,0,0); pv.clearRect(0,0,120,120); pv.setTransform(2.2,0,0,2.2,0,0);
-  const look = {key:`p_${pick.cls}_${pick.race}`, outfit:pick.cls, tint:pick.race==="human"?null:pick.race}; const [sx,sy] = raceScale(pick.race);
+  const look = raceLook(`p_${pick.cls}_${pick.race}`, pick.cls, pick.race); const [sx,sy] = raceScale(pick.race);
   pv.setTransform(1.7,0,0,1.7,0,0);
   if(!drawLPC(pv, look, 35, 66, {anim:"walk", frame:0, dir:2}, sx, sy)){ pv.setTransform(2.2,0,0,2.2,0,0); drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1}); clearTimeout(renderPicks._t); renderPicks._t = setTimeout(()=>{ if(!running) renderPicks(); }, 250); }
 }
 $("races").addEventListener("click", e=>{ const b = e.target.closest("[data-race]"); if(b){ pick.race = b.dataset.race; renderPicks(); } });
 $("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b){ pick.cls = b.dataset.cls; renderPicks(); } });
-let confirmNew = false;
 $("start").addEventListener("click", ()=>{
   const name = ($("cname").value||"").trim().slice(0,16) || "Hjälte";
-  if(localSave && !confirmNew){ confirmNew = true; $("start").textContent = `Klicka igen för att ersätta ${localSave.name}`; return; }
-  confirmNew = false; startGame(newSave(name, pick.race, pick.cls), true);
+  if(chars.length >= MAX_CHARS) return;
+  const sv = newSave(name, pick.race, pick.cls); sv.id = newId(); chars.push(sv); selChar = sv.id;
+  startGame(sv, true);
 });
 
 function startGame(sv, fresh){
-  S = Object.assign(newSave(sv.name, sv.race, sv.cls), sv);
+  S = Object.assign(newSave(sv.name, sv.race, sv.cls), sv); if(!S.id){ S.id = newId(); }
   S.skills = Object.assign({mining:1, herb:1}, sv.skills||{});
   if(!Array.isArray(sv.learned)) S.learned = allBarIds().filter(id=>AB[id].lvl<=S.level && AB[id].lvl<=16);
   S.learned = S.learned.filter(id=>AB[id]);
@@ -2227,6 +2441,7 @@ addEventListener("keydown", e=>{
   if(e.repeat) return;
   if(k.length===1 && k>="0" && k<="9"){ tryUse(currentBar()[k==="0"?9:+k-1]); return; }
   if(k==="tab"){ e.preventDefault(); cycleTarget(); return; }
+  if(k==="t"){ startAttack(); return; }
   if(k==="e") return interact();
   if(k==="q") return usePotion("hp");
   if(k==="r") return usePotion("mana");
@@ -2237,18 +2452,26 @@ addEventListener("keyup", e=>keys.delete(e.key.toLowerCase()));
 addEventListener("blur", ()=>keys.clear());
 $("menu").addEventListener("click", e=>{ const b = e.target.closest("[data-p]"); if(b) openPanel(b.dataset.p); });
 $("revive").addEventListener("click", revive);
+// start auto attack on the current target (right-click, T or the touch button)
+function startAttack(m){ m = m || P.target; if(!m || m.dead || P.dead) return; setTarget(m); P.autoTarget = m; P.autoT = Math.min(P.autoT, 0.2); }
+function mobAt(e){ const wx = e.clientX/ZOOM + cam.x, wy = e.clientY/ZOOM + cam.y; let best = null, bd = 34;
+  for(const m of mobs){ if(m.dead) continue; const cy = m.y - Math.max(m.r, 22); const d = Math.hypot(m.x-wx, cy-wy); if(d < bd + m.r*0.5){ bd = d; best = m; } } return best; }
+let lastRight = 0;
+// right-click (also Ctrl+click on a Mac, and double-click) starts attacking
+cv.addEventListener("contextmenu", e=>{ e.preventDefault(); if(running && performance.now()-lastRight > 150) startAttack(mobAt(e)); });
+cv.addEventListener("dblclick", e=>{ if(running){ const m = mobAt(e); if(m) startAttack(m); } });
 cv.addEventListener("pointerdown", e=>{
   if(!running) return;
   const wx = e.clientX/ZOOM + cam.x, wy = e.clientY/ZOOM + cam.y;
-  let best = null, bd = 34;
-  for(const m of mobs){ if(m.dead) continue; const cy = m.y - m.r; const d = Math.hypot(m.x-wx, cy-wy); if(d < bd + m.r*0.5){ bd = d; best = m; } }
+  const best = mobAt(e);
+  if(e.button === 2 || (e.button === 0 && e.ctrlKey)){ lastRight = performance.now(); startAttack(best); return; }
   if(best){ setTarget(best); return; }
   for(const n of npcs){ if(Math.hypot(n.x-wx, n.y-20-wy) < 26){ if(dist(P,n) < 90) openPanel("npc", n.id); else err("För långt bort"); return; } }
   for(const n of nodes){ if(n.active && Math.hypot(n.x-wx, n.y-wy) < 22){ if(dist(P,n) < 60) startGather(n); else err("För långt bort"); return; } }
 });
 // touch joystick
 const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
-if(isTouch){ $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; }
+if(isTouch){ $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
 (function(){ const j = $("joy"), k = j.querySelector("i"); let id = null;
   const mv = e=>{ const r = j.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const l = Math.hypot(dx,dy), mx = 45; if(l > mx){ dx = dx/l*mx; dy = dy/l*mx; } joy.x = dx/mx; joy.y = dy/mx; k.style.transform = `translate(${dx}px,${dy}px)`; };
   j.addEventListener("pointerdown", e=>{ id = e.pointerId; j.setPointerCapture(id); mv(e); });
@@ -2258,21 +2481,36 @@ if(isTouch){ $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").
 })();
 $("interact").addEventListener("click", interact);
 $("tabbtn").addEventListener("click", cycleTarget);
+$("atkbtn").addEventListener("click", ()=>startAttack());
 
 // ======================= SAVE =======================
-const LS_KEY = "rimfrost-save-v1";
+// Up to 5 characters, kept in this browser and (on claude.ai) in your account.
+const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?Math.round(P.x):null, y:P?Math.round(P.y):null, t:Date.now()}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?Math.round(P.x):null, y:P?Math.round(P.y):null, t:Date.now()}; }
+function storeChars(important){
+  try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
+  if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
+}
 function save(important){
   if(!S || !running) return;
   const data = serialize(); localSave = data;
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(data)); }catch(_){}
-  if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
+  const i = chars.findIndex(c=>c.id===data.id); if(i>=0) chars[i] = data; else chars.push(data);
+  storeChars(important);
 }
 function pushCloud(){
   if(!cloud) return; if(cloudBusy){ cloudDirty = true; return; }
   cloudBusy = true; lastCloud = Date.now();
-  cloud.ref.set({json: JSON.stringify(serialize()), t: Date.now()}).catch(()=>{ cloud = null; }).finally(()=>{ cloudBusy = false; if(cloudDirty && cloud){ cloudDirty = false; pushCloud(); } });
+  cloud.ref.set({json: JSON.stringify({v:4, chars}), t: Date.now()}).catch(()=>{ cloud = null; }).finally(()=>{ cloudBusy = false; if(cloudDirty && cloud){ cloudDirty = false; pushCloud(); } });
+}
+function mergeChars(list){
+  for(const c of list){ if(!c || !c.name) continue; if(!c.id) c.id = newId();
+    const i = chars.findIndex(x=>x.id===c.id); if(i<0) chars.push(c); else if((c.t||0) > (chars[i].t||0)) chars[i] = c; }
+  chars.sort((a,b)=>(b.t||0)-(a.t||0)); chars = chars.slice(0, MAX_CHARS);
+}
+function loadLocalChars(){
+  try{ const raw = localStorage.getItem(LS_CHARS); if(raw) mergeChars(JSON.parse(raw)); }catch(_){}
+  try{ const old = localStorage.getItem(LS_KEY); if(old){ const s = JSON.parse(old); if(s && s.name && !chars.some(c=>c.name===s.name && c.race===s.race && c.cls===s.cls)){ s.id = s.id || newId(); mergeChars([s]); } localStorage.removeItem(LS_KEY); localStorage.setItem(LS_CHARS, JSON.stringify(chars)); } }catch(_){}
 }
 async function initCloud(){
   try{
@@ -2284,7 +2522,7 @@ async function initCloud(){
     const snap = await ref.get();
     cloud = {ref};
     if(snap.exists){ const d = snap.data(); const s = d && d.json ? JSON.parse(d.json) : null;
-      if(s && s.name && (!localSave || (s.t||0) > (localSave.t||0))){ localSave = s; if(!running) renderCont(); } }
+      if(s){ const before = chars.length; mergeChars(Array.isArray(s.chars) ? s.chars : [s]); if(!running){ if(!before && chars.length) showSelect(); else if(!$("selbox").hidden) renderCharList(); } } }
   }catch(_){ cloud = null; }
 }
 addEventListener("visibilitychange", ()=>{ if(document.hidden) save(true); });
@@ -2300,7 +2538,7 @@ function loop(ts){
 }
 function boot(data){
   resize(); genWorld(); makeTiles(); makeMinimap();
-  try{ const raw = localStorage.getItem(LS_KEY); if(raw) localSave = JSON.parse(raw); }catch(_){ localSave = null; }
+  loadLocalChars();
   const hs = data && data.save;
   if(hs && hs.name) startGame(hs); else showCreate();
   initCloud();
