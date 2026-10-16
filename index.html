@@ -143,6 +143,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .pick span{font-size:12.5px;color:var(--mute)}
 .pick.sel{border-color:var(--frost);box-shadow:0 0 0 1px var(--frost) inset;background:#18262e}
 .pick .sw{width:18px;height:18px;border-radius:50%;display:inline-block;vertical-align:-3px;margin-right:6px;border:1px solid rgba(255,255,255,.3)}
+#cname.need{border-color:var(--bad);box-shadow:0 0 0 2px rgba(224,80,74,.35)}
 #cname{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 12px;font-size:16px;font-family:var(--body);width:min(320px,100%)}
 #preview{display:block;width:120px;height:120px;margin:0 auto}
 .chars{display:flex;flex-direction:column;gap:8px}
@@ -247,7 +248,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
     <div id="newbox" class="list" style="gap:14px">
       <div class="row"><button class="btn" id="backbtn" hidden>← Tillbaka</button></div>
       <canvas id="preview" width="120" height="120"></canvas>
-      <div class="row" style="justify-content:center"><input id="cname" maxlength="16" placeholder="Namn på din hjälte" value="Christoffer"></div>
+      <div class="row" style="justify-content:center"><input id="cname" maxlength="16" placeholder="Välj namn" value=""></div>
       <h3 class="muted" style="margin:6px 0 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Ras</h3>
       <div class="picks" id="races"></div>
       <h3 class="muted" style="margin:6px 0 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Klass</h3>
@@ -3244,7 +3245,7 @@ function showCreate(){
   if(chars.length){ showSelect(); } else showNew(false);
 }
 function showSelect(){ $("selbox").hidden = false; $("newbox").hidden = true; if(!chars.find(c=>c.id===selChar)) selChar = chars[0] && chars[0].id; renderCharList(); }
-function showNew(back){ $("selbox").hidden = true; $("newbox").hidden = false; $("backbtn").hidden = !back; $("start").textContent = "Börja äventyret"; renderPicks(); }
+function showNew(back){ $("cname").value = ""; $("cname").classList.remove("need"); $("cname").placeholder = "Välj namn"; $("selbox").hidden = true; $("newbox").hidden = false; $("backbtn").hidden = !back; $("start").textContent = "Börja äventyret"; renderPicks(); }
 function renderCont(){ if(!running && !$("create").hidden){ if(chars.length && $("newbox").hidden) showSelect(); else if(chars.length && $("backbtn").hidden) showSelect(); } }
 function charPlace(c){ if(c.x==null) return HUBS[RACE_HUB[c.race]].name; const z = zinfo(zoneAtTile(Math.floor(c.x/TILE), Math.floor(c.y/TILE))); return z ? z.name : ""; }
 function renderCharList(){
@@ -3290,8 +3291,10 @@ function renderPicks(){
 }
 $("races").addEventListener("click", e=>{ const b = e.target.closest("[data-race]"); if(b){ pick.race = b.dataset.race; renderPicks(); } });
 $("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b){ pick.cls = b.dataset.cls; renderPicks(); } });
+$("cname").addEventListener("input", ()=>$("cname").classList.remove("need"));
 $("start").addEventListener("click", ()=>{
-  const name = ($("cname").value||"").trim().slice(0,16) || "Hjälte";
+  const name = ($("cname").value||"").trim().slice(0,16);
+  if(!name){ const c = $("cname"); c.classList.add("need"); c.placeholder = "Välj ett namn först"; c.focus(); return; }
   if(chars.length >= MAX_CHARS) return;
   const sv = newSave(name, pick.race, pick.cls); sv.id = newId(); chars.push(sv); selChar = sv.id;
   startGame(sv, true);
