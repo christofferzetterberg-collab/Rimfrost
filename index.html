@@ -143,6 +143,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .pick span{font-size:12.5px;color:var(--mute)}
 .pick.sel{border-color:var(--frost);box-shadow:0 0 0 1px var(--frost) inset;background:#18262e}
 .pick .sw{width:18px;height:18px;border-radius:50%;display:inline-block;vertical-align:-3px;margin-right:6px;border:1px solid rgba(255,255,255,.3)}
+.pick:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(1)}
 #cname.need{border-color:var(--bad);box-shadow:0 0 0 2px rgba(224,80,74,.35)}
 #cname{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 12px;font-size:16px;font-family:var(--body);width:min(320px,100%)}
 #preview{display:block;width:120px;height:120px;margin:0 auto}
@@ -270,6 +271,14 @@ const RACES = {
   undead:{name:"Odöd", skin:"#b8c4a8", desc:"Återhämtar hälsa och mana 50% snabbare utanför strid.", hair:"#3a3a3a"}
 };
 
+// which classes each race may choose
+const RACE_CLASSES = {
+  human:["mage","warrior","priest","druid"],
+  orc:["warrior","hunter","mage"],
+  elf:["mage","warrior","hunter","priest","druid"],
+  dwarf:["warrior","hunter","paladin"],
+  undead:["mage","warrior","priest","paladin"]
+};
 const CLASSES = {
   mage:{name:"Mage", color:"#4a7be0", res:"mana", hp:0.9, armor:1},
   warrior:{name:"Warrior", color:"#b0763a", res:"rage", hp:1.25, armor:0.85},
@@ -3283,17 +3292,19 @@ $("newcharbtn").addEventListener("click", ()=>{ if(chars.length < MAX_CHARS) sho
 $("backbtn").addEventListener("click", showSelect);
 function renderPicks(){
   $("races").innerHTML = Object.entries(RACES).map(([k,r])=>`<button class="pick ${pick.race===k?"sel":""}" data-race="${k}"><b><i class="sw" style="background:${r.skin}"></i>${r.name}</b><span>${r.desc}</span></button>`).join("");
-  $("classes").innerHTML = Object.entries(CLASSES).map(([k,c])=>`<button class="pick ${pick.cls===k?"sel":""}" data-cls="${k}"><b><i class="sw" style="background:${c.color}"></i>${c.name}</b></button>`).join("");
+  if(!RACE_CLASSES[pick.race].includes(pick.cls)) pick.cls = RACE_CLASSES[pick.race][0];
+  $("classes").innerHTML = Object.entries(CLASSES).map(([k,c])=>`<button class="pick ${pick.cls===k?"sel":""}" data-cls="${k}" ${RACE_CLASSES[pick.race].includes(k)?"":`disabled title="${RACES[pick.race].name} kan inte vara ${c.name}"`}><b><i class="sw" style="background:${c.color}"></i>${c.name}</b></button>`).join("");
   const pv = $("preview").getContext("2d"); pv.setTransform(1,0,0,1,0,0); pv.clearRect(0,0,120,120); pv.setTransform(2.2,0,0,2.2,0,0);
   const look = raceLook(`p_${pick.cls}_${pick.race}`, pick.cls, pick.race); const [sx,sy] = raceScale(pick.race);
   pv.setTransform(1.7,0,0,1.7,0,0);
   if(!drawLPC(pv, look, 35, 66, {anim:"walk", frame:0, dir:2}, sx, sy)){ pv.setTransform(2.2,0,0,2.2,0,0); drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1}); clearTimeout(renderPicks._t); renderPicks._t = setTimeout(()=>{ if(!running) renderPicks(); }, 250); }
 }
 $("races").addEventListener("click", e=>{ const b = e.target.closest("[data-race]"); if(b){ pick.race = b.dataset.race; renderPicks(); } });
-$("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b){ pick.cls = b.dataset.cls; renderPicks(); } });
+$("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b && !b.disabled && RACE_CLASSES[pick.race].includes(b.dataset.cls)){ pick.cls = b.dataset.cls; renderPicks(); } });
 $("cname").addEventListener("input", ()=>$("cname").classList.remove("need"));
 $("start").addEventListener("click", ()=>{
   const name = ($("cname").value||"").trim().slice(0,16);
+  if(!RACE_CLASSES[pick.race].includes(pick.cls)) return;
   if(!name){ const c = $("cname"); c.classList.add("need"); c.placeholder = "Välj ett namn först"; c.focus(); return; }
   if(chars.length >= MAX_CHARS) return;
   const sv = newSave(name, pick.race, pick.cls); sv.id = newId(); chars.push(sv); selChar = sv.id;
