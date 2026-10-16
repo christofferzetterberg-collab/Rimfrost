@@ -65,7 +65,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #cast i{background:linear-gradient(90deg,#c9a640,#f2d77a)}
 #hotbar{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .slot{position:relative;width:48px;height:48px;border-radius:6px;border:1px solid #3b4955;background:#10161a;padding:0;overflow:hidden;color:#fff}
-.slot canvas{display:block;width:100%;height:100%}
+.slot canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.ico{display:inline-block;width:32px;height:32px;vertical-align:middle;margin-right:6px;image-rendering:pixelated;background-repeat:no-repeat;flex:none}
 .slot .k{position:absolute;top:1px;left:3px;font-size:11px;font-weight:800;text-shadow:0 1px 2px #000}
 .slot .cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;text-shadow:0 1px 2px #000}
 .slot.oom canvas{filter:saturate(.25) brightness(.55)}
@@ -388,8 +389,8 @@ const AB = {
   bear:{name:"Björnhamn", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
     desc:()=>`Byter hamn till björn: +60% hälsa, mindre skada och använder ilska. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="bear"?null:"bear")},
-  cat:{name:"Katthamn", lvl:10, cost:0, range:0, school:"nature", icon:"cat", tgt:"self", offGcd:true, form:true,
-    desc:()=>`Byter hamn till katt: +30% fart, snabba attacker och energi. Tryck igen för att återgå.`,
+  cat:{name:"Varghamn", lvl:10, cost:0, range:0, school:"nature", icon:"cat", tgt:"self", offGcd:true, form:true,
+    desc:()=>`Byter hamn till varg: +30% fart, snabba attacker och energi. Tryck igen för att återgå.`,
     run:()=>setForm(P.form==="cat"?null:"cat")},
   // bear
   maul:{name:"Björnslag", lvl:10, cost:15, res:"rage", range:55, school:"phys", icon:"claw", tgt:"enemy",
@@ -485,8 +486,8 @@ const TALENTS = {
     {id:"moonfury",tier:1,max:3,name:"Månraseri",d:r=>`Naturens vrede, Månsken och Stjärnfall gör +${8*r}% skada.`},
     {id:"naturalist",tier:1,max:3,name:"Naturalist",d:r=>`+${5*r}% maxhälsa.`},
     {id:"impRejuv",tier:1,max:3,name:"Förbättrad föryngring",d:r=>`Dina helningar är ${10*r}% starkare.`},
-    {id:"d_dodge",tier:2,max:3,name:"Kattreflexer",eff:{dodge:0.01},d:r=>`+${r}% chans att undvika attacker.`},
-    {id:"feral",tier:2,max:3,name:"Vildinstinkt",d:r=>`Attacker i björn- och katthamn gör +${8*r}% skada.`},
+    {id:"d_dodge",tier:2,max:3,name:"Vargreflexer",eff:{dodge:0.01},d:r=>`+${r}% chans att undvika attacker.`},
+    {id:"feral",tier:2,max:3,name:"Vildinstinkt",d:r=>`Attacker i björn- och varghamn gör +${8*r}% skada.`},
     {id:"thickHide",tier:2,max:2,name:"Tjock päls",d:r=>`Du tar ${5*r}% mindre skada i björnhamn.`},
     {id:"naturesGrace",tier:2,max:3,name:"Naturens nåd",d:r=>`Naturens vrede och Stjärnfall kastas ${(0.15*r).toFixed(2)} sek snabbare.`},
     {id:"heartWild",tier:3,max:1,name:"Vildmarkens hjärta",d:()=>`+10% skada med allt och +10% hälsa i björnhamn.`},
@@ -500,12 +501,12 @@ const ITEMS = {
   obsidian:{name:"Obsidian", sell:15, kind:"ore"}, rimkr:{name:"Rimkristall", sell:22, kind:"ore"},
   ang:{name:"Ängsblomma", sell:2, kind:"herb"}, silver:{name:"Silverört", sell:5, kind:"herb"}, drake:{name:"Draköga", sell:10, kind:"herb"},
   fireflower:{name:"Eldblomma", sell:15, kind:"herb"}, iceflower:{name:"Isblomma", sell:22, kind:"herb"},
-  potHp:{name:"Läkedryck", sell:3, kind:"use", desc:"Återställer 40% hälsa."},
-  potHp2:{name:"Stor läkedryck", sell:8, kind:"use", desc:"Återställer 75% hälsa."},
-  potHp3:{name:"Mäktig läkedryck", sell:20, kind:"use", desc:"Återställer all hälsa."},
-  potMana:{name:"Manadryck", sell:3, kind:"use", desc:"Återställer 50% mana."},
-  potMana2:{name:"Stor manadryck", sell:20, kind:"use", desc:"Återställer all mana."},
-  elixir:{name:"Styrkeelixir", sell:10, kind:"use", desc:"+20% skada i 5 minuter."},
+  potHp:{spr:["potions",14], name:"Läkedryck", sell:3, kind:"use", desc:"Återställer 40% hälsa."},
+  potHp2:{spr:["potions",20], name:"Stor läkedryck", sell:8, kind:"use", desc:"Återställer 75% hälsa."},
+  potHp3:{spr:["potions",0], name:"Mäktig läkedryck", sell:20, kind:"use", desc:"Återställer all hälsa."},
+  potMana:{spr:["potions",12], name:"Manadryck", sell:3, kind:"use", desc:"Återställer 50% mana."},
+  potMana2:{spr:["potions",26], name:"Stor manadryck", sell:20, kind:"use", desc:"Återställer all mana."},
+  elixir:{spr:["potions",1], name:"Styrkeelixir", sell:10, kind:"use", desc:"+20% skada i 5 minuter."},
   pelt:{name:"Vargskinn", sell:1, kind:"junk"}, tusk:{name:"Svinbete", sell:1, kind:"junk"}, silk:{name:"Spindelsilke", sell:3, kind:"junk"},
   ring:{name:"Stulen ring", sell:6, kind:"junk"}, tooth:{name:"Trolltand", sell:5, kind:"junk"}, rune:{name:"Runsten", sell:7, kind:"junk"},
   cloth:{name:"Ruttet tyg", sell:6, kind:"junk"}, dust:{name:"Vättestoft", sell:8, kind:"junk"}, crown:{name:"Draugkronan", sell:150, kind:"junk"},
@@ -537,6 +538,9 @@ const RECIPES = [
   {out:"potMana2", n:1, need:{fireflower:1, iceflower:1}}
 ];
 function smithCost(w){ if(w>=15) return null; if(w<3) return {ore:"copper", n:4, gold:(w+1)*10}; if(w<6) return {ore:"iron", n:5, gold:(w+1)*15}; if(w<9) return {ore:"goldore", n:5, gold:(w+1)*20}; if(w<12) return {ore:"obsidian", n:6, gold:(w+1)*30}; return {ore:"rimkr", n:6, gold:(w+1)*40}; }
+// Sprite sheets (32x32 frames in one row). Loaded from the assets folder.
+const SHEETS = {potions:"assets/potions/potions.png"};
+const SHEET_IMG = {};
 const WEAPON_NAMES = {mage:"Stav", warrior:"Svärd", hunter:"Pilbåge", priest:"Stav", druid:"Stav"};
 
 </script>
@@ -620,6 +624,9 @@ const MOBS = {
   sandgolem:{name:"Sandgolem", lv:[6,9], color:"#c8a870", r:14, sp:72, shape:"golem", drop:"rune"},
   garuk:{name:"Krigsherre Garuk", lv:[10,10], color:"#5a7a3a", r:15, sp:92, shape:"troll", elite:4, drop:"tooth",
     special:{name:"Krigsstamp", every:9, r:100, windup:1.4, mult:2.2}},
+  // critters (neutral: only fight back)
+  hare:{name:"Hare", lv:[1,2], color:"#a07850", r:7, sp:110, shape:"critter", passive:true, drop:"pelt"},
+  deer:{name:"Kronhjort", lv:[3,6], color:"#7a5a40", r:13, sp:100, shape:"critter", passive:true, drop:"pelt"},
   // shared
   troll:{name:"Bergstroll", lv:[10,13], color:"#4f7d63", r:14, sp:88, shape:"troll", drop:"tooth"},
   golem:{name:"Stengolem", lv:[12,15], color:"#878275", r:15, sp:70, shape:"golem", drop:"rune"},
@@ -647,6 +654,7 @@ const SPAWNS = [
   ["icebear",10,"snodal"],["frostkobold",11,"snodal"],
   ["jackal",12,"rod"],["bristle",10,"rod"],["scorpion",9,"rod"],
   ["raider",11,"damm"],["sandgolem",9,"damm"],
+  ["hare",5,"frostang"],["hare",5,"silver"],["hare",4,"koppar"],["hare",4,"rod"],["deer",4,"frostang"],["deer",5,"silver"],["deer",4,"skugg"],["deer",4,"manskog"],
   ["troll",16,"jarn"],["golem",14,"jarn"],
   ["ghoul",14,"dimma"],["wisp",10,"dimma"],
   ["hound",14,"aska"],["elemental",10,"aska"],
@@ -964,7 +972,7 @@ function spawnAll(){
 function makeMob(type, tx, ty, lvl){
   const d = MOBS[type], el = d.elite||1;
   const m = {type, def:d, name:d.name, lvl, elite:!!d.elite, x:tx*TILE+16, y:ty*TILE+16, hx:tx*TILE+16, hy:ty*TILE+16, r:d.r, sp:d.sp,
-    maxHp:Math.round((30+lvl*18)*el), dmg:(3+lvl*2.4)*(d.elite?1.25:1), atkSpd:d.boss?2.2:2.0, state:"idle", dots:[], slowT:0, slowPct:0, rootT:0, stunT:0,
+    maxHp:Math.round((30+lvl*18)*el), dmg:(3+lvl*2.4)*(d.elite?1.25:1)*(d.passive?0.6:1), atkSpd:d.boss?2.2:2.0, state:"idle", dots:[], slowT:0, slowPct:0, rootT:0, stunT:0,
     atkT:0, wanderT:rand(1,4), wx:null, wy:null, specT:d.special?d.special.every:0, tele:null, dead:false, respawn:0, fx:1, flash:0, swing:0, evading:false, ph:Math.random()*6};
   m.hp = m.maxHp; return m;
 }
@@ -1024,7 +1032,7 @@ function aggroRange(m){ if(m.def.boss) return 170; return clamp(120 + (m.lvl-S.l
 function anchor(m){ m.lx = m.x; m.ly = m.y; m.lastHit = time; }
 function aggro(m){ m.state = "chase"; m.path = null; anchor(m); }
 function engage(m){ if(m && !m.dead && m.state==="idle"){ aggro(m); social(m); } P.combatT = 6; }
-function social(m){ if(m.def.boss) return; for(const o of mobs) if(o!==m&&!o.dead&&o.state==="idle"&&o.type===m.type&&dist(o,m)<110){ aggro(o); } }
+function social(m){ if(m.def.boss || m.def.passive) return; for(const o of mobs) if(o!==m&&!o.dead&&o.state==="idle"&&o.type===m.type&&dist(o,m)<110){ aggro(o); } }
 // line of sight for a moving body, and a tile path (BFS) around obstacles
 function clearLine(ax, ay, bx, by, r){ const d = Math.hypot(bx-ax, by-ay), n = Math.ceil(d/8); for(let i=1;i<=n;i++){ const t = i/n; if(collides(ax+(bx-ax)*t, ay+(by-ay)*t, r)) return false; } return true; }
 function findPath(m, gx, gy){
@@ -1192,6 +1200,8 @@ function finishAbility(id, t){
   if(a.cd) P.cds[id] = a.cd;
   if(id==="pyroblast" && P.buffs.hotstreak) delete P.buffs.hotstreak;
   a.run(t);
+  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? "bow" : null) : "cast"); }
+  if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
   if(t) engage(t);
   if(t && P.target !== t) setTarget(t);
 }
@@ -1216,7 +1226,8 @@ function autoAttack(dt){
   const ai = autoInfo(); P.autoT = Math.max(0, P.autoT - dt);
   const t = P.target; if(!ai || !t || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
-  P.autoT = ai.spd; P.swing = 0.2;
+  P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
+  if(!P.form) setAct(P, S.cls==="warrior" ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
   if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
   else { hit(t, pow()*ai.mult, "phys", "auto"); if(ai.rage) addRes("rage", ai.rage); }
   engage(t);
@@ -1339,7 +1350,7 @@ function collides(x, y, r){
     const cx = clamp(x, tx*TILE, tx*TILE+TILE), cy = clamp(y, ty*TILE, ty*TILE+TILE); if((x-cx)**2 + (y-cy)**2 < r*r) return true; }
   return false;
 }
-function moveEnt(e, dx, dy){ const r = Math.min(e.r, 12); if(!collides(e.x+dx, e.y, r)) e.x += dx; if(!collides(e.x, e.y+dy, r)) e.y += dy; }
+function moveEnt(e, dx, dy){ if(Math.abs(dx)+Math.abs(dy) > 0.01 && !(e===P && P.act && P.act.t < P.act.dur)) e.dir = dirOf(dx, dy); const r = Math.min(e.r, 12); if(!collides(e.x+dx, e.y, r)) e.x += dx; if(!collides(e.x, e.y+dy, r)) e.y += dy; }
 
 function update(dt){
   time += dt;
@@ -1377,7 +1388,7 @@ function update(dt){
 }
 
 function updPlayer(dt){
-  P.hurt = Math.max(0, (P.hurt||0)-dt); P.swing = Math.max(0, (P.swing||0)-dt);
+  P.hurt = Math.max(0, (P.hurt||0)-dt); P.swing = Math.max(0, (P.swing||0)-dt); if(P.act) P.act.t += dt;
   if(P.dead) return;
   P.gcd = Math.max(0, P.gcd-dt); P.potCd = Math.max(0, P.potCd-dt);
   for(const k in P.cds){ P.cds[k] -= dt; if(P.cds[k] <= 0) delete P.cds[k]; }
@@ -1416,7 +1427,7 @@ function updPlayer(dt){
 
 function updMob(m, dt){
   if(m.dead){ m.respawn -= dt; if(m.respawn <= 0) respawnMob(m); return; }
-  m.flash = Math.max(0, m.flash-dt); m.swing = Math.max(0, m.swing-dt);
+  m.flash = Math.max(0, m.flash-dt); m.swing = Math.max(0, m.swing-dt); if(m.act) m.act.t += dt;
   for(const d of m.dots){ d.tick -= dt; if(d.tick <= 0){ d.tick += 1; d.left -= 1; damageMob(m, Math.max(1, Math.round(d.per)), false, d.school); if(m.dead) return; } }
   m.dots = m.dots.filter(d=>d.left>0);
   m.slowT = Math.max(0, m.slowT-dt); m.rootT = Math.max(0, m.rootT-dt); m.stunT = Math.max(0, m.stunT-dt);
@@ -1424,7 +1435,7 @@ function updMob(m, dt){
   const spd = m.sp * (m.slowT>0 ? 1-m.slowPct : 1);
   if(m.state === "idle"){
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.1*dt);
-    if(dp < aggroRange(m)){ aggro(m); social(m); return; }
+    if(!m.def.passive && dp < aggroRange(m)){ aggro(m); social(m); return; }
     m.wanderT -= dt;
     if(m.wanderT <= 0){ m.wanderT = rand(3,7); if(!m.def.boss && m.type!=="leader"){ m.wx = m.hx + rand(-60,60); m.wy = m.hy + rand(-60,60); } }
     if(m.wx !== null){ const dx = m.wx-m.x, dy = m.wy-m.y, d = Math.hypot(dx,dy); if(d < 4) m.wx = null; else { moveEnt(m, dx/d*spd*0.35*dt, dy/d*spd*0.35*dt); m.fx = dx<0?-1:1; m.walk = true; } } else m.walk = false;
@@ -1443,14 +1454,14 @@ function updMob(m, dt){
     if(dp > reach-4 && m.rootT <= 0) steer(m, P.x, P.y, dt, spd);
     else m.fx = P.x<m.x?-1:1;
     m.atkT -= dt;
-    if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2;
+    if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(P.x-m.x, P.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
       if(m.def.ranged) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300});
       else playerDamage(m.dmg, m, "melee"); }
   } else if(m.state === "return"){
     const dx = m.hx-m.x, dy = m.hy-m.y, d = Math.hypot(dx,dy);
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.5*dt);
     if(d < 8){ m.state = "idle"; m.evading = false; m.hp = m.maxHp; }
-    else { const s = m.sp*1.4*dt; m.x += dx/d*s; m.y += dy/d*s; m.fx = dx<0?-1:1; m.walk = true; }
+    else { const s = m.sp*1.4*dt; m.x += dx/d*s; m.y += dy/d*s; m.fx = dx<0?-1:1; m.dir = dirOf(dx, dy); m.walk = true; }
   }
 }
 
@@ -1468,14 +1479,15 @@ function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth
 addEventListener("resize", resize);
 
 // tile sprites (3 variants each)
-const tileSprites = {};
-function makeTiles(){
+let tileSprites = {}, OVL = {}, BASEOFF = false;
+function makeTiles(){ makeTilesInner(); const normal = tileSprites; tileSprites = {}; BASEOFF = true; makeTilesInner(); OVL = tileSprites; tileSprites = normal; BASEOFF = false; }
+function makeTilesInner(){
   const mk = (fn) => [0,1,2].map(v=>{ const c = document.createElement("canvas"); c.width = c.height = TILE; const g = c.getContext("2d"); const r = rng(v*97+fn.length*13+Object.keys(tileSprites).length*7); fn(g, r, v); return c; });
   const speck = (g, r, n, cols, s=2) => { for(let i=0;i<n;i++){ g.fillStyle = cols[Math.floor(r()*cols.length)]; g.fillRect(Math.floor(r()*TILE), Math.floor(r()*TILE), s, s); } };
-  const grass = (g, r) => { g.fillStyle = "#3d6a34"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<14;i++){ g.strokeStyle = r()<0.5?"#4d7d3f":"#335b2c"; const x=r()*TILE, y=r()*TILE; g.beginPath(); g.moveTo(x,y); g.lineTo(x+r()*2-1,y-3-r()*2); g.stroke(); } };
-  const forest = (g, r) => { g.fillStyle = "#2b4628"; g.fillRect(0,0,TILE,TILE); speck(g, r, 16, ["#375733","#22391f","#4a3d28"], 2); };
-  const rock = (g, r) => { g.fillStyle = "#666a6e"; g.fillRect(0,0,TILE,TILE); speck(g, r, 12, ["#777c81","#575b5f","#70746f"], 3); };
-  const swamp = (g, r) => { g.fillStyle = "#38452f"; g.fillRect(0,0,TILE,TILE); speck(g, r, 10, ["#46563a","#2f3b28","#3f5a52"], 3); };
+  const grass = (g, r) => { if(BASEOFF) return; g.fillStyle = "#3d6a34"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<14;i++){ g.strokeStyle = r()<0.5?"#4d7d3f":"#335b2c"; const x=r()*TILE, y=r()*TILE; g.beginPath(); g.moveTo(x,y); g.lineTo(x+r()*2-1,y-3-r()*2); g.stroke(); } };
+  const forest = (g, r) => { if(BASEOFF) return; g.fillStyle = "#2b4628"; g.fillRect(0,0,TILE,TILE); speck(g, r, 16, ["#375733","#22391f","#4a3d28"], 2); };
+  const rock = (g, r) => { if(BASEOFF) return; g.fillStyle = "#666a6e"; g.fillRect(0,0,TILE,TILE); speck(g, r, 12, ["#777c81","#575b5f","#70746f"], 3); };
+  const swamp = (g, r) => { if(BASEOFF) return; g.fillStyle = "#38452f"; g.fillRect(0,0,TILE,TILE); speck(g, r, 10, ["#46563a","#2f3b28","#3f5a52"], 3); };
   tileSprites[T_GRASS] = mk(grass);
   tileSprites[T_FOREST] = mk(forest);
   tileSprites[T_ROCK] = mk(rock);
@@ -1494,18 +1506,18 @@ function makeTiles(){
   tileSprites[T_BOULDER] = mk((g, r) => { grass(g, r); g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(17,25,12,5,0,0,7); g.fill(); g.fillStyle = "#7b7f84"; g.beginPath(); g.ellipse(16,17,12,10,0,0,7); g.fill(); g.fillStyle = "#9a9ea3"; g.beginPath(); g.ellipse(12,13,5,4,0,0,7); g.fill(); });
   tileSprites.rboulder = mk((g, r) => { rock(g, r); g.fillStyle = "#4f5357"; g.beginPath(); g.ellipse(16,17,12,10,0,0,7); g.fill(); g.fillStyle = "#6c7074"; g.beginPath(); g.ellipse(12,13,5,4,0,0,7); g.fill(); });
   tileSprites[T_CRYPT] = mk((g, r) => { g.fillStyle = "#33363d"; g.fillRect(0,0,TILE,TILE); g.strokeStyle = "#272a30"; g.strokeRect(0.5,0.5,15,15); g.strokeRect(16.5,0.5,15,15); g.strokeRect(0.5,16.5,31,15); speck(g, r, 6, ["#3d4048"], 3); });
-  const ash = (g, r) => { g.fillStyle = "#3a3431"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#4a433f","#2c2725","#6b3a2a","#8a4a2a"], 2); };
-  const snow = (g, r) => { g.fillStyle = "#dbe6ec"; g.fillRect(0,0,TILE,TILE); speck(g, r, 12, ["#c7d5dd","#f4f9fc","#b9cad4"], 3); };
+  const ash = (g, r) => { if(BASEOFF) return; g.fillStyle = "#3a3431"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#4a433f","#2c2725","#6b3a2a","#8a4a2a"], 2); };
+  const snow = (g, r) => { if(BASEOFF) return; g.fillStyle = "#dbe6ec"; g.fillRect(0,0,TILE,TILE); speck(g, r, 12, ["#c7d5dd","#f4f9fc","#b9cad4"], 3); };
   tileSprites[T_ASH] = mk(ash);
   tileSprites[T_SNOW] = mk(snow);
   tileSprites[T_LAVA] = mk((g, r) => { g.fillStyle = "#b53d1c"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<4;i++){ g.fillStyle = r()<0.5?"#f08a2a":"#ffc35a"; g.beginPath(); g.ellipse(r()*32,r()*32,3+r()*5,2+r()*3,r()*3,0,7); g.fill(); } g.strokeStyle = "#5a1d10"; g.lineWidth = 2; g.beginPath(); g.moveTo(r()*32,0); g.lineTo(r()*32,32); g.stroke(); g.lineWidth = 1; });
   tileSprites[T_ICE] = mk((g, r) => { g.fillStyle = "#86b9d1"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#c4e4f2"; g.fillRect(0,0,TILE,9); g.fillStyle = "#5f93ad"; g.fillRect(0,26,TILE,6); g.strokeStyle = "rgba(255,255,255,.6)"; g.beginPath(); g.moveTo(r()*20+4,12); g.lineTo(r()*20+8,24); g.stroke(); });
   tileSprites[T_SPINE] = mk((g, r) => { snow(g, r); g.fillStyle = "rgba(0,0,0,.18)"; g.beginPath(); g.ellipse(16,28,10,4,0,0,7); g.fill(); g.fillStyle = "#4a3221"; g.fillRect(14,22,4,7); [[16,2,9,14],[16,8,12,22],[16,14,14,28]].reverse().forEach(([x,y,w,b])=>{ g.fillStyle = "#2a4d43"; g.beginPath(); g.moveTo(x,y); g.lineTo(x+w,b-2); g.lineTo(x-w,b-2); g.fill(); g.fillStyle = "#f2f8fb"; g.beginPath(); g.moveTo(x,y); g.lineTo(x+w*0.5,y+(b-y)*0.45); g.lineTo(x-w*0.5,y+(b-y)*0.45); g.fill(); }); });
   tileSprites[T_OBSID] = mk((g, r) => { ash(g, r); g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(17,26,12,5,0,0,7); g.fill(); g.fillStyle = "#1d1a24"; g.beginPath(); g.moveTo(5,25); g.lineTo(9,8); g.lineTo(18,3); g.lineTo(27,12); g.lineTo(28,25); g.fill(); g.fillStyle = "#54467a"; g.beginPath(); g.moveTo(11,10); g.lineTo(17,6); g.lineTo(15,16); g.fill(); });
-  const elfg = (g, r) => { g.fillStyle = "#4f8a5e"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<12;i++){ g.strokeStyle = r()<0.5?"#62a070":"#447a52"; const x=r()*TILE, y=r()*TILE; g.beginPath(); g.moveTo(x,y); g.lineTo(x+r()*2-1,y-3-r()*2); g.stroke(); } speck(g, r, 4, ["#e8f0ff","#d0b0ff"], 2); };
-  const moss = (g, r) => { g.fillStyle = "#26334a"; g.fillRect(0,0,TILE,TILE); speck(g, r, 16, ["#2f3f5a","#1c2638","#3a3060","#5a7a9a"], 2); };
+  const elfg = (g, r) => { if(BASEOFF) return; g.fillStyle = "#4f8a5e"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<12;i++){ g.strokeStyle = r()<0.5?"#62a070":"#447a52"; const x=r()*TILE, y=r()*TILE; g.beginPath(); g.moveTo(x,y); g.lineTo(x+r()*2-1,y-3-r()*2); g.stroke(); } speck(g, r, 4, ["#e8f0ff","#d0b0ff"], 2); };
+  const moss = (g, r) => { if(BASEOFF) return; g.fillStyle = "#26334a"; g.fillRect(0,0,TILE,TILE); speck(g, r, 16, ["#2f3f5a","#1c2638","#3a3060","#5a7a9a"], 2); };
   const steppe = (g, r) => { g.fillStyle = "#9a6a3e"; g.fillRect(0,0,TILE,TILE); for(let i=0;i<12;i++){ g.strokeStyle = r()<0.5?"#b0814c":"#7f5530"; const x=r()*TILE, y=r()*TILE; g.beginPath(); g.moveTo(x,y); g.lineTo(x+r()*3-1.5,y-3); g.stroke(); } };
-  const sand = (g, r) => { g.fillStyle = "#c79a62"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#d6ab72","#b38654","#a8784a"], 2); };
+  const sand = (g, r) => { if(BASEOFF) return; g.fillStyle = "#c79a62"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#d6ab72","#b38654","#a8784a"], 2); };
   tileSprites[T_ELFGRASS] = mk(elfg);
   tileSprites[T_MOSS] = mk(moss);
   tileSprites[T_STEPPE] = mk(steppe);
@@ -1517,6 +1529,23 @@ function makeTiles(){
   tileSprites[T_RCLIFF] = mk((g, r) => { g.fillStyle = "#8a4a2e"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#b0603a"; g.fillRect(0,0,TILE,9); g.fillStyle = "#6a3620"; g.fillRect(0,26,TILE,6); g.fillStyle = "#9a5636"; g.fillRect(0,15,TILE,3); });
   tileSprites[T_CACTUS] = mk((g, r) => { sand(g, r); g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(16,28,8,3,0,0,7); g.fill(); g.fillStyle = "#4f7a3a"; g.beginPath(); g.roundRect(13,6,6,22,3); g.fill(); g.beginPath(); g.roundRect(6,12,5,9,2); g.fill(); g.beginPath(); g.roundRect(21,9,5,9,2); g.fill(); g.fillRect(9,18,5,3); g.fillRect(18,15,4,3); });
   tileSprites[T_CWALL] = mk((g, r) => { g.fillStyle = "#1f2227"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#3a3f47"; g.fillRect(0,0,TILE,8); g.strokeStyle = "#2a2e34"; g.strokeRect(0.5,8.5,15,11); g.strokeRect(16.5,8.5,15,11); g.strokeRect(8.5,20.5,15,11); });
+}
+// ground textures (CC0, Screaming Brain Studios) drawn continuously across tiles; objects drawn on top
+const GROUND_ORDER = ["grass","forest","elfgrass","moss","steppe","sand","path","rock","snow","swamp","ash","lava","water"];
+const GIDX = Object.fromEntries(GROUND_ORDER.map((k,i)=>[k,i]));
+const GSCALE = {rock:2, snow:2, lava:2, ash:2};
+let GTEX = null, OBJECT_T = null;
+function groundTex(t){ if(!GTEX){ GTEX = {[T_GRASS]:"grass",[T_FOREST]:"forest",[T_ELFGRASS]:"elfgrass",[T_MOSS]:"moss",[T_STEPPE]:"steppe",[T_SAND]:"sand",[T_PATH]:"path",[T_ROCK]:"rock",[T_SNOW]:"snow",[T_SWAMP]:"swamp",[T_ASH]:"ash",[T_LAVA]:"lava",[T_WATER]:"water"};
+  OBJECT_T = new Set([T_TREE,T_PINE,T_BIRCH,T_VTREE,T_DEAD,T_BOULDER,T_CACTUS,T_OBSID,T_SPINE]); } return GTEX[t]; }
+function drawTile(c, x, y){
+  const t = map[y*MW+x], g = sImg("assets/environment/ground.png");
+  if(!g.complete || !g.naturalWidth){ c.drawImage(tileSprite(t,x,y), x*TILE, y*TILE); return; }
+  let tex = groundTex(t), obj = false;
+  if(!tex && OBJECT_T.has(t)){ tex = groundTex(FLOOR[terrAt(x,y)]); obj = true; }
+  if(!tex){ c.drawImage(tileSprite(t,x,y), x*TILE, y*TILE); return; }
+  const s = GSCALE[tex] || 1, per = 128*s, sx = ((x*TILE) % per)/s, sy = ((y*TILE) % per)/s;
+  c.drawImage(g, GIDX[tex]*128 + sx, sy, TILE/s, TILE/s, x*TILE, y*TILE, TILE, TILE);
+  if(obj){ const v = hash(x,y) % 3, ov = (t===T_TREE && terrAt(x,y)==="forest") ? OVL.ftree : (t===T_BOULDER && terrAt(x,y)!=="meadow") ? OVL.rboulder : OVL[t]; if(ov) c.drawImage(ov[v], x*TILE, y*TILE); }
 }
 function tileSprite(t, x, y){
   const v = hash(x,y) % 3;
@@ -1570,6 +1599,7 @@ function drawHero(c, x, y, o){
   c.restore();
 }
 function drawBeast(c, x, y, form, fx){
+  if(FORM_LOOK[form] && drawCreature(c, FORM_LOOK[form], x, y, P.moving ? "run" : "idle", fx, 0, P.swing>0 ? P.swing*30 : 0)) return;
   const walk = P.moving ? Math.sin(time*12) : 0;
   c.save(); c.translate(x, y); c.scale(fx<0?-1:1, 1);
   c.fillStyle = "rgba(0,0,0,.32)"; ell(c, 0, 0, form==="bear"?18:14, 5);
@@ -1578,6 +1608,9 @@ function drawBeast(c, x, y, form, fx){
   c.restore();
 }
 function drawMob(c, m){
+  const CL = CREATURE_LOOK[m.type]; if(CL){ const anim = m.swing>0 ? "run" : m.walk ? (m.state==="chase"||m.state==="return" ? "run" : "walk") : "idle";
+    if(drawCreature(c, CL, m.x, m.y, anim, m.fx, m.ph, m.swing>0 ? m.swing*30 : 0)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 18, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.3)"; c.beginPath(); c.arc(m.x, m.y-14, 16, 0, 7); c.fill(); } return; } }
+  const L = mobLook(m); if(L){ const sc = L.scale||1; if(drawLPC(c, L, m.x, m.y, lpcState(m, m.walk), sc, sc)){ if(m.rootT>0){ c.strokeStyle = "#6a9a3a"; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.y-4, 14*sc, 6, 0, 0, 7); c.stroke(); c.lineWidth = 1; } if(m.flash>0){ c.fillStyle = "rgba(255,255,255,.35)"; c.beginPath(); c.arc(m.x, m.y-26*sc, 16*sc, 0, 7); c.fill(); } return; } }
   const d = m.def, col = m.flash>0 ? "#ffffff" : d.color, walk = m.walk ? Math.sin(time*11+m.ph) : 0, r = m.r;
   c.save(); c.translate(m.x, m.y); c.scale(m.fx<0?-1:1, 1);
   c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 0, r*1.1, r*0.4);
@@ -1645,7 +1678,7 @@ function render(){
   cam.x = clamp(P.x - vw/2, 0, MW*TILE - vw); cam.y = clamp(P.y - vh/2, 0, MH*TILE - vh);
   ctx.setTransform(DPR*ZOOM,0,0,DPR*ZOOM, -Math.round(cam.x*DPR*ZOOM), -Math.round(cam.y*DPR*ZOOM));
   const x0 = Math.floor(cam.x/TILE), y0 = Math.floor(cam.y/TILE), x1 = Math.ceil((cam.x+vw)/TILE), y1 = Math.ceil((cam.y+vh)/TILE);
-  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ if(x<0||y<0||x>=MW||y>=MH) continue; ctx.drawImage(tileSprite(map[y*MW+x],x,y), x*TILE, y*TILE); }
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ if(x<0||y<0||x>=MW||y>=MH) continue; drawTile(ctx, x, y); }
   const inView = (o, pad=60) => o.x > cam.x-pad && o.x < cam.x+vw+pad && o.y > cam.y-pad && o.y < cam.y+vh+pad;
   for(const d of deco) if(inView(d,90) && d.k!=="fire" && d.k!=="brazier") drawDeco(ctx, d);
   for(const n of nodes) if(n.active && inView(n)) drawNode(ctx, n);
@@ -1658,11 +1691,12 @@ function render(){
   // y-sorted entities
   const ents = [];
   for(const m of mobs) if(!m.dead && inView(m)) ents.push({y:m.y, f:()=>drawMob(ctx, m)});
-  for(const n of npcs) if(inView(n)) ents.push({y:n.y, f:()=>drawHero(ctx, n.x, n.y, {race:n.race, skin:RACES[n.race||"human"].skin, body:n.color, fx:n.fx, hair:RACES[n.race||"human"].hair, ph:n.x})});
+  for(const n of npcs) if(inView(n)) ents.push({y:n.y, f:()=>{ const [sx,sy] = raceScale(n.race); if(!drawLPC(ctx, npcLook(n), n.x, n.y, {anim:"walk", frame:0, dir:2}, sx, sy)) drawHero(ctx, n.x, n.y, {race:n.race, skin:RACES[n.race||"human"].skin, body:n.color, fx:n.fx, hair:RACES[n.race||"human"].hair, ph:n.x}); }});
   for(const d of deco) if((d.k==="fire"||d.k==="brazier") && inView(d,90)) ents.push({y:d.y, f:()=>drawDeco(ctx, d)});
   if(!P.dead || true) ents.push({y:P.y, f:()=>{ ctx.globalAlpha = P.dead ? 0.35 : 1;
     if(P.shield>0){ ctx.strokeStyle = "rgba(255,246,208,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(P.x, P.y-16, 22, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
-    if(P.form) drawBeast(ctx, P.x, P.y, P.form, P.fx); else drawHero(ctx, P.x, P.y, {race:S.race, cls:S.cls, skin:RACES[S.race].skin, hair:RACES[S.race].hair, body:CLASSES[S.cls].color, fx:P.fx, moving:P.moving, swing:P.swing});
+    const [psx, psy] = raceScale(S.race);
+    if(P.form) drawBeast(ctx, P.x, P.y, P.form, P.fx); else if(!drawLPC(ctx, playerLook(), P.x, P.y, lpcState(P, P.moving), psx, psy)) drawHero(ctx, P.x, P.y, {race:S.race, cls:S.cls, skin:RACES[S.race].skin, hair:RACES[S.race].hair, body:CLASSES[S.cls].color, fx:P.fx, moving:P.moving, swing:P.swing});
     if(P.hurt>0){ ctx.fillStyle = `rgba(255,60,60,${P.hurt*2})`; ctx.beginPath(); ctx.arc(P.x, P.y-16, 18, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1; }});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
@@ -1675,11 +1709,11 @@ function render(){
   // name plates
   ctx.textAlign = "center"; ctx.font = "700 11px 'Alegreya Sans', sans-serif";
   for(const m of mobs){ if(m.dead || !inView(m)) continue; const near = dist(m,P) < 230 || m===P.target; if(!near) continue;
-    const top = m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
+    const CLk = CREATURE_LOOK[m.type]; const top = CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
     ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.elite?" Elit":""})`, m.x, top-6); }
-  for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-48); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-38); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
-    const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-60+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
+  for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-62); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
+    const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
   // interaction hint
   const it = nearestInteract();
   if(it && !P.dead){ const o = it.obj; const label = it.type==="npc" ? `[E] Prata med ${o.name}` : o.qitem ? `[E] Plocka upp ${o.def.name}` : `[E] ${o.def.skill==="mining"?"Bryt":"Plocka"} ${o.def.name}${S.skills[o.def.skill]<o.def.req?` (kräver ${o.def.req})`:""}`;
@@ -1768,10 +1802,148 @@ function drawWorldMap(cv){
 }
 </script>
 <script>
+// ======================= LPC CHARACTER SPRITES =======================
+// Layered 64x64 sprites (rows: 0 up, 1 left, 2 down, 3 right). Art: Liberated Pixel Cup (OGA-BY 3.0).
+const LPC_FILES = {"bow": {"characters": ["BELT_leather", "BELT_rope", "BODY_animation", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown", "WEAPON_arrow", "WEAPON_bow"], "charactersV2/64x64": ["BEHIND_quiver", "BODY_skeleton"]}, "combat_dummy": {"characters": ["BODY_animation"], "charactersV2/64x64": ["BODY_death"]}, "hurt": {"characters": ["BEHIND_quiver", "BELT_leather", "BELT_rope", "BODY_male", "BODY_skeleton", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown"]}, "slash": {"characters": ["BEHIND_quiver", "BELT_leather", "BELT_rope", "BODY_human", "BODY_skeleton", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown", "WEAPON_dagger"], "charactersV2/64x64": ["WEAPON_shield_cutout_body", "WEAPON_shield_cutout_chain_armor_helmet"]}, "spellcast": {"characters": ["BEHIND_quiver", "BELT_leather", "BELT_rope", "BODY_male", "BODY_skeleton", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "HEAD_skeleton_eye_glow", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown"]}, "thrust": {"characters": ["BEHIND_quiver", "BELT_leather", "BELT_rope", "BODY_animation", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown", "WEAPON_shield_cutout_body", "WEAPON_shield_cutout_chain_armor_helmet", "WEAPON_spear", "WEAPON_staff"]}, "walkcycle": {"characters": ["BEHIND_quiver", "BELT_leather", "BELT_rope", "BODY_male", "BODY_skeleton", "FEET_plate_armor_shoes", "FEET_shoes_brown", "HANDS_plate_armor_gloves", "HEAD_chain_armor_helmet", "HEAD_chain_armor_hood", "HEAD_hair_blonde", "HEAD_leather_armor_hat", "HEAD_plate_armor_helmet", "HEAD_robe_hood", "LEGS_pants_greenish", "LEGS_plate_armor_pants", "LEGS_robe_skirt", "TORSO_chain_armor_jacket_purple", "TORSO_chain_armor_torso", "TORSO_leather_armor_bracers", "TORSO_leather_armor_shirt_white", "TORSO_leather_armor_shoulders", "TORSO_leather_armor_torso", "TORSO_plate_armor_arms_shoulders", "TORSO_plate_armor_torso", "TORSO_robe_shirt_brown", "WEAPON_shield_cutout_body", "WEAPON_shield_cutout_chain_armor_helmet"]}};
+const ANIMS = {walk:{dir:"walkcycle", frames:9, body:"BODY_male"}, slash:{dir:"slash", frames:6, body:"BODY_human"}, cast:{dir:"spellcast", frames:7, body:"BODY_male"},
+  bow:{dir:"bow", frames:13, body:"BODY_animation"}, thrust:{dir:"thrust", frames:8, body:"BODY_animation"}, hurt:{dir:"hurt", frames:6, body:"BODY_male", oneRow:true}};
+const ACT_DUR = {slash:0.42, cast:0.5, bow:0.65, thrust:0.45};
+const OUTFITS = {
+  warrior:["FEET_plate_armor_shoes","LEGS_plate_armor_pants","TORSO_plate_armor_torso","TORSO_plate_armor_arms_shoulders","HANDS_plate_armor_gloves","HEAD_plate_armor_helmet"],
+  hunter:["BEHIND_quiver","FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_shirt_white","TORSO_leather_armor_torso","TORSO_leather_armor_shoulders","TORSO_leather_armor_bracers","BELT_leather","HEAD_leather_armor_hat"],
+  mage:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_robe_shirt_brown","BELT_rope","HEAD_robe_hood"],
+  priest:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_chain_armor_torso","TORSO_chain_armor_jacket_purple","BELT_rope","HEAD_chain_armor_hood"],
+  druid:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_robe_shirt_brown","TORSO_leather_armor_shoulders","BELT_rope","HEAD_hair_blonde"],
+  guard:["FEET_plate_armor_shoes","LEGS_pants_greenish","TORSO_chain_armor_torso","TORSO_chain_armor_jacket_purple","HEAD_chain_armor_helmet"],
+  merchant:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_shirt_white","BELT_leather","HEAD_hair_blonde"],
+  smith:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_torso","HANDS_plate_armor_gloves","BELT_leather"],
+  alch:["FEET_shoes_brown","LEGS_robe_skirt","TORSO_robe_shirt_brown","BELT_rope","HEAD_hair_blonde"],
+  bandit:["FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_torso","BELT_leather","HEAD_chain_armor_hood"],
+  chief:["FEET_plate_armor_shoes","LEGS_plate_armor_pants","TORSO_leather_armor_torso","TORSO_plate_armor_arms_shoulders","HEAD_chain_armor_helmet"],
+  bones:[], draug:["TORSO_chain_armor_torso","HEAD_plate_armor_helmet"], wraith:["LEGS_robe_skirt","TORSO_robe_shirt_brown","HEAD_robe_hood"]
+};
+const BIG_SWORD = "assets/charactersV2/192x192/slash/WEAPON_longsword.png";
+// skin recolors (base LPC skin ramp -> race ramp)
+const SKIN_BASE = [[253,213,183],[234,163,119],[210,133,96],[158,62,55]];
+const SKINS = {
+  orc:[[168,204,118],[128,172,86],[98,140,64],[62,96,46]], elf:[[255,234,222],[246,200,176],[224,172,144],[172,104,94]],
+  dwarf:[[246,192,160],[226,146,106],[198,112,80],[140,56,46]], kobold:[[240,204,104],[214,170,72],[184,140,52],[128,90,32]],
+  frost:[[206,228,242],[164,198,222],[128,162,196],[82,106,142]]
+};
+const SKEL_TINT = {ghoul:[0.72,0.92,0.62], wraith:[0.75,0.7,1.0], frost:[0.8,0.92,1.05]};
+const IMGS = {};
+function sImg(p){ if(!IMGS[p]){ const i = new Image(); i.src = p; IMGS[p] = i; } return IMGS[p]; }
+function layerPath(anim, name){ const d = ANIMS[anim].dir, f = LPC_FILES[d] || {};
+  if((f.characters||[]).includes(name)) return `assets/characters/${d}/${name}.png`;
+  if((f["charactersV2/64x64"]||[]).includes(name)) return `assets/charactersV2/64x64/${d}/${name}.png`; return null; }
+function recolor(im, tint, skel){
+  try{ const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext("2d"); g.drawImage(im,0,0);
+    const d = g.getImageData(0,0,c.width,c.height), a = d.data;
+    for(let i=0;i<a.length;i+=4){ if(a[i+3] < 10) continue;
+      if(skel){ const t = SKEL_TINT[tint]; if(t){ a[i] = Math.min(255,a[i]*t[0]); a[i+1] = Math.min(255,a[i+1]*t[1]); a[i+2] = Math.min(255,a[i+2]*t[2]); } continue; }
+      const ramp = SKINS[tint]; if(!ramp) continue; let bi = -1, bd = 1600;
+      for(let k=0;k<4;k++){ const b = SKIN_BASE[k], dd = (a[i]-b[0])**2+(a[i+1]-b[1])**2+(a[i+2]-b[2])**2; if(dd < bd){ bd = dd; bi = k; } }
+      if(bi >= 0){ a[i] = ramp[bi][0]; a[i+1] = ramp[bi][1]; a[i+2] = ramp[bi][2]; } }
+    g.putImageData(d,0,0); return c; }catch(_){ return im; }
+}
+const SHEETS_LPC = {};
+function lpcSheet(look, anim){
+  const key = look.key + "|" + anim; if(key in SHEETS_LPC) return SHEETS_LPC[key];
+  const A = ANIMS[anim], skel = look.body === "skeleton", bodyName = skel ? "BODY_skeleton" : A.body;
+  const out = OUTFITS[look.outfit] || [];
+  const names = [...out.filter(n=>n.startsWith("BEHIND")), bodyName, ...out.filter(n=>!n.startsWith("BEHIND")), ...((look.weapons||{})[anim]||[])];
+  const layers = names.map(n=>[n, layerPath(anim, n)]).filter(x=>x[1]);
+  if(!layers.some(l=>l[0]===bodyName)){ SHEETS_LPC[key] = null; return null; }
+  const imgs = layers.map(([n,p])=>[n, sImg(p)]);
+  if(imgs.some(([,i])=>!i.complete)) return null;
+  if(imgs.some(([,i])=>!i.naturalWidth)){ SHEETS_LPC[key] = null; return null; }
+  const cv = document.createElement("canvas"); cv.width = imgs[0][1].naturalWidth; cv.height = imgs[0][1].naturalHeight; const g = cv.getContext("2d");
+  for(const [n,i] of imgs) g.drawImage(n===bodyName && look.tint ? recolor(i, look.tint, skel) : i, 0, 0);
+  SHEETS_LPC[key] = cv; return cv;
+}
+function dirOf(dx, dy){ return Math.abs(dx) > Math.abs(dy) ? (dx<0?1:3) : (dy<0?0:2); }
+function setAct(e, anim){ if(anim) e.act = {anim, t:0, dur:ACT_DUR[anim]}; }
+function lpcState(e, moving){
+  if(e.dead) return {anim:"hurt", frame:5, dir:0};
+  if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
+  if(e.casting && e.casting.kind==="spell") return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2};
+  if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir||2};
+  if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir||2};
+  return {anim:"walk", frame:0, dir:e.dir==null?2:e.dir};
+}
+function drawLPC(c, look, x, y, st, sx, sy){
+  let sh = lpcSheet(look, st.anim);
+  if(!sh && st.anim!=="walk"){ st = {anim:"walk", frame:0, dir:st.dir}; sh = lpcSheet(look, "walk"); }
+  if(!sh) return false;
+  const row = ANIMS[st.anim].oneRow ? 0 : st.dir;
+  c.save(); c.translate(x, y); c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 0, 12*sx, 4); c.scale(sx, sy); c.imageSmoothingEnabled = false;
+  c.drawImage(sh, st.frame*64, row*64, 64, 64, -32, -62, 64, 64);
+  if(look.big && st.anim==="slash"){ const im = sImg(look.big); if(im.complete && im.naturalWidth) c.drawImage(im, st.frame*192, row*192, 192, 192, -96, -126, 192, 192); }
+  c.restore(); return true;
+}
+const CASTER_W = {thrust:["WEAPON_staff"]};
+function playerLook(){ const cls = S.cls, race = S.race;
+  const w = cls==="warrior" ? {walk:["WEAPON_shield_cutout_body"], slash:["WEAPON_shield_cutout_body"], thrust:["WEAPON_shield_cutout_body"]} : cls==="hunter" ? {bow:["WEAPON_bow","WEAPON_arrow"]} : CASTER_W;
+  return {key:`p_${cls}_${race}`, outfit:cls, tint:race==="human"?null:race, weapons:w, big:cls==="warrior"?BIG_SWORD:null}; }
+function raceScale(race){ return race==="dwarf" ? [1.1, 0.86] : race==="orc" ? [1.06, 1.04] : [1, 1]; }
+function npcLook(n){ const outfit = n.trains || (n.shop?"merchant" : n.smith?"smith" : n.alch?"alch" : "guard");
+  return {key:`n_${outfit}_${n.race||"human"}`, outfit, tint:(n.race&&n.race!=="human")?n.race:null, weapons:CASTER_W}; }
+const MOB_LOOK = {
+  thief:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}}, bandit:{outfit:"bandit", weapons:{slash:["WEAPON_dagger"]}},
+  raider:{outfit:"bandit", tint:"orc", weapons:{slash:["WEAPON_dagger"]}}, leader:{outfit:"chief", big:BIG_SWORD, scale:1.2},
+  kobold:{outfit:"bandit", tint:"kobold", scale:0.78, weapons:{slash:["WEAPON_dagger"]}}, frostkobold:{outfit:"bandit", tint:"frost", scale:0.8, weapons:{slash:["WEAPON_dagger"]}},
+  snorre:{outfit:"chief", tint:"kobold", scale:1.0, big:BIG_SWORD}, lostdruid:{outfit:"druid", tint:"elf", cast:true},
+  ghoul:{outfit:"bones", body:"skeleton", tint:"ghoul"}, morvel:{outfit:"wraith", body:"skeleton", tint:"wraith", scale:1.2, cast:true},
+  boss:{outfit:"draug", body:"skeleton", tint:"frost", scale:1.45, big:BIG_SWORD}
+};
+function mobLook(m){ const L = MOB_LOOK[m.type]; if(!L) return null; return {key:"m_"+m.type, ...L}; }
+// ---- side-view animal sprites (frames face left, one row)
+const CREATURES = {
+  Bear:{w:64,h:33, idle:["Bear_Idle",12], walk:["Bear_Walk",8], run:["Bear_Run",5]},
+  Boar:{w:64,h:40, idle:["Boar_Idle",8], walk:["Boar_Walk",8], run:["Boar_Run",6]},
+  Deer:{w:72,h:52, idle:["Deer_Idle",10], walk:["Deer_Walk",8], run:["Deer_Run",6]},
+  Fox:{w:64,h:36, idle:["Fox_Idle",6], walk:["Fox_Walk",8], run:["Fox_Run",6]},
+  Rabbit:{w:32,h:26, idle:["Rabbit_Idle",10], walk:["Rabbit_Hop",10], run:["Rabbit_Run",6]},
+  Wolf:{w:64,h:40, idle:["Wolf_Walk",1], walk:["Wolf_Walk",8], run:["Wolf_Run",6]}
+};
+const CREATURE_LOOK = {
+  wolf:{c:"Wolf"}, oldgray:{c:"Wolf", tint:["#ffffff",0.55], s:1.25}, boar:{c:"Boar"}, lynx:{c:"Fox", tint:["#d8b070",0.35], s:1.1},
+  shadewolf:{c:"Wolf", tint:["#6a4aa0",0.35]}, rocksvin:{c:"Boar", tint:["#9aa0a8",0.5]}, icebear:{c:"Bear", tint:["#ffffff",0.6], s:1.1},
+  jackal:{c:"Fox", tint:["#e0c080",0.4]}, bristle:{c:"Boar", tint:["#2a1a10",0.3]}, hound:{c:"Wolf", tint:["#d0441a",0.4], s:1.1},
+  frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}
+};
+const CSHEETS = {};
+function creatureSheet(c, file, tint){
+  const key = c+"/"+file+(tint?tint.join():""); if(CSHEETS[key]) return CSHEETS[key];
+  const im = sImg(`assets/creatures/${c}/${file}.png`); if(!im.complete || !im.naturalWidth) return null;
+  if(!tint){ CSHEETS[key] = im; return im; }
+  const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; const g = cv.getContext("2d");
+  g.drawImage(im,0,0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = tint[1]; g.fillStyle = tint[0]; g.fillRect(0,0,cv.width,cv.height);
+  CSHEETS[key] = cv; return cv;
+}
+function drawCreature(c, look, x, y, anim, fx, ph, lunge){
+  const C = CREATURES[look.c], [file, n] = C[anim], sh = creatureSheet(look.c, file, look.tint); if(!sh) return false;
+  const fps = anim==="run" ? 13 : anim==="walk" ? 10 : 6, f = Math.floor((time + (ph||0))*fps) % n, sc = look.s || 1;
+  c.save(); c.translate(x + (lunge||0)*(fx>0?1:-1), y); c.fillStyle = "rgba(0,0,0,.28)"; ell(c, 0, 0, C.w*0.32*sc, 4);
+  c.scale(fx>0 ? -sc : sc, sc); c.imageSmoothingEnabled = false;
+  c.drawImage(sh, f*C.w, 0, C.w, C.h, -C.w/2, -C.h+2, C.w, C.h); c.restore(); return true;
+}
+const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}};
+</script>
+<script>
 // ======================= UI =======================
 const $ = id => document.getElementById(id);
 function setT(el, v){ if(el._v !== v){ el._v = v; el.textContent = v; } }
 function setW(el, f){ const v = (clamp(f,0,1)*100).toFixed(1)+"%"; if(el._w !== v){ el._w = v; el.style.width = v; } }
+// item icons from sprite sheets (falls back to nothing when an item has no sprite)
+function icoHTML(k){ const it = ITEMS[k]; if(!it || !it.spr) return ""; const [sh,i] = it.spr; return `<span class="ico" style="background-image:url('${SHEETS[sh]}');background-position:-${i*32}px 0"></span>`; }
+function drawItemSprite(cv, k, fallbackCol){ const it = ITEMS[k], img = it && it.spr && SHEET_IMG[it.spr[0]];
+  if(img && img.complete && img.naturalWidth){ const g = cv.getContext("2d"); g.clearRect(0,0,cv.width,cv.height); const bg = g.createRadialGradient(cv.width/2,cv.height/2,4,cv.width/2,cv.height/2,cv.width*0.7); bg.addColorStop(0,"#2a3540"); bg.addColorStop(1,"#0d1216"); g.fillStyle = bg; g.fillRect(0,0,cv.width,cv.height);
+    g.imageSmoothingEnabled = false; const s = Math.floor(cv.width/32); const o = (cv.width-32*s)/2; g.drawImage(img, it.spr[1]*32, 0, 32, 32, o, o, 32*s, 32*s); }
+  else drawIcon(cv, "flask", fallbackCol); }
+for(const [k,src] of Object.entries(SHEETS)){ const im = new Image(); im.onload = ()=>{ if(running) buildHotbar(); }; im.src = src; SHEET_IMG[k] = im; }
+const WICON = {warrior:"sword", hunter:"bow", mage:"wand", priest:"tome", druid:"upg_wand"};
+const wIco = (name, px) => `<img src="assets/weapons/${name}.png" alt="" style="width:${px}px;height:${px}px;image-rendering:pixelated;vertical-align:middle;margin-right:6px;flex:none">`;
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 let lastErr = 0;
 function log(txt, color){ const d = document.createElement("div"); d.textContent = txt; if(color) d.style.color = color; const l = $("log"); l.appendChild(d); while(l.children.length > 7) l.firstChild.remove(); }
@@ -1838,7 +2010,7 @@ function buildHotbar(){
     b.addEventListener("click", ()=>tryUse(id)); hb.appendChild(b); slotEls.push({b, id, cd:b.querySelector(".cd")});
   });
   const pots = [["hp","Q","potHp","#c03a52"]]; if(CLASSES[S.cls].res==="mana") pots.push(["mana","R","potMana","#3f86e0"]);
-  pots.forEach(([kind, key, item, col])=>{ const b = document.createElement("button"); b.className = "slot pot"; const c = document.createElement("canvas"); c.width = c.height = 96; drawIcon(c, "flask", col); b.appendChild(c);
+  pots.forEach(([kind, key, item, col])=>{ const b = document.createElement("button"); b.className = "slot pot"; const c = document.createElement("canvas"); c.width = c.height = 96; drawItemSprite(c, item, col); b.appendChild(c);
     b.insertAdjacentHTML("beforeend", `<span class="k">${key}</span><span class="cd"></span><span class="cnt"></span>`); b.title = kind==="hp" ? "Läkedryck (Q)" : "Manadryck (R)";
     b.addEventListener("click", ()=>usePotion(kind)); hb.appendChild(b); slotEls.push({b, pot:kind, cd:b.querySelector(".cd"), cnt:b.querySelector(".cnt")}); });
 }
@@ -1859,7 +2031,7 @@ function updHotbar(){
 // ---- HUD
 function updHUD(dt){
   setT($("pname"), S.name); setT($("plvl"), "Nivå "+S.level);
-  setT($("pdesc"), `${RACES[S.race].name} ${CLASSES[S.cls].name}${P.form==="bear"?" · Björnform":P.form==="cat"?" · Kattform":""}`);
+  setT($("pdesc"), `${RACES[S.race].name} ${CLASSES[S.cls].name}${P.form==="bear"?" · Björnform":P.form==="cat"?" · Varghamn":""}`);
   setW($("phpi"), P.hp/P.maxHp); setW($("pshi"), P.shield/P.maxHp); setT($("phpt"), `${Math.ceil(P.hp)} / ${P.maxHp}`);
   const type = resType(), mr = maxRes(type); const ri = $("presi"); if(ri._c !== type){ ri._c = type; ri.style.background = RES_COLOR[type]; }
   setW(ri, P[type]/mr); setT($("prest"), `${RES_NAME[type]} ${Math.floor(P[type])} / ${mr}${P.form==="cat"&&P.cp?` · Kombo ${P.cp}`:""}`);
@@ -1900,7 +2072,7 @@ function renderPanel(){
     <h3>Egenskaper</h3><div class="stats">
       <div><span>Hälsa</span><span>${P.maxHp}</span></div><div><span>${RES_NAME[type]}</span><span>${type==="mana"?P.maxMana:100}</span></div>
       <div><span>Kraft</span><span>${fmt(pow()*genMult())}</span></div><div><span>Kritisk träff</span><span>${(critChance(null,"phys")*100).toFixed(0)}%</span></div>
-      <div><span>Skada du tar</span><span>${Math.round(takenMult()*100)}%</span></div><div><span>Vapen</span><span>${WEAPON_NAMES[S.cls]} +${S.weapon}</span></div>
+      <div><span>Skada du tar</span><span>${Math.round(takenMult()*100)}%</span></div><div><span>Vapen</span><span>${wIco(WICON[S.cls],20)}${WEAPON_NAMES[S.cls]} +${S.weapon}</span></div>
       <div><span>Undvika</span><span>${(avoidChances().dodge*100).toFixed(0)}%</span></div><div><span>Parera</span><span>${(avoidChances().parry*100).toFixed(0)}%</span></div>
       <div><span>Gruvdrift</span><span>${S.skills.mining} / ${SKILL_MAX}</span></div><div><span>Örtplockning</span><span>${S.skills.herb} / ${SKILL_MAX}</span></div>
       <div><span>Guld</span><span>${S.gold}</span></div><div><span>Uppdrag klara</span><span>${Object.values(S.quests).filter(q=>q.state==="done").length} / ${QUESTS.length}</span></div></div>
@@ -1908,7 +2080,7 @@ function renderPanel(){
   } else if(panelKind==="bag"){
     const ks = Object.keys(S.bag).filter(k=>S.bag[k]>0);
     h += `<h2>Väska</h2><div class="muted"><span class="coin">${S.gold} guld</span> · Sälj saker hos en handlare i byarna och lägren.</div><h3>Föremål</h3>`;
-    h += ks.length ? `<div class="list">${ks.map(k=>{ const it = ITEMS[k]; return `<div class="item"><div><b>${it.name}</b> <span class="muted">× ${S.bag[k]}</span><div class="d">${it.desc || (it.kind==="ore"?"Malm – används hos smeden.":it.kind==="herb"?"Ört – används hos alkemisten.":"Skräp – sälj till handlaren.")}</div></div>${it.kind==="use"?`<button class="btn" data-act="use" data-k="${k}">Använd</button>`:""}</div>`; }).join("")}</div>` : `<div class="muted">Väskan är tom.</div>`;
+    h += ks.length ? `<div class="list">${ks.map(k=>{ const it = ITEMS[k]; return `<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${it.name}</b> <span class="muted">× ${S.bag[k]}</span><div class="d">${it.desc || (it.kind==="ore"?"Malm – används hos smeden.":it.kind==="herb"?"Ört – används hos alkemisten.":"Skräp – sälj till handlaren.")}</div></div></div>${it.kind==="use"?`<button class="btn" data-act="use" data-k="${k}">Använd</button>`:""}</div>`; }).join("")}</div>` : `<div class="muted">Väskan är tom.</div>`;
     const qk = Object.keys(S.qbag||{}).filter(k=>S.qbag[k]>0);
     if(qk.length) h += `<h3>Uppdragsföremål</h3><div class="list">${qk.map(k=>`<div class="item"><div><b>${QITEMS[k].name}</b> <span class="muted">× ${S.qbag[k]}</span></div></div>`).join("")}</div>`;
   } else if(panelKind==="talents"){
@@ -1960,14 +2132,14 @@ function renderPanel(){
         if(later) h += `<p class="muted">Kom tillbaka när du har blivit starkare.</p>`; }
     }
     if(n.shop){
-      h += `<h3>Köp</h3><div class="list">${SHOP.map(([k,p])=>`<div class="item"><div><b>${ITEMS[k].name}</b> <span class="coin">${p} guld</span><div class="d">${ITEMS[k].desc}</div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Köp</button></div>`).join("")}</div>`;
+      h += `<h3>Köp</h3><div class="list">${SHOP.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} guld</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Köp</button></div>`).join("")}</div>`;
       const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0);
-      h += `<h3>Sälj</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sälj allt skräp (${junk} guld)</button></div><div class="list">${sell.map(k=>`<div class="item"><div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div><button class="btn" data-act="sell" data-k="${k}">Sälj 1 (${ITEMS[k].sell} guld)</button></div>`).join("") || `<div class="muted">Inget att sälja.</div>`}</div>`;
+      h += `<h3>Sälj</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sälj allt skräp (${junk} guld)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sälj 1 (${ITEMS[k].sell} guld)</button></div>`).join("") || `<div class="muted">Inget att sälja.</div>`}</div>`;
     }
     if(n.smith){ const c = smithCost(S.weapon);
-      h += `<h3>Smedja</h3><div class="item"><div><b>${WEAPON_NAMES[S.cls]} +${S.weapon}</b><div class="d">${c ? `Förbättra till +${S.weapon+1} (mer skada): ${c.n} ${ITEMS[c.ore].name} och ${c.gold} guld. Du har ${S.bag[c.ore]||0} ${ITEMS[c.ore].name.toLowerCase()}.` : "Ditt vapen är fullt förbättrat."}</div></div>${c?`<button class="btn pri" data-act="upgrade" ${((S.bag[c.ore]||0)>=c.n && S.gold>=c.gold)?"":"disabled"}>Förbättra</button>`:""}</div>`; }
+      h += `<h3>Smedja</h3><div class="item"><div style="display:flex;align-items:center">${wIco(WICON[S.cls],40)}<div><b>${WEAPON_NAMES[S.cls]} +${S.weapon}</b><div class="d">${c ? `Förbättra till +${S.weapon+1} (mer skada): ${c.n} ${ITEMS[c.ore].name} och ${c.gold} guld. Du har ${S.bag[c.ore]||0} ${ITEMS[c.ore].name.toLowerCase()}.` : "Ditt vapen är fullt förbättrat."}</div></div></div>${c?`<button class="btn pri" data-act="upgrade" ${((S.bag[c.ore]||0)>=c.n && S.gold>=c.gold)?"":"disabled"}>Förbättra</button>`:""}</div>`; }
     if(n.alch){
-      h += `<h3>Alkemi</h3><div class="list">${RECIPES.map((r,i)=>{ const ok = Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v); return `<div class="item"><div><b>${ITEMS[r.out].name}</b><div class="d">${Object.entries(r.need).map(([k,v])=>`${v} ${ITEMS[k].name} (har ${S.bag[k]||0})`).join(" + ")} · ${ITEMS[r.out].desc}</div></div><button class="btn" data-act="craft" data-i="${i}" ${ok?"":"disabled"}>Brygg</button></div>`; }).join("")}</div>`; }
+      h += `<h3>Alkemi</h3><div class="list">${RECIPES.map((r,i)=>{ const ok = Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v); return `<div class="item"><div style="display:flex;align-items:center">${icoHTML(r.out)}<div><b>${ITEMS[r.out].name}</b><div class="d">${Object.entries(r.need).map(([k,v])=>`${v} ${ITEMS[k].name} (har ${S.bag[k]||0})`).join(" + ")} · ${ITEMS[r.out].desc}</div></div></div><button class="btn" data-act="craft" data-i="${i}" ${ok?"":"disabled"}>Brygg</button></div>`; }).join("")}</div>`; }
     if(!n.trains && !n.shop && !n.smith && !n.alch && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">Jag har inget mer åt dig just nu, ${esc(S.name)}.</p>`;
   } else if(panelKind==="map"){
     const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
@@ -2015,7 +2187,9 @@ function renderPicks(){
   $("races").innerHTML = Object.entries(RACES).map(([k,r])=>`<button class="pick ${pick.race===k?"sel":""}" data-race="${k}"><b><i class="sw" style="background:${r.skin}"></i>${r.name}</b><span>${r.desc}</span></button>`).join("");
   $("classes").innerHTML = Object.entries(CLASSES).map(([k,c])=>`<button class="pick ${pick.cls===k?"sel":""}" data-cls="${k}"><b><i class="sw" style="background:${c.color}"></i>${c.name}</b></button>`).join("");
   const pv = $("preview").getContext("2d"); pv.setTransform(1,0,0,1,0,0); pv.clearRect(0,0,120,120); pv.setTransform(2.2,0,0,2.2,0,0);
-  drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1});
+  const look = {key:`p_${pick.cls}_${pick.race}`, outfit:pick.cls, tint:pick.race==="human"?null:pick.race}; const [sx,sy] = raceScale(pick.race);
+  pv.setTransform(1.7,0,0,1.7,0,0);
+  if(!drawLPC(pv, look, 35, 66, {anim:"walk", frame:0, dir:2}, sx, sy)){ pv.setTransform(2.2,0,0,2.2,0,0); drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1}); clearTimeout(renderPicks._t); renderPicks._t = setTimeout(()=>{ if(!running) renderPicks(); }, 250); }
 }
 $("races").addEventListener("click", e=>{ const b = e.target.closest("[data-race]"); if(b){ pick.race = b.dataset.race; renderPicks(); } });
 $("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b){ pick.cls = b.dataset.cls; renderPicks(); } });
