@@ -13,6 +13,7 @@ Ett 2D-rollspel i webbläsaren, inspirerat av World of Warcraft.
 - **Tab**: välj närmaste fiende
 - **E**: prata med personer, bryt malm, plocka örter
 - **Q / R**: läkedryck / manadryck
+- **M**: karta
 - **C** karaktär, **B** väska, **N** talanger, **L** uppdrag, **H** hjälp
 
 Spelet sparas automatiskt i webbläsaren.
