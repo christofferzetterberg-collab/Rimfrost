@@ -192,6 +192,44 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
   .slot{width:40px;height:40px}
   #log{display:none}
 }
+
+/* ---- touch devices (phones/tablets) ---- */
+#tclear{background:none;border:none;color:var(--mute);font-size:13px;padding:0 0 0 6px;line-height:1;cursor:pointer}
+body.touch{--hb:160px}
+body.touch #frames{flex-direction:column;gap:6px;max-width:none}
+body.touch .frame{width:46vw;max-width:230px;padding:4px 6px}
+body.touch #tclear{font-size:18px;padding:0 2px 0 10px;color:var(--text)}
+body.touch #side{width:112px}
+body.touch #mm{width:100px;height:66px}
+body.touch #tracker{display:none}
+body.touch #menu{display:flex;justify-content:center}
+body.touch #menu button{width:100%;font-size:14px;padding:7px 8px;font-weight:700}
+body.touch #log{display:block;bottom:auto;top:calc(196px + env(safe-area-inset-top,0px));width:min(56vw,260px);max-width:none;font-size:10.5px;line-height:1.25}
+body.touch #log div:nth-last-child(n+4){display:none}
+body.touch #bottom{left:auto;transform:none;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));width:auto;align-items:flex-end}
+body.touch #hotbar{display:grid;grid-template-columns:repeat(4,46px);gap:5px;direction:rtl}
+body.touch .slot{width:46px;height:46px;direction:ltr}
+body.touch .slot .k{display:none}
+body.touch .slot.empty{display:none}
+body.touch #xpbar{position:fixed;left:0;right:0;bottom:0;width:auto;height:5px;border:none;border-radius:0}
+body.touch #xpbar b{display:none}
+body.touch #cast{position:fixed;left:50%;top:60%;transform:translateX(-50%)}
+body.touch #joy{left:max(14px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:128px;height:128px}
+body.touch #joy i{left:39px;top:39px}
+body.touch #atkbtn{right:max(12px,env(safe-area-inset-right,0px));bottom:calc(var(--hb) + 20px + env(safe-area-inset-bottom,0px));width:66px;height:66px;font-size:14px}
+body.touch #tabbtn{right:max(88px,calc(env(safe-area-inset-right,0px) + 88px));bottom:calc(var(--hb) + 24px + env(safe-area-inset-bottom,0px));width:54px;height:54px}
+body.touch #interact{right:max(152px,calc(env(safe-area-inset-right,0px) + 152px));bottom:calc(var(--hb) + 24px + env(safe-area-inset-bottom,0px));width:54px;height:54px}
+@media (orientation:landscape){
+  body.touch{--hb:104px}
+  body.touch #frames{flex-direction:row}
+  body.touch .frame{width:200px}
+  body.touch #hotbar{grid-template-columns:repeat(6,44px)}
+  body.touch .slot{width:44px;height:44px}
+  body.touch #log{top:calc(104px + env(safe-area-inset-top,0px));width:min(28vw,220px)}
+  body.touch #cast{top:auto;bottom:calc(var(--hb) + 100px)}
+}
+body.touch .menu-grid .muted{display:none}
+body.touch.pnl #joy, body.touch.pnl #atkbtn, body.touch.pnl #tabbtn, body.touch.pnl #interact, body.touch.pnl #bottom{display:none}
 @media (prefers-reduced-motion:reduce){#log div{animation:none}.bar i{transition:none}}
 </style>
 
@@ -206,7 +244,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
     <div class="fxrow" id="pbuffs"></div>
   </div>
   <div class="frame" id="tframe" hidden>
-    <div class="top"><span id="tname">-</span><span class="num" id="tlvl"></span></div>
+    <div class="top"><span id="tname">-</span><span class="num" id="tlvl"></span><button id="tclear" aria-label="Ta bort målet" title="Ta bort målet">✕</button></div>
     <div class="sub" id="tdesc"></div>
     <div class="bar"><i id="thpi" style="background:var(--bad)"></i><b class="num" id="thpt"></b></div>
     <div class="fxrow" id="tbuffs"></div>
@@ -2116,7 +2154,7 @@ function drawDungeonDark(c, cam, vw, vh){
 // ======================= RENDER =======================
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, ZOOM = 1; const cam = {x:0, y:0};
-function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = W < 700 ? 0.8 : 1; }
+function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = (W < 700 && !matchMedia("(pointer:coarse)").matches) ? 0.8 : 1; }
 addEventListener("resize", resize);
 
 // tile sprites (3 variants each)
@@ -2791,7 +2829,7 @@ function menuHTML(){
   return `<h2>Meny</h2><div class="menu-grid">
     <button class="btn pri" data-act="close">Fortsätt spela</button>
     <button class="btn" data-act="open" data-k="spells">Formelbok <span class="muted">${keyName(KB.spells)}</span></button>
-    <button class="btn" data-act="open" data-k="keys">Tangentbindningar</button>
+    ${isTouch ? "" : `<button class="btn" data-act="open" data-k="keys">Tangentbindningar</button>`}
     <button class="btn" data-act="open" data-k="char">Karaktär <span class="muted">${keyName(KB.char)}</span></button>
     <button class="btn" data-act="open" data-k="bag">Väska <span class="muted">${keyName(KB.bag)}</span></button>
     <button class="btn ${left>0&&S.level>=10?"glowb":""}" data-act="open" data-k="talents">Talanger <span class="muted">${keyName(KB.talents)}</span>${left>0&&S.level>=10?` · ${left} poäng`:""}</button>
@@ -3101,8 +3139,8 @@ function vendorGearHTML(n){
   return h;
 }
 let panelKind = null, panelArg = null;
-function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; }
-function closePanel(){ panelKind = null; $("panel").hidden = true; }
+function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; document.body.classList.add("pnl"); }
+function closePanel(){ document.body.classList.remove("pnl"); panelKind = null; $("panel").hidden = true; }
 function renderPanel(){
   const el = $("panel"); let h = `<button class="x" data-act="close" aria-label="Stäng">✕</button>`;
   if(panelKind==="char"){
@@ -3140,7 +3178,7 @@ function renderPanel(){
     h += act.length ? `<div class="list">${act.map(q=>`<div class="item"><div><b>${esc(q.name)}</b> <span class="muted">· nivå ${q.lvl} · ${npcName(q.npc)}</span><div class="d">${esc(q.text)}</div>${q.obj.map((o,i)=>`<div class="d" style="color:var(--text)">${esc(objName(o))}: ${qProg(q,i)}/${o[2]}</div>`).join("")}${q.to?`<div class="d" style="color:var(--text)">Lämna in hos ${esc(npcName(q.to))}</div>`:""}<div class="d">Belöning: ${qXP(q)} XP, ${qGold(q)} guld${questGearQ(q)>=0?`, <span style="color:${QUAL[questGearQ(q)].color}">${QUAL[questGearQ(q)].name.toLowerCase()} utrustning</span>`:""}</div></div><button class="btn" data-act="abandon" data-id="${q.id}">Avbryt</button></div>`).join("")}</div>` : `<div class="muted">Du har inga aktiva uppdrag. Leta efter ett gult ! ovanför personer i byarna och lägren.</div>`;
     h += `<h3>Klara</h3><div class="muted">${QUESTS.filter(q=>S.quests[q.id]?.state==="done").map(q=>q.name).join(", ") || "Inga än."}</div>`;
   } else if(panelKind==="help"){
-    h += `<h2>Så spelar du</h2><div class="list">
+    h += `<h2>Så spelar du</h2><div class="list">${isTouch ? `<div class="item"><div><b>Pekskärm</b><div class="d">Styrspaken nere till vänster flyttar dig. Tryck på en fiende för att välja den och tryck sedan <b>Slå</b> för att attackera (eller dubbeltryck på fienden). <b>Mål</b> väljer närmaste fiende. Tryck på ✕ i fiendens ruta – eller på tom mark – för att ta bort målet. <b>E</b> pratar med personer och plockar upp saker. Formlerna ligger nere till höger; vilka som visas väljer du i Formelboken under Meny.</div></div></div>` : ""}
       <div class="item"><div><b>Gå</b><div class="d">W A S D eller piltangenterna. På mobil: styrspaken nere till vänster.</div></div></div>
       <div class="item"><div><b>Välj mål och attackera</b><div class="d">Vänsterklicka på en fiende för att markera den, eller tryck Tab för närmaste. Högerklicka, Ctrl+klicka, dubbelklicka eller tryck T för att börja attackera – då slår eller skjuter gubben automatiskt tills målet dör eller du byter mål. Esc avbryter. Färgen på nivån visar hur svår den är: grön lätt, gul jämn, röd farlig.</div></div></div>
       <div class="item"><div><b>Förmågor</b><div class="d">Tangent 1–9 och 0 eller klicka på knapparna längst ner. Trollformler med kasttid avbryts om du går. Q dricker läkedryck, R manadryck.</div></div></div>
@@ -3368,12 +3406,15 @@ cv.addEventListener("pointerdown", e=>{
   const best = mobAt(e);
   if(e.button === 2 || (e.button === 0 && e.ctrlKey)){ lastRight = performance.now(); startAttack(best); return; }
   if(best){ setTarget(best); return; }
+  if(isTouch){ for(const o of dobjs){ if(Math.hypot(o.x-wx, o.y-16-wy) < 30 && dobjLabel(o)){ if(dist(P,o) < 70) useDObj(o); else err("För långt bort"); return; } } }
   for(const n of npcs){ if(Math.hypot(n.x-wx, n.y-20-wy) < 26){ if(dist(P,n) < 90) openPanel("npc", n.id); else err("För långt bort"); return; } }
   for(const n of nodes){ if(n.active && Math.hypot(n.x-wx, n.y-wy) < 22){ if(dist(P,n) < 60) startGather(n); else err("För långt bort"); return; } }
+  if(isTouch && P.target){ setTarget(null); P.autoTarget = null; }   // tapping empty ground clears the target on phones
 });
+$("tclear").addEventListener("click", e=>{ e.stopPropagation(); setTarget(null); P.autoTarget = null; });
 // touch joystick
 const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
-if(isTouch){ $("menu").hidden = false; $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
+if(isTouch){ document.body.classList.add("touch"); $("side").appendChild($("menu")); $("menu").hidden = false; $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
 (function(){ const j = $("joy"), k = j.querySelector("i"); let id = null;
   const mv = e=>{ const r = j.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const l = Math.hypot(dx,dy), mx = 45; if(l > mx){ dx = dx/l*mx; dy = dy/l*mx; } joy.x = dx/mx; joy.y = dy/mx; k.style.transform = `translate(${dx}px,${dy}px)`; };
   j.addEventListener("pointerdown", e=>{ id = e.pointerId; j.setPointerCapture(id); mv(e); });
