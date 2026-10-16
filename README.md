@@ -24,7 +24,8 @@ Spelet sparas automatiskt i webbläsaren.
 - **Figurer och vapen i rörelse** (`assets/characters`, `assets/charactersV2`): Liberated Pixel Cup (LPC), används under licensen **OGA-BY 3.0**. Skapare: se nedladdningssidan på OpenGameArt.org.
 - **Vapen- och föremålsikoner** (`assets/weapons`): **CC-BY 3.0**, skapare: [Ravenmore](https://opengameart.org/users/ravenmore).
 - **Djur** (`assets/creatures`): **CC0**.
-- **Orc-sprites** (`assets/charactersV2/Orc/orc.png`): **CC-BY 3.0**, skapare: Calciumtrice (OpenGameArt.org).
+- **Orc-krigare (fiende)** (`assets/monsters/orcwarrior.png`): **CC-BY 3.0**, skapare: Calciumtrice (OpenGameArt.org).
+- **Orc- och alvkroppar för spelare** (`assets/charactersV2/Orc/orc.png`, `assets/charactersV2/Elf/alv.png`): gjorda i Universal LPC Spritesheet Character Generator, licenser **OGA-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0**. Skapare: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike), Thane Brimhall (pennomi), laetissima, Matthew Krohn (makrohn), Manuel Riecke (MrBeast), Zi Ye, Nila122. Fullständig lista: `creditsAlv.txt` och `creditsOrc.txt`.
 - **Alv-sprites** (`assets/charactersV2/Elf`): **CC-BY 3.0**, skapare: [Vander96](https://opengameart.org/users/vander96).
 - **Bossar** (`assets/bosses`): skapare: [Balmer](https://opengameart.org/users/balmer) (OpenGameArt.org).
 - **Goblin, gargoyl och drake** (`assets/monsters`, gjorda av `assets/charactersV2/char`): **GPL 2.0**, skapare: [Mobile Game Graphics](https://opengameart.org/users/mobile-game-graphics).

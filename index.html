@@ -1996,6 +1996,9 @@ function recolor(im, tint, skel){
 function dyeLayer(im, col){ try{ const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext("2d");
   g.drawImage(im,0,0); g.globalCompositeOperation = "color"; g.fillStyle = col; g.fillRect(0,0,c.width,c.height);
   g.globalCompositeOperation = "destination-in"; g.drawImage(im,0,0); return c; }catch(_){ return im; } }
+// full ULPC body sheets for races (13x54 grid of 64px): row offset per animation
+const RACE_BODY = {orc:"assets/charactersV2/Orc/orc.png", elf:"assets/charactersV2/Elf/alv.png"};
+const ULPC_ROW = {cast:0, thrust:4, walk:8, slash:12, bow:16, hurt:20};
 const SHEETS_LPC = {};
 function lpcSheet(look, anim){
   const key = look.key + "|" + anim; if(key in SHEETS_LPC) return SHEETS_LPC[key];
@@ -2005,10 +2008,13 @@ function lpcSheet(look, anim){
   const layers = names.map(n=>[n, layerPath(anim, n)]).filter(x=>x[1]);
   if(!layers.some(l=>l[0]===bodyName)){ SHEETS_LPC[key] = null; return null; }
   const imgs = layers.map(([n,p])=>[n, sImg(p)]);
+  const rb = !skel && RACE_BODY[look.tint] ? sImg(RACE_BODY[look.tint]) : null;
+  if(rb && !rb.complete) return null;
   if(imgs.some(([,i])=>!i.complete)) return null;
   if(imgs.some(([,i])=>!i.naturalWidth)){ SHEETS_LPC[key] = null; return null; }
   const cv = document.createElement("canvas"); cv.width = imgs[0][1].naturalWidth; cv.height = imgs[0][1].naturalHeight; const g = cv.getContext("2d");
-  for(const [n,i] of imgs) g.drawImage(n===bodyName && look.tint ? recolor(i, look.tint, skel) : n.includes("#") ? dyeLayer(i, "#"+n.split("#")[1]) : i, 0, 0);
+  for(const [n,i] of imgs){ if(n===bodyName && rb && rb.naturalWidth){ g.drawImage(rb, 0, ULPC_ROW[anim]*64, cv.width, cv.height, 0, 0, cv.width, cv.height); continue; }
+    g.drawImage(n===bodyName && look.tint ? recolor(i, look.tint, skel) : n.includes("#") ? dyeLayer(i, "#"+n.split("#")[1]) : i, 0, 0); }
   SHEETS_LPC[key] = cv; return cv;
 }
 function dirOf(dx, dy){ return Math.abs(dx) > Math.abs(dy) ? (dx<0?1:3) : (dy<0?0:2); }
@@ -2136,7 +2142,7 @@ function drawBullet(c, p){ const B = BSHEET.bullet, sh = bossSheet("bullet"); if
   c.save(); c.imageSmoothingEnabled = false; c.drawImage(sh, f*B.w, 0, B.w, B.h, p.x - B.w, p.y - B.h, B.w*2, B.h*2); c.restore(); return true; }
 // ---- side-view monster sheets (frames face right): rows [row, frames]
 const SIDE = {
-  orc:{f:"assets/charactersV2/Orc/orc.png", w:32, h:32, idle:[0,10], walk:[2,10], attack:[3,10], foot:1, tall:31},
+  orc:{f:"assets/monsters/orcwarrior.png", w:32, h:32, idle:[0,10], walk:[2,10], attack:[3,10], foot:1, tall:31},
   goblin:{f:"assets/monsters/goblin.png", w:64, h:64, idle:[0,1], walk:[1,8], attack:[2,3], foot:16, tall:29},
   gargoyle:{f:"assets/monsters/gargoyle.png", w:72, h:72, idle:[0,4], walk:[1,4], attack:[2,3], foot:23, tall:29, fly:12},
   dragon:{f:"assets/monsters/dragon.png", w:80, h:80, idle:[0,4], walk:[1,4], attack:[2,3], foot:15, tall:45, fly:8}
