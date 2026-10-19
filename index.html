@@ -394,31 +394,31 @@ const AB = {
     run:()=>{ring(P.x,P.y,100,"#c8a070");aoe(P.x,P.y,100,m=>{hit(m,pow()*2.0,"phys","quake");slow(m,0.5,4);});}},
 
   // ---- Hunter
-  steady:{name:"Steady Shot", lvl:1, cost:10, range:320, school:"phys", icon:"arrow", tgt:"enemy",
-    desc:()=>`A steady shot that deals ${fmt(pow()*1.3)} damage.`,
-    run:t=>proj(t,"#e9e2c8",4,()=>hit(t,pow()*1.3,"phys","steady"),"arrow")},
-  firearrow:{name:"Fire Arrow", lvl:2, cost:20, cd:6, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
+  steady:{name:"Steady Shot", lvl:1, cost:0, cast:1.5, range:320, school:"phys", icon:"arrow", tgt:"enemy",
+    desc:()=>`A steady shot that deals ${fmt(pow()*1.3)} damage and gives you 12 focus. You must stand still while aiming.`,
+    run:t=>{ addRes("focus", 12); proj(t,"#e9e2c8",4,()=>hit(t,pow()*1.3,"phys","steady"),"arrow"); }},
+  firearrow:{name:"Fire Arrow", lvl:2, cost:30, cd:6, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
     desc:()=>`A burning arrow: ${fmt(spow()*1.1)} damage and sets the target ablaze (${fmt(spow()*1.4)} over 6 sec).`,
     run:t=>proj(t,"#ff7a2e",5,()=>{hit(t,spow()*1.1,"fire","firearrow");dot(t,"burn",spow()*1.4*(1+0.15*T("fireArrows")),6,"fire");},"arrow")},
-  icearrow:{name:"Ice Arrow", lvl:4, cost:20, cd:8, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
+  icearrow:{name:"Ice Arrow", lvl:4, cost:30, cd:8, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
     desc:()=>`A freezing arrow: ${fmt(spow()*1.4)} damage and slows the target by 60% for ${6+T("iceArrows")} sec.`,
     run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,spow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
   disengage:{name:"Disengage", lvl:6, cost:0, cd:15, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
     desc:()=>`Leaps swiftly backwards, away from your target.`,
     run:()=>{const t=P.target&&!P.target.dead?P.target:null;let dx=-P.fx,dy=0;if(t){dx=P.x-t.x;dy=P.y-t.y;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
-  multishot:{name:"Triple Shot", lvl:10, cost:30, cd:8, range:320, school:"phys", icon:"multi", tgt:"enemy",
+  multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, range:320, school:"phys", icon:"multi", tgt:"enemy",
     desc:()=>`Fires three arrows at the target and up to two enemies near it, ${fmt(pow()*1.2)} damage each.`,
     run:t=>{const near=mobs.filter(m=>m!==t&&!m.dead&&dist(m,t)<130).slice(0,2);[t,...near].forEach(m=>proj(m,"#e9e2c8",4,()=>hit(m,pow()*1.2,"phys","multishot"),"arrow"));}},
-  aimed:{name:"Aimed Shot", lvl:14, cost:35, cd:10, cast:2.5, range:340, school:"phys", icon:"aim", tgt:"enemy",
+  aimed:{name:"Aimed Shot", lvl:14, cost:45, cd:10, cast:2.5, range:340, school:"phys", icon:"aim", tgt:"enemy",
     desc:()=>`A carefully aimed shot: ${fmt(pow()*4.0)} damage.`,
     run:t=>proj(t,"#fff3c4",6,()=>hit(t,pow()*4.0,"phys","aimed"),"arrow")},
-  poison:{name:"Poison Arrow", lvl:18, cost:20, range:320, school:"nature", icon:"poison", tgt:"enemy",
+  poison:{name:"Poison Arrow", lvl:18, cost:30, range:320, school:"nature", icon:"poison", tgt:"enemy",
     desc:()=>`A poisoned arrow: ${fmt(spow()*2.6)} poison damage over 12 sec.`,
     run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",spow()*2.6,12,"nature"),"arrow")},
-  snare:{name:"Snare", lvl:22, cost:15, cd:20, range:320, school:"nature", icon:"roots", tgt:"enemy",
+  snare:{name:"Snare", lvl:22, cost:25, cd:20, range:320, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Throws a snare that holds the target in place for 6 sec.`,
     run:t=>{root(t,6);burst(t.x,t.y,"#c8a070",10);}},
-  stormarrow:{name:"Storm Arrow", lvl:26, cost:40, cd:20, range:340, school:"nature", icon:"storm", tgt:"enemy",
+  stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, range:340, school:"nature", icon:"storm", tgt:"enemy",
     desc:()=>`An arrow charged with lightning: ${fmt(spow()*5.0)} damage.`,
     run:t=>proj(t,"#e8f4ff",7,()=>{hit(t,spow()*5.0,"nature","stormarrow");burst(t.x,t.y,"#e8f4ff",18);},"arrow")},
 
@@ -522,8 +522,9 @@ const AB = {
   swipe:{name:"Swipe", lvl:10, cost:20, res:"rage", range:0, school:"phys", icon:"whirl", tgt:"self",
     desc:()=>`Swipes with your paws: ${fmt(pow()*1.0)} damage to all enemies within 80.`,
     run:()=>{ring(P.x,P.y,80,"#d9b48a");aoe(P.x,P.y,80,m=>hit(m,pow()*1.0,"phys","swipe"));}},
-  frenzy:{name:"Frenzied Regeneration", lvl:12, cost:0, res:"rage", cd:30, range:0, school:"nature", icon:"bloom", tgt:"self",
-    desc:()=>`Heals you for ${fmt(P.maxHp*0.3)} over 6 sec.`, run:()=>hot("frenzy",P.maxHp*0.3*(1+0.1*T("impRejuv")),6)},
+  frenzy:{name:"Frenzied Regeneration", lvl:12, cost:50, res:"rage", cd:30, range:0, school:"nature", icon:"bloom", tgt:"self",
+    check:()=>P.hp/P.maxHp <= 0.3 || "You can only use this at 30% health or lower",
+    desc:()=>`Heals you for ${fmt(P.maxHp*0.5*(1+0.1*T("impRejuv")))} over 6 sec. Only usable at 30% health or lower.`, run:()=>hot("frenzy",P.maxHp*0.5*(1+0.1*T("impRejuv")),6)},
   bash:{name:"Bash", lvl:14, cost:10, res:"rage", cd:20, range:55, school:"phys", icon:"fist", tgt:"enemy",
     desc:()=>`Stuns the target for 3 sec and deals ${fmt(pow()*0.5)} damage.`, run:t=>{slash(t);hit(t,pow()*0.5,"phys","bash");stun(t,3);}},
   roar:{name:"Terrifying Roar", lvl:20, cost:15, res:"rage", cd:30, range:0, school:"phys", icon:"horn", tgt:"self",
@@ -1675,7 +1676,7 @@ function tryUse(id){
   if(P[type] < cost) return err(`Not enough ${RES_NAME[type].toLowerCase()}`);
   const ct = castTime(id);
   if(!a.offGcd) P.gcd = 1.0;
-  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; snd("cast"); }
+  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; if(a.school!=="phys") snd("cast"); }
   else { P[type] -= cost; finishAbility(id, t); }
 }
 function finishAbility(id, t){
@@ -1917,7 +1918,7 @@ function updPlayer(dt){
   if(P.sitting && P.hp >= P.maxHp && P.mana >= P.maxMana && !P.sitFull){ P.sitFull = true; log("You are fully rested.", "#7be08a"); }
   const rg = S.race==='undead' ? 1.5 : 1, rest = P.sitting ? 2.5 : 1;
   P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05*rg*rest)*dt);
-  P.focus = Math.min(100, P.focus + (inC?7:15)*dt);
+  P.focus = Math.min(100, P.focus + (inC?4:9)*dt);
   P.energy = Math.min(100, P.energy + 12*dt);
   if(!inC) P.rage = Math.max(0, P.rage - 3*dt);
   if(!inC && (P.combatT < -1 || P.sitting)) P.hp = Math.min(P.maxHp, P.hp + P.maxHp*0.04*rg*rest*dt);
@@ -3730,7 +3731,10 @@ addEventListener("blur", ()=>keys.clear());
 $("menu").addEventListener("click", e=>{ const b = e.target.closest("[data-p]"); if(b) openPanel(b.dataset.p); });
 $("revive").addEventListener("click", releaseSpirit);
 // start auto attack on the current target (right-click, T or the touch button)
-function startAttack(m){ m = m || P.target; if(!m || m.dead || P.dead) return; setTarget(m); P.autoTarget = m; P.autoT = Math.min(P.autoT, 0.2); }
+function startAttack(m){ if(P.dead) return; m = m || P.target;
+  if(!m || m.dead || m.evading){
+    const cand = mobs.filter(o=>!o.dead && !o.evading && dist(P,o)-o.r < 400).sort((a,b)=>(!!a.def.passive - !!b.def.passive) || (dist(P,a)-dist(P,b))); m = cand[0];
+    if(!m) return err("No enemy nearby"); } setTarget(m); P.autoTarget = m; P.autoT = Math.min(P.autoT, 0.2); }
 function mobAt(e){ const wx = e.clientX/ZOOM + cam.x, wy = e.clientY/ZOOM + cam.y; let best = null, bd = 34;
   for(const m of mobs){ if(m.dead) continue; const cy = m.y - Math.max(m.r, 22); const d = Math.hypot(m.x-wx, cy-wy); if(d < bd + m.r*0.5){ bd = d; best = m; } } return best; }
 let lastRight = 0;
