@@ -1490,7 +1490,7 @@ function buff(name, dur){ P.buffs[name] = dur; }
 // ---- resting: sit down out of combat (X) for faster health and mana regen
 const REST_DELAY = 5;
 function canRest(){ if(!P || P.dead) return "You cannot rest now"; if(P.combatT > 0) return "You cannot rest in combat";
-  if(P.combatT > -REST_DELAY) return `Wait ${Math.ceil(REST_DELAY + P.combatT)} sec after combat`; if(P.form) return "Return to normal form to rest"; return null; }
+  if(P.form) return "Return to normal form to rest"; return null; }
 function sitDown(){ const why = canRest(); if(why) return err(why); P.sitting = true;  P.sitFull = false; P.casting = null; P.autoTarget = null; floatText(P.x, P.y-56, "Resting", "#9fd6e8"); }
 function standUp(){ P.sitting = false;  }
 function toggleRest(){ if(P.sitting) standUp(); else sitDown(); }
@@ -1829,6 +1829,7 @@ function updPlayer(dt){
   }
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
+  if(P.combatT > 0 && !mobs.some(m=>m.state==="chase" && !m.dead)) P.combatT = Math.min(P.combatT, 0.25);   // no enemy is after you: combat ends right away
   P.combatT -= dt; const inC = P.combatT > 0;
   if(P.sitting && (P.moving || P.casting || P.autoTarget || P.dash || P.leap || inC || P.dead)) standUp();
   if(P.sitting && P.hp >= P.maxHp && P.mana >= P.maxMana && !P.sitFull){ P.sitFull = true; log("You are fully rested.", "#7be08a"); }
