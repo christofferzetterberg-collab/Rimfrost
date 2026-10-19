@@ -458,6 +458,9 @@ const AB = {
   moonfire:{name:"Moonfire", lvl:2, cost:18, range:290, school:"arcane", icon:"moon", tgt:"enemy",
     desc:()=>`Moonlight: ${fmt(spow()*0.8)} damage instantly and ${fmt(spow()*1.4)} over 9 sec.`,
     run:t=>{burst(t.x,t.y,"#d38cff",10);hit(t,spow()*0.8,"arcane","moonfire");dot(t,"moonfire",spow()*1.4*tmul("moonfire","arcane"),9,"arcane");}},
+  touch:{name:"Nature's Touch", lvl:1, cost:25, cast:2.5, range:0, school:"nature", icon:"cross", tgt:"self",
+    desc:()=>`Heals you for ${fmt(P.maxHp*0.35*(1+0.1*T("impRejuv")))} health.`,
+    run:()=>{healP(P.maxHp*0.35*(1+0.1*T("impRejuv")));burst(P.x,P.y,"#9cf07a",12);}},
   rejuv:{name:"Lifebud", lvl:4, cost:22, range:0, school:"nature", icon:"bloom", tgt:"self",
     desc:()=>`Heals you for ${fmt(P.maxHp*0.35*(1+0.1*T("impRejuv")))} over 12 sec.`,
     run:()=>{hot("rejuv",P.maxHp*0.35*(1+0.1*T("impRejuv")),12);burst(P.x,P.y,"#9cf07a",10);}},
@@ -546,7 +549,7 @@ const BARS = {
   warrior:["heroic","charge","shout","rend","whirlwind","execute","shieldbash","secondwind","quake"],
   hunter:["steady","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow"],
   priest:["smite","heal","swp","pws","mindblast","holynova","renew","darkpulse","judgment"],
-  druid:["wrath","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat","leopard"],
+  druid:["wrath","touch","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat","leopard"],
   druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat","leopard"],
   druid_cat:["claw","rake","bite","dash","pounce","bear","cat","leopard"],
   druid_leopard:["leopard","bear","cat"],
@@ -715,7 +718,7 @@ const AB_SND = {
   heroic:["swing"], charge:["unsheathe"], shout:["push"], rend:["swing"], whirlwind:["swing"], execute:["swing"], shieldbash:["swing"], secondwind:["heal"], quake:["quake"],
   steady:["bow"], multishot:["bow"], aimed:["bow"], poison:["bow","poison"], snare:["bow","roots"], disengage:["push"],
   smite:["holy"], heal:["heal"], swp:["shadow2"], pws:["shield"], mindblast:["shadow"], holynova:["holyaoe"], renew:["heal"], darkpulse:["darkaoe"],
-  judgment:["holy"], wrath:["nature"], rejuv:["nature"], roots:["roots"], hurricane:["tempest"], bark:["bark"], bloom:["heal"],
+  judgment:["holy"], wrath:["nature"], rejuv:["nature"], touch:["heal"], roots:["roots"], hurricane:["tempest"], bark:["bark"], bloom:["heal"],
   palstrike:["swing","holy"], palheal:["heal"], hammer:["holy"], holyshield:["shield"], crusader:["swing"], consecrate:["holyaoe"], avenging:["holyaoe"], bubble:["shield"], judge:["holy"],
   bear:["form"], cat:["form"], leopard:["form"], maul:["swing"], swipe:["swing"], frenzy:["heal"], bash:["swing"], roar:["roar"],
   claw:["swing"], rake:["swing"], bite:["swing"], dash:["push"], pounce:["swing"],
@@ -1306,7 +1309,7 @@ let running = false, time = 0, curZone = null;
 const T = id => (S && S.talents[id]) || 0;
 
 function newSave(name, race, cls){
-  return {v:3, name, race, cls, level:1, xp:0, gold:5, weapon:0, bag:{potHp:3}, qbag:{}, gear:[], eq:{}, skills:{mining: race==="dwarf"?25:1, herb:1}, talents:{}, quests:{}, learned:[BARS[cls][0]], x:null, y:null, t:Date.now()};
+  return {v:3, name, race, cls, level:1, xp:0, gold:5, weapon:0, bag:{potHp:3}, qbag:{}, gear:[], eq:{}, skills:{mining: race==="dwarf"?25:1, herb:1}, talents:{}, quests:{}, learned:cls==="druid" ? ["wrath","touch"] : [BARS[cls][0]], x:null, y:null, t:Date.now()};
 }
 
 function spawnAll(){
@@ -3547,6 +3550,7 @@ function startGame(sv, fresh){
   S.skills = Object.assign({mining:1, herb:1}, sv.skills||{});
   if(!Array.isArray(sv.learned)) S.learned = allBarIds().filter(id=>AB[id].lvl<=S.level && AB[id].lvl<=16);
   S.learned = S.learned.filter(id=>AB[id]); ensureBars();
+  if(S.cls==="druid" && !S.learned.includes("touch")){ S.learned.push("touch"); autoPlace("touch"); }
   spawnAll();
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
   S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; renameOldGear();
