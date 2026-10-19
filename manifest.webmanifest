@@ -1,8 +1,8 @@
 {
   "name": "Rimfrost",
   "short_name": "Rimfrost",
-  "description": "Ett 2D-rollspel i en nordisk fantasyvärld.",
-  "lang": "sv",
+  "description": "A 2D role-playing game in a Nordic fantasy world.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

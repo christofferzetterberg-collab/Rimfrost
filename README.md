@@ -1,44 +1,47 @@
 # Rimfrost
 
-Ett 2D-rollspel i webbläsaren, inspirerat av World of Warcraft.
+A 2D role-playing game in the browser, inspired by World of Warcraft.
 
-## Spela
+## Play
 
-Öppna `index.html` i en webbläsare (dubbelklicka på filen), eller spela online via GitHub Pages.
+Open `index.html` in a browser (double-click the file), or play online via GitHub Pages.
 
-## Installera som app på mobilen
+## Install as an app on your phone
 
-Spelet är en installerbar webbapp (PWA) när det körs via GitHub Pages.
+The game is an installable web app (PWA) when it runs on GitHub Pages.
 
-1. Slå på GitHub Pages: repot på github.com → Settings → Pages → Branch: `main`, mapp `/ (root)` → Save.
-2. Öppna adressen (t.ex. `https://<användarnamn>.github.io/Rimfrost/`) på mobilen.
-3. iPhone: Safari → dela-knappen → "Lägg till på hemskärmen". Android: Chrome → menyn → "Installera app".
+1. Turn on GitHub Pages: the repository on github.com → Settings → Pages → Branch: `main`, folder `/ (root)` → Save.
+2. Open the address (e.g. `https://<username>.github.io/Rimfrost/`) on your phone.
+3. iPhone: Safari → Share button → "Add to Home Screen". Android: Chrome → menu → "Install app".
 
-Uppdateringar: pusha till GitHub som vanligt. Appen hämtar den nya versionen själv och visar "Ny version av Rimfrost finns – tryck för att uppdatera". Filen `sw.js` gör att spelet även fungerar utan internet.
+Updates: push to GitHub as usual. The app fetches the new version by itself and shows "A new version of Rimfrost is available – tap to update". The file `sw.js` also lets the game work without an internet connection.
 
-## Kontroller
+## Controls (keyboard, all keys can be changed under Esc → Keybindings)
 
-- **W A S D** eller piltangenterna: gå
-- **1–9, 0**: förmågor
-- **Vänsterklick / Tab**: välj fiende
-- **Högerklick / T**: börja attackera
-- **E**: prata med personer, bryt malm, plocka örter
-- **Q / R**: läkedryck / manadryck
-- **M**: karta
-- **C** karaktär, **B** väska, **N** talanger, **L** uppdrag, **H** hjälp
+- **W A S D** or the arrow keys: move
+- **1–9, 0**: action bar
+- **Left-click / Tab**: select an enemy
+- **Right-click / T**: start attacking
+- **E**: talk to people, mine ore, gather herbs, use dungeon objects
+- **Q / R**: health potion / mana potion
+- **X**: sit down and rest
+- **Esc**: close windows, clear target, open the menu
+- **C** character, **B** bag, **P** spellbook, **N** talents, **L** quest log, **M** map, **K** crafting, **H** information
 
-Spelet sparas automatiskt i webbläsaren.
+On touch screens the game shows a joystick and on-screen buttons instead.
 
-## Grafik och licenser
+The game saves automatically in the browser.
 
-- **Figurer och vapen i rörelse** (`assets/characters`, `assets/charactersV2`): Liberated Pixel Cup (LPC), används under licensen **OGA-BY 3.0**. Skapare: se nedladdningssidan på OpenGameArt.org.
-- **Vapen- och föremålsikoner** (`assets/weapons`): **CC-BY 3.0**, skapare: [Ravenmore](https://opengameart.org/users/ravenmore).
-- **Djur** (`assets/creatures`): **CC0**.
-- **Orc-krigare (fiende)** (`assets/monsters/orcwarrior.png`): **CC-BY 3.0**, skapare: Calciumtrice (OpenGameArt.org).
-- **Orc- och alvkroppar för spelare** (`assets/charactersV2/Orc/orc.png`, `assets/charactersV2/Elf/alv.png`): gjorda i Universal LPC Spritesheet Character Generator, licenser **OGA-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0**. Skapare: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike), Thane Brimhall (pennomi), laetissima, Matthew Krohn (makrohn), Manuel Riecke (MrBeast), Zi Ye, Nila122. Fullständig lista: `creditsAlv.txt` och `creditsOrc.txt`.
-- **Alv-sprites** (`assets/charactersV2/Elf`): **CC-BY 3.0**, skapare: [Vander96](https://opengameart.org/users/vander96).
-- **Bossar** (`assets/bosses`): skapare: [Balmer](https://opengameart.org/users/balmer) (OpenGameArt.org).
-- **Goblin, gargoyl och drake** (`assets/monsters`, gjorda av `assets/charactersV2/char`): **GPL 2.0**, skapare: [Mobile Game Graphics](https://opengameart.org/users/mobile-game-graphics).
-- **Specialeffekter** (`assets/fx`, gjorda av `assets/specialeffects`): **CC0**.
-- **Marktexturer** (`assets/environment/ground.png`, gjord av Screaming Brain Studios hex-texturer): **CC0**.
-- **Flaskor** (`assets/potions`): **CC0** (fri att använda).
+## Art and licenses
+
+- **Animated characters and weapons** (`assets/characters`, `assets/charactersV2`): Liberated Pixel Cup (LPC), used under **OGA-BY 3.0**. Authors: see the download page on OpenGameArt.org.
+- **Weapon and item icons** (`assets/weapons`): **CC-BY 3.0**, author: [Ravenmore](https://opengameart.org/users/ravenmore).
+- **Animals** (`assets/creatures`): **CC0**.
+- **Orc warrior (enemy)** (`assets/monsters/orcwarrior.png`): **CC-BY 3.0**, author: Calciumtrice (OpenGameArt.org).
+- **Orc and elf player bodies** (`assets/charactersV2/Orc/orc.png`, `assets/charactersV2/Elf/alv.png`): made with the Universal LPC Spritesheet Character Generator, licenses **OGA-BY 3.0 / CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0**. Authors: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike), Thane Brimhall (pennomi), laetissima, Matthew Krohn (makrohn), Manuel Riecke (MrBeast), Zi Ye, Nila122. Full list: `creditsAlv.txt` and `creditsOrc.txt`.
+- **Elf sprites** (`assets/charactersV2/Elf`): **CC-BY 3.0**, author: [Vander96](https://opengameart.org/users/vander96).
+- **Bosses** (`assets/bosses`): author: [Balmer](https://opengameart.org/users/balmer) (OpenGameArt.org).
+- **Goblin, gargoyle and dragon** (`assets/monsters`, made from `assets/charactersV2/char`): **GPL 2.0**, author: [Mobile Game Graphics](https://opengameart.org/users/mobile-game-graphics).
+- **Special effects** (`assets/fx`, made from `assets/specialeffects`): **CC0**.
+- **Ground textures** (`assets/environment/ground.png`, made from Screaming Brain Studios hex textures): **CC0**.
+- **Potions** (`assets/potions`): **CC0** (free to use).
