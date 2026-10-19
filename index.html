@@ -71,6 +71,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #bottom{left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,calc(100vw - 20px))}
 #cast{width:240px;max-width:70vw}
 #cast[hidden]{display:none}
+#abtip{position:fixed;z-index:60;width:260px;background:rgba(12,17,21,.97);border:1px solid #4a5a64;border-radius:8px;padding:9px 11px;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);font-size:13px;line-height:1.35;color:var(--text)}
+#abtip[hidden]{display:none}
+#abtip .tip-n{font-weight:800;font-size:15px;color:#fff;margin-bottom:3px}
+#abtip .tip-row{display:flex;justify-content:space-between;gap:10px;color:#d8dee2}
+#abtip .tip-m{color:#9aa6ad;font-size:12px}
+#abtip .tip-d{color:#f2d77a;margin-top:5px}
+#abtip .tip-red{color:#ff6b5e;margin-top:4px}
 #cast .bar{height:16px;border:1px solid var(--line)}
 #cast i{background:linear-gradient(90deg,#c9a640,#f2d77a);transition:none}
 #hotbar{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
@@ -404,8 +411,8 @@ const AB = {
     desc:()=>`A freezing arrow: ${fmt(spow()*1.4)} damage and slows the target by 60% for ${6+T("iceArrows")} sec.`,
     run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,spow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
   disengage:{name:"Disengage", lvl:6, cost:0, cd:15, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
-    desc:()=>`Leaps swiftly backwards, away from your target.`,
-    run:()=>{const t=P.target&&!P.target.dead?P.target:null;let dx=-P.fx,dy=0;if(t){dx=P.x-t.x;dy=P.y-t.y;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
+    desc:()=>`Leaps swiftly backwards, opposite to the way you last moved.`,
+    run:()=>{const m=P.lastMv;let dx,dy;if(m){dx=-m.x;dy=-m.y;}else{const t=P.target&&!P.target.dead?P.target:null;dx=t?P.x-t.x:-P.fx;dy=t?P.y-t.y:0;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
   multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, range:320, school:"phys", icon:"multi", tgt:"enemy",
     desc:()=>`Fires three arrows at the target and up to two enemies near it, ${fmt(pow()*1.2)} damage each.`,
     run:t=>{const near=mobs.filter(m=>m!==t&&!m.dead&&dist(m,t)<130).slice(0,2);[t,...near].forEach(m=>proj(m,"#e9e2c8",4,()=>hit(m,pow()*1.2,"phys","multishot"),"arrow"));}},
@@ -1909,7 +1916,7 @@ function updPlayer(dt){
   else if(il > 0.05){
     if(P.casting) cancelCast(P.casting.kind==="spell" ? "Interrupted – you moved" : null);
     const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
-    moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true;
+    moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true; P.lastMv = {x:ix/il, y:iy/il};
   }
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.kind==="gather" && P.casting.node.qitem && P.combatT > 0){ P.casting = null; err("You cannot pick that up in combat"); } else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
@@ -3148,7 +3155,7 @@ function spellsHTML(){
   h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id);
     const meta = [ `level ${a.lvl}`, a.cost ? `${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}` : "", a.cast ? `${a.cast} sec cast` : "instant", a.cd ? `${a.cd} sec cooldown` : "", a.range ? `range ${a.range}` : "" ].filter(Boolean).join(" · ");
     const side = learned ? `<span class="muted" style="font-size:12px;flex:none">${slot>=0 ? `On slot ${keyName(KB["bar"+(slot+1)])}` : "Not on the bar"}</span>` : `<span class="muted" style="font-size:12px;flex:none">${S.level >= a.lvl ? "Learn from your trainer" : `Unlocks at level ${a.lvl}`}</span>`;
-    return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico ${learned?"drag":""}" src="${abIconURL(id)}" alt="" draggable="false" ${learned?`data-drag="${id}" title="Drag to a slot"`:""}><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${side}</div>`; }).join("")}</div>`;
+    return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico ${learned?"drag":""}" src="${abIconURL(id)}" alt="" draggable="false" data-tipab="${id}" ${learned?`data-drag="${id}"`:""}><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${side}</div>`; }).join("")}</div>`;
   return h;
 }
 // ---- drag & drop of abilities onto the bar (only inside the spellbook)
@@ -3268,6 +3275,22 @@ function renderEffects(el, list){
     el.innerHTML = list.map(e=>`<div class="fxc ${e.good?"":"bad"}" title="${esc(e.name)}${e.d?" – "+esc(e.d):""}"><img src="${e.url}" alt=""><b></b></div>`).join(""); }
   const kids = el.children; list.forEach((e,i)=>{ const b = kids[i] && kids[i].lastChild; if(b) setT(b, fmtLeft(e.left)); });
 }
+
+// ---- ability tooltips (mouse only)
+function abTipHTML(id){ const a = AB[id]; if(!a) return "";
+  const res = a.res || CLASSES[S.cls].res, cost = costOf(id), ct = castTime(id);
+  const left = [], right = [];
+  left.push(cost > 0 ? `${cost} ${RES_NAME[res]}` : (id==="steady" ? "Generates 12 Focus" : "No cost"));
+  right.push(a.range > 0 ? `${a.range > 100 ? Math.round(a.range/10) + " yd" : "Melee"} range` : "Self");
+  const l2 = ct > 0 ? `${ct.toFixed(1).replace(/\.0$/,"")} sec cast` : "Instant", r2 = a.cd ? `${a.cd >= 60 ? (a.cd/60)+" min" : a.cd+" sec"} cooldown` : "";
+  const lockedTxt = S.level < a.lvl ? `<div class="tip-red">Requires level ${a.lvl}</div>` : !S.learned.includes(id) ? `<div class="tip-red">Learn from your class trainer (level ${a.lvl})</div>` : "";
+  return `<div class="tip-n">${esc(a.name)}</div><div class="tip-row"><span>${left[0]}</span><span>${right[0]}</span></div><div class="tip-row"><span>${l2}</span><span>${r2}</span></div>${a.offGcd?`<div class="tip-m">Not on the global cooldown</div>`:""}<div class="tip-d">${esc(a.desc())}</div>${lockedTxt}`; }
+(function(){ if(matchMedia("(pointer:coarse)").matches) return; const tip = document.createElement("div"); tip.id = "abtip"; tip.hidden = true; document.body.appendChild(tip); let cur = null;
+  const place = (el)=>{ const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight; let x = r.left + r.width/2 - w/2, y = r.top - h - 8; if(y < 6) y = r.bottom + 8; x = Math.max(6, Math.min(innerWidth - w - 6, x)); tip.style.left = x+"px"; tip.style.top = y+"px"; };
+  document.addEventListener("mouseover", e=>{ const el = e.target.closest && e.target.closest("[data-tipab]"); if(el === cur) return; cur = el; if(!el || !S){ tip.hidden = true; return; } tip.innerHTML = abTipHTML(el.dataset.tipab); tip.hidden = false; place(el); });
+  document.addEventListener("pointerdown", ()=>{ tip.hidden = true; cur = null; }, true);
+  setInterval(()=>{ if(cur && !tip.hidden){ if(!document.body.contains(cur)){ tip.hidden = true; cur = null; } else tip.innerHTML = abTipHTML(cur.dataset.tipab); } }, 500);
+})();
 </script>
 <script>
 // ======================= UI =======================
@@ -3394,7 +3417,7 @@ function buildHotbar(){
     if(!id){ b.classList.add("empty"); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span>`); b.title = "Empty slot – place a spell here from the Spellbook"; b.addEventListener("click", ()=>openPanel("spells")); hb.appendChild(b); slotEls.push(null); return; }
     const a = AB[id]; const c = document.createElement("canvas"); c.width = c.height = 96; { const ic = abIcon(id); drawIcon(c, ic[0], ic[1]); }
     b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span><span class="cd"></span>`);
-    b.title = `${a.name} – ${a.desc()}`; b.setAttribute("aria-label", a.name);
+    b.dataset.tipab = id; b.setAttribute("aria-label", a.name);
     b.addEventListener("click", ()=>tryUse(id)); hb.appendChild(b); slotEls.push({b, id, cd:b.querySelector(".cd")});
   });
   const pots = [["hp","Q","potHp","#c03a52"]]; if(CLASSES[S.cls].res==="mana") pots.push(["mana","R","potMana","#3f86e0"]);
