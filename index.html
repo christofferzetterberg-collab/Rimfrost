@@ -1385,7 +1385,7 @@ function buildCity(id, h, set, roadTiles){
   for(const [txt,dx,dy] of CITY_SIGNS) deco.push({k:"sign", text:txt, x:(h.x+dx)*TILE+16, y:(h.y+dy)*TILE+16});
 }
 // random reachable tile matching a predicate
-const R = rng(2024);
+let R = rng(2024);
 function pickTile(pred, tries=6000){
   for(let i=0;i<tries;i++){ const x=2+Math.floor(R()*(OW-4)), y=2+Math.floor(R()*(MH-4)); const j=y*MW+x;
     if(reach[j] && !SOLID.has(map[j]) && pred(x,y,zmap[j],map[j])) return {x,y}; }
@@ -1402,6 +1402,7 @@ function newSave(name, race, cls){
 }
 
 function spawnAll(){
+  R = rng(2024);   // same monsters in the same places for everyone (needed for co-op)
   mobs = []; nodes = []; npcs = []; qobjs = [];
   const used = new Set();
   const free = (x,y,t) => !used.has(y*MW+x) && !(t===T_PATH && R()<0.7) && !nearHub(x,y,5) && !(y>=CRYPT.y0-1 && y<=CRYPT.y1+1 && x>=CRYPT.x0-1 && x<=CRYPT.x1+1);
@@ -1436,6 +1437,7 @@ function spawnAll(){
     list.forEach((n,i)=>{ const a = i/list.length*Math.PI*2 - Math.PI/2 + 0.3; let rr = rad, x, y;
       do { x = h.x*TILE+16 + Math.cos(a)*rr*TILE; y = h.y*TILE+16 + Math.sin(a)*rr*TILE; rr -= 0.25; } while(collides(x, y, 10) && rr > 1);
       npcs.push({...n, x, y, fx: x < h.x*TILE ? 1 : -1}); }); }
+  mobs.forEach((m,i)=>{ m.nid = i; });   // network id for the shared overworld monsters
   spawnDungeons();
 }
 
@@ -1507,7 +1509,7 @@ function cycleTarget(){ const list = mobs.filter(m=>!m.dead&&!m.evading&&dist(P,
 function aggroRange(m){ if(m.def.boss) return 170; return clamp(120 + (m.lvl-S.level)*8, 50, 170); }
 function anchor(m){ m.lx = m.x; m.ly = m.y; m.lastHit = time; }
 function aggro(m){ if(m.state!=="chase") mobSnd(m, "aggro"); m.state = "chase"; m.path = null; anchor(m); }
-function engage(m){ if(m && !m.dead && m.state==="idle"){ aggro(m); social(m); } P.combatT = 6; }
+function engage(m){ if(coopGuestMob(m)){ P.combatT = 6; return; } if(m && !m.dead && m.state==="idle"){ aggro(m); social(m); } if(coopIsMe()) P.combatT = 6; }
 function social(m){ if(m.def.boss || m.def.passive) return; for(const o of mobs) if(o!==m&&!o.dead&&o.state==="idle"&&o.type===m.type&&dist(o,m)<110){ aggro(o); } }
 // line of sight for a moving body, and a tile path (BFS) around obstacles
 function clearLine(ax, ay, bx, by, r){ const d = Math.hypot(bx-ax, by-ay), n = Math.ceil(d/8); for(let i=1;i<=n;i++){ const t = i/n; if(collides(ax+(bx-ax)*t, ay+(by-ay)*t, r)) return false; } return true; }
@@ -1556,22 +1558,23 @@ function hit(m, base, school, ab){
 function lvlPenalty(m){ const d = m.lvl - S.level; return d > 0 ? Math.max(0.5, 1 - 0.06*d) : 1; }
 function damageMob(m, amt, crit, school){
   if(m.dead) return;
-  m.hp -= amt; m.flash = 0.12; anchor(m);
+  if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school]); return; }
+  m.hp -= amt; m.flash = 0.12; anchor(m); coopThreat(m, amt);
   floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit);
   engage(m);
   if(m.hp <= 0) killMob(m);
 }
-function dot(m, key, total, dur, school, raw){
+function dot(m, key, total, dur, school, raw, final){
   if(!m || m.dead || m.evading) return;
-  if(!raw) total *= genMult();
-  total *= lvlPenalty(m);
+  if(!final){ if(!raw) total *= genMult(); total *= lvlPenalty(m); }
+  if(coopGuestMob(m)){ P.combatT = 6; return coopOp("dot", m, [key, total, dur, school]); }
   m.dots = m.dots.filter(d=>d.key!==key);
-  m.dots.push({key, per:total/dur, left:dur, tick:1, school});
+  m.dots.push({key, per:total/dur, left:dur, tick:1, school, owner:coopAttacker()});
   engage(m);
 }
-function slow(m, pct, dur){ if(!m||m.dead) return; engage(m); anchor(m); m.slowPct = Math.max(pct, m.slowT>0?m.slowPct:0); m.slowT = Math.max(m.slowT, dur); }
-function root(m, dur){ if(!m||m.dead||m.def.boss) return; engage(m); anchor(m); m.rootT = Math.max(m.rootT, dur); }
-function stun(m, dur){ if(!m||m.dead) return; engage(m); anchor(m); m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
+function slow(m, pct, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("slow", m, [pct, dur]); } engage(m); anchor(m); m.slowPct = Math.max(pct, m.slowT>0?m.slowPct:0); m.slowT = Math.max(m.slowT, dur); }
+function root(m, dur){ if(!m||m.dead||m.def.boss) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("root", m, [dur]); } engage(m); anchor(m); m.rootT = Math.max(m.rootT, dur); }
+function stun(m, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("stun", m, [dur]); } engage(m); anchor(m); m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
 function aoe(x, y, r, fn){ mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,m.y-y)<r+m.r).forEach(fn); }
 function zone(x, y, r, dur, dmg, school, ab, slows){ zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
 function proj(t, color, size, onHit, kind, sp){ projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
@@ -1600,9 +1603,14 @@ function killMob(m){
   m.dead = true; m.hp = 0; m.dots = []; m.tele = null; m.state = "idle"; mobSnd(m, "death");
   m.respawn = m.def.dg ? 1e9 : m.def.boss ? 600 : m.elite ? 360 : 180;
   if(P.target === m) P.target = null;
+  const n = coopKillShare(m); m.threat = null;   // in co-op: everyone nearby shares the kill
+  if(n > 0) killRewards(m, n);
+}
+function killRewards(m, share){
+  if(P.target === m) P.target = null;
   const diff = m.lvl - S.level;
   let xp = 0;
-  if(diff > -5){ xp = (18 + m.lvl*9) * (m.elite ? 4 : 1) * clamp(1 + diff*0.1, 0.3, 1.5); }
+  if(diff > -5){ xp = (18 + m.lvl*9) * (m.elite ? 4 : 1) * clamp(1 + diff*0.1, 0.3, 1.5) / (share||1); }
   const got = [];
   if(!BEASTS.has(m.type)){ const gold = Math.max(1, Math.round((1 + m.lvl*0.8) * (m.elite?6:1) * rand(0.7,1.3))); S.gold += gold; got.push(`${gold} gold`); }
   for(const [it, ch] of (LOOT[m.type] || [[m.def.drop, m.elite ? 1 : 0.35]])) if(ITEMS[it] && Math.random() < ch){ addItem(it, 1); got.push(ITEMS[it].name); }
@@ -1644,7 +1652,7 @@ function playerDamage(raw, src, kind){
 }
 function die(){
   P.dead = true; P.hp = 0; P.casting = null; if(P.sitting) standUp(); P.dash = null; P.leap = null;
-  for(const m of mobs) if(m.state==="chase") evade(m);
+  for(const m of mobs) if(m.state==="chase" && !coopMob(m)) evade(m);
   document.getElementById("dead").hidden = false; snd("death");
   log("You have died.", "#ff6b5e");
   S.death = {x:Math.round(P.x), y:Math.round(P.y), dg:P.inDungeon||null, ghost:false}; save(true);
@@ -1659,7 +1667,7 @@ function reviveOld(){
   showBanner(sp.name, "You have been resurrected", 2.5);
   save(true);
 }
-function evade(m){ m.state = "return"; m.evading = true; m.dots = []; m.tele = null; }
+function evade(m){ if(coopGuestMob(m)) return; m.threat = null; m.state = "return"; m.evading = true; m.dots = []; m.tele = null; }
 
 // ---- abilities
 function tryUse(id){
@@ -1920,7 +1928,7 @@ function updPlayer(dt){
   }
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.kind==="gather" && P.casting.node.qitem && P.combatT > 0){ P.casting = null; err("You cannot pick that up in combat"); } else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
-  if(P.combatT > 0 && !mobs.some(m=>m.state==="chase" && !m.dead)) P.combatT = Math.min(P.combatT, 0.25);   // no enemy is after you: combat ends right away
+  if(P.combatT > 0 && !mobs.some(m=>m.state==="chase" && !m.dead && coopTargetsMe(m))) P.combatT = Math.min(P.combatT, 0.25);   // no enemy is after you: combat ends right away
   P.combatT -= dt; const inC = P.combatT > 0;
   if(P.sitting && (P.moving || P.casting || P.autoTarget || P.dash || P.leap || inC || P.dead)) standUp();
   if(P.sitting && P.hp >= P.maxHp && P.mana >= P.maxMana && !P.sitFull){ P.sitFull = true; log("You are fully rested.", "#7be08a"); }
@@ -1935,12 +1943,14 @@ function updPlayer(dt){
 }
 
 function updMob(m, dt){
+  if(coopGuestMob(m)) return coopGuestUpd(m, dt);   // in co-op the host runs the shared monsters
   if(m.dead){ m.respawn -= dt; if(m.respawn <= 0) respawnMob(m); return; }
   m.flash = Math.max(0, m.flash-dt); m.swing = Math.max(0, m.swing-dt); if(m.act) m.act.t += dt;
-  for(const d of m.dots){ d.tick -= dt; if(d.tick <= 0){ d.tick += 1; d.left -= 1; damageMob(m, Math.max(1, Math.round(d.per)), false, d.school); if(m.dead) return; } }
+  for(const d of m.dots){ d.tick -= dt; if(d.tick <= 0){ d.tick += 1; d.left -= 1; COOP_ATK = d.owner || null; damageMob(m, Math.max(1, Math.round(d.per)), false, d.school); COOP_ATK = null; if(m.dead) return; } }
   m.dots = m.dots.filter(d=>d.left>0);
   m.slowT = Math.max(0, m.slowT-dt); m.rootT = Math.max(0, m.rootT-dt); m.stunT = Math.max(0, m.stunT-dt);
-  const dp = P.dead ? 1e9 : dist(m, P);
+  const TG = mobTarget(m), T = TG ? TG.e : null; m.tgtId = TG ? TG.id : null;
+  const dp = T ? dist(m, T) : 1e9;
   const spd = m.sp * (m.slowT>0 ? 1-m.slowPct : 1);
   if(m.state === "idle"){
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.1*dt);
@@ -1949,23 +1959,24 @@ function updMob(m, dt){
     if(m.wanderT <= 0){ m.wanderT = rand(3,7); if(!m.def.boss && m.type!=="leader"){ m.wx = m.hx + rand(-60,60); m.wy = m.hy + rand(-60,60); } }
     if(m.wx !== null){ const dx = m.wx-m.x, dy = m.wy-m.y, d = Math.hypot(dx,dy); if(d < 4) m.wx = null; else { moveEnt(m, dx/d*spd*0.35*dt, dy/d*spd*0.35*dt); m.fx = dx<0?-1:1; m.walk = true; } } else m.walk = false;
   } else if(m.state === "chase"){
-    if(P.dead){ evade(m); return; }
+    if(!T){ evade(m); return; }
     if(m.lx === undefined) anchor(m);
     if(time - m.lastHit > 8 && (Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || dp > 380)){ evade(m); log(`${m.name} gives up and returns.`, "#93a4ad"); return; }
-    P.combatT = Math.max(P.combatT, 2);
+    if(TG.me) P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
-      if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; if(Math.hypot(P.x-m.tele.x, P.y-m.tele.y) < m.tele.r + P.r) playerDamage(m.dmg*sp.mult, m); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
+      if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; for(const c of mobCands(m)) if(Math.hypot(c.e.x-m.tele.x, c.e.y-m.tele.y) < m.tele.r + 11) mobAttack(m, c, m.dmg*sp.mult, null); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
       return; }
     if(m.def.special){ m.specT -= dt; if(m.specT <= 0 && dp < 240){ const sp = m.def.special; m.specT = sp.every; m.tele = {x:m.x, y:m.y, r:sp.r, t:sp.windup, max:sp.windup}; floatText(m.x, m.y-m.r-30, sp.name+"!", "#ff8a5a", true); log(`${m.name} is preparing ${sp.name} – get out of the circle!`, "#ff8a5a"); return; } }
-    const reach = m.def.ranged || (m.r + P.r + 8);
+    const reach = m.def.ranged || (m.r + 11 + 8);
     m.walk = false;
-    if(dp > reach-4 && m.rootT <= 0) steer(m, P.x, P.y, dt, spd);
-    else m.fx = P.x<m.x?-1:1;
+    if(dp > reach-4 && m.rootT <= 0) steer(m, T.x, T.y, dt, spd);
+    else m.fx = T.x<m.x?-1:1;
     m.atkT -= dt;
-    if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(P.x-m.x, P.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
-      if(m.def.ranged) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300, bullet:!!(BOSS_LOOK[m.type]&&BOSS_LOOK[m.type].bullet)});
-      else { mobSnd(m, "attack"); playerDamage(m.dmg, m, "melee"); } }
+    if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(T.x-m.x, T.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
+      if(m.def.ranged && TG.me) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300, bullet:!!(BOSS_LOOK[m.type]&&BOSS_LOOK[m.type].bullet)});
+      else if(m.def.ranged) mobAttack(m, TG, m.dmg, "ranged");
+      else { mobSnd(m, "attack"); mobAttack(m, TG, m.dmg, "melee"); } }
   } else if(m.state === "return"){
     const dx = m.hx-m.x, dy = m.hy-m.y, d = Math.hypot(dx,dy);
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.5*dt);
@@ -3923,6 +3934,10 @@ function coopData(c, d){
   if(!d || typeof d !== "object") return;
   if(COOP.role==="host" && (d.t==="st" || d.t==="bye")) coopBroadcast(d, c);   // relay to the other guests
   if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[d.id]; } return; }
+  if(d.t==="op"){ if(COOP.role==="host") coopHostOp(d); return; }
+  if(d.t==="hit"){ if(d.to===coopMyId()){ const m = coopMobByNid(d.nid); playerDamage(d.dmg, m, d.kind); } else if(COOP.role==="host") coopSendTo(d.to, d); return; }
+  if(d.t==="kill"){ if(d.to && d.to.includes(coopMyId())){ const m = coopMobByNid(d.nid); if(m) killRewards(m, d.n); } return; }
+  if(d.t==="mobs"){ if(COOP.role==="guest") coopApplyMobs(d.m); return; }
   if(d.t!=="st" || !d.id || (COOP.peer && d.id===COOP.peer.id)) return;
   let r = COOP.remotes[d.id];
   if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); snd("qaccept"); coopRefresh(); }
@@ -3939,6 +3954,7 @@ function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; c
 function coopUpdate(dt){
   if(!coopOn()) return;
   COOP.sendT -= dt; if(COOP.sendT <= 0){ COOP.sendT = 1/12; coopSendState(); }
+  if(COOP.role==="host"){ COOP.mobT = (COOP.mobT||0) - dt; if(COOP.mobT <= 0){ COOP.mobT = 0.1; coopHostMobs(); } }
   const now = performance.now();
   for(const [id, r] of Object.entries(COOP.remotes)){
     if(now - r.seen > 8000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
@@ -3946,6 +3962,59 @@ function coopUpdate(dt){
     if(r.act) r.act.t += dt;
   }
 }
+// ---------- step 2: shared monsters. The host runs every overworld monster; guests send their attacks to the host.
+let COOP_ATK = null;                       // who is attacking right now (set while the host applies a guest's attack)
+const coopMyId = () => (COOP.peer && COOP.peer.id) || "me";
+const coopIsMe = () => !COOP_ATK || COOP_ATK === coopMyId();
+const coopAttacker = () => COOP_ATK || coopMyId();
+const coopMob = m => !!(m && coopOn() && m.nid != null && !m.def.dg);
+const coopGuestMob = m => COOP.role==="guest" && coopMob(m);
+function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId(); }
+function coopMobByNid(nid){ if(!COOP.nidMap || COOP.nidMap.n !== mobs.length){ COOP.nidMap = {n:mobs.length}; for(const m of mobs) if(m.nid != null) COOP.nidMap[m.nid] = m; } return COOP.nidMap[nid]; }
+function coopSendTo(id, msg){ const r = COOP.remotes[id]; const c = r && COOP.conns.find(c=>c.peer===r.via); if(c && c.open){ try{ c.send(msg); }catch(e){} } }
+function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(); const r = COOP.remotes[id];
+  const tank = id===coopMyId() ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
+  m.threat = m.threat || {}; m.threat[id] = (m.threat[id]||0) + amt*(tank ? 2 : 1); }
+function mobCands(m){ const L = [], dg = m.def.dg || null;
+  if(!P.dead && (!coopMob(m) || (P.inDungeon||null) === dg)) L.push({id:coopMyId(), e:P, me:true});
+  if(coopMob(m)) for(const r of Object.values(COOP.remotes)) if(!r.dead && !r.ghost && (r.dg||null) === dg) L.push({id:r.id, e:r, me:false});
+  return L; }
+function mobTarget(m){ const L = mobCands(m); if(L.length <= 1) return L[0] || null;
+  if(m.threat){ let best = null, bv = 0; for(const c of L){ const v = m.threat[c.id]||0; if(v > bv && dist(m, c.e) < 700){ bv = v; best = c; } } if(best) return best; }
+  let best = null, bd = 1e9; for(const c of L){ const d = dist(m, c.e); if(d < bd){ bd = d; best = c; } } return best; }
+function mobAttack(m, c, dmg, kind){ if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
+function coopOp(op, m, a){ coopBroadcast({t:"op", op, nid:m.nid, a, from:coopMyId()}); }
+function coopHostOp(d){ const m = coopMobByNid(d.nid); if(!m || m.dead) return; const a = d.a || []; COOP_ATK = d.from;
+  try{ if(d.op==="dmg") damageMob(m, a[0], a[1], a[2]); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
+  finally{ COOP_ATK = null; } }
+// who shares a kill: everyone alive within reach in the open world. Returns the host's own share count (0 = the host gets nothing).
+function coopKillShare(m){ if(!coopMob(m) || COOP.role!=="host") return 1;
+  const near = e => (e.dg||null)===null && Math.hypot(e.x-m.x, e.y-m.y) < 1500;
+  const meIn = !P.dead && !P.inDungeon && near({x:P.x, y:P.y, dg:null});
+  const ids = Object.values(COOP.remotes).filter(r=>!r.dead && near(r)).map(r=>r.id);
+  const n = ids.length + (meIn ? 1 : 0); if(ids.length) coopBroadcast({t:"kill", nid:m.nid, n, to:ids});
+  return meIn ? n : 0; }
+// host → guests: states of the monsters near any guest, 10 times a second
+const MOB_ST = {idle:0, chase:1, return:2};
+function coopHostMobs(){ const near = Object.values(COOP.remotes).filter(r=>!r.dg); if(!near.length) return; const out = [];
+  for(const m of mobs){ if(m.nid == null || m.def.dg) continue; if(!near.some(r=>Math.abs(r.x-m.x) < 1100 && Math.abs(r.y-m.y) < 800)) continue;
+    const ac = m.act && m.act.t < m.act.dur ? [m.act.anim, +m.act.t.toFixed(2), m.act.dur] : 0;
+    out.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.hp), MOB_ST[m.state]||0, m.dead?1:0, m.dir||0, m.fx||1, m.walk?1:0, m.tgtId||0, m.tele ? [Math.round(m.tele.x), Math.round(m.tele.y), m.tele.r, +m.tele.t.toFixed(2), m.tele.max] : 0, ac, +m.stunT.toFixed(1), +m.rootT.toFixed(1), +m.slowT.toFixed(1), m.dots.map(d=>d.key)]); }
+  coopBroadcast({t:"mobs", m:out}); }
+function coopApplyMobs(list){ const now = performance.now();
+  for(const s of list){ const m = coopMobByNid(s[0]); if(!m) continue;
+    const wasDead = m.dead, wasState = m.state;
+    m.nx = s[1]; m.ny = s[2]; if(s[5] || wasDead || Math.hypot(m.nx-m.x, m.ny-m.y) > 300){ m.x = m.nx; m.y = m.ny; }
+    if(s[3] < m.hp) m.flash = 0.12; m.hp = s[3]; m.state = ["idle","chase","return"][s[4]]; m.evading = m.state==="return";
+    m.dead = !!s[5]; m.dir = s[6]; m.fx = s[7]; m.walk = !!s[8]; m.tgtId = s[9] || null; m.tele = s[10] ? {x:s[10][0], y:s[10][1], r:s[10][2], t:s[10][3], max:s[10][4]} : null;
+    if(s[11] && (!m.act || m.act.anim !== s[11][0] || Math.abs(m.act.t - s[11][1]) > 0.25)) m.act = {anim:s[11][0], t:s[11][1], dur:s[11][2]};
+    m.stunT = s[12]; m.rootT = s[13]; m.slowT = s[14]; m.dots = (s[15]||[]).map(k=>({key:k, per:0, left:1, tick:1}));
+    m.seenT = now;
+    if(m.dead && !wasDead){ mobSnd(m, "death"); burst(m.x, m.y, m.def.color, 16); if(P.target===m) P.target = null; if(P.autoTarget===m) P.autoTarget = null; }
+    if(!m.dead && wasState!=="chase" && m.state==="chase") mobSnd(m, "aggro");
+    if(!m.dead && wasDead){ m.hp = s[3]; } } }
+function coopGuestUpd(m, dt){ m.flash = Math.max(0, (m.flash||0)-dt); m.swing = Math.max(0, (m.swing||0)-dt); if(m.act) m.act.t += dt; if(m.tele) m.tele.t -= dt;
+  if(m.nx != null && !m.dead){ const k = Math.min(1, dt*10); m.x += (m.nx-m.x)*k; m.y += (m.ny-m.y)*k; } }
 function coopVisible(){ return Object.values(COOP.remotes).filter(r=>(r.dg||null) === (P.inDungeon||null)); }
 function drawRemote(c, r){
   c.globalAlpha = r.ghost ? 0.5 : r.dead ? 0.35 : 1;
@@ -3959,7 +4028,7 @@ function drawRemote(c, r){
   c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(r.x-22, top+4, 44, 5); c.fillStyle = r.dead ? "#666" : "#4fd06a"; c.fillRect(r.x-22, top+4, 44*Math.max(0, Math.min(1, r.hp/(r.mhp||1))), 5); c.lineWidth = 1;
 }
 function coopHTML(){
-  let h = `<h2>Co-op</h2><div class="muted">Play together with friends on PC. One of you hosts and gets a code, the others join with that code. Right now you can see each other in the world – fighting together comes in a later update.</div>`;
+  let h = `<h2>Co-op</h2><div class="muted">Play together with friends on PC. One of you hosts and gets a code, the others join with that code. You fight the same monsters and share the XP. Healing and buffing each other comes in a later update.</div>`;
   if(coopOn() || COOP.role==="host"){
     if(COOP.role==="host") h += `<h3>Your code</h3><div class="item"><div><b style="font-size:28px;letter-spacing:6px;color:var(--frost)">${COOP.code||"…"}</b><div class="d">Give this code to your friends.</div></div></div>`;
     else h += `<h3>Joined game</h3><div class="item"><div><b>${COOP.code}</b></div></div>`;
