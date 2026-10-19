@@ -3878,7 +3878,7 @@ function coopNewCode(){ const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c = ""
 function coopRefresh(){ if(panelKind==="coop") renderPanel(); }
 function coopOn(){ return COOP.conns.length > 0; }
 function coopErr(e){ const t = e && e.type;
-  COOP.status = t==="peer-unavailable" ? "No game was found with that code." : t==="network" || t==="server-error" || t==="socket-error" || t==="socket-closed" ? "Could not reach the co-op service. Check your internet connection." : t==="browser-incompatible" ? "This browser does not support co-op." : "Something went wrong: " + (t || (e && e.message) || e);
+  COOP.status = t==="peer-unavailable" ? "No game was found with that code." : t==="network" || t==="server-error" || t==="socket-error" || t==="socket-closed" ? "Could not reach the co-op service. Check your internet connection." : t==="browser-incompatible" ? "This browser does not support co-op." : t==="blocked" ? "The game was found, but your computers could not connect directly. A firewall or the network (for example a work computer or work network) is probably blocking it." : "Something went wrong: " + (t || (e && e.message) || e);
   COOP.busy = false; coopRefresh(); }
 async function coopHost(){
   if(COOP.busy) return; COOP.busy = true; coopLeave(true); COOP.status = "Starting…"; coopRefresh();
@@ -3896,7 +3896,7 @@ async function coopJoin(code){
   try{ await coopLoad(); }catch(e){ return coopErr(e); }
   const peer = new Peer(undefined, window.COOP_SERVER || {debug:0}); COOP.peer = peer; COOP.role = "guest"; COOP.code = code;
   peer.on("open", ()=>{ const c = peer.connect(PEER_PREFIX + code, {reliable:true}); coopAttach(c);
-    setTimeout(()=>{ if(COOP.role==="guest" && !coopOn() && COOP.busy) coopErr({type:"peer-unavailable"}); }, 12000); });
+    setTimeout(()=>{ if(COOP.role==="guest" && !coopOn() && COOP.busy) coopErr({type:"blocked"}); }, 15000); });
   peer.on("error", e=>coopErr(e));
 }
 function coopAttach(c){
