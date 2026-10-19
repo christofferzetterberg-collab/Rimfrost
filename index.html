@@ -1428,7 +1428,7 @@ function setForm(f){
 
 function killMob(m){
   m.dead = true; m.hp = 0; m.dots = []; m.tele = null; m.state = "idle";
-  m.respawn = m.def.dg ? 1e9 : m.def.boss ? 150 : m.elite ? 90 : 28;
+  m.respawn = m.def.dg ? 1e9 : m.def.boss ? 600 : m.elite ? 360 : 180;
   if(P.target === m) P.target = null;
   const diff = m.lvl - S.level;
   let xp = 0;
@@ -2503,7 +2503,7 @@ function render(){
   for(const m of mobs){ if(m.dead || !inView(m)) continue; const near = dist(m,P) < 230 || m===P.target; if(!near) continue;
     const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : ORC_LOOK[m.type] ? sideTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
-    ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.elite?" Elite":""})`, m.x, top-6);
+    ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.def.boss?" Boss":m.elite?" Elite":""})`, m.x, top-6);
     if(m===P.autoTarget){ const sy = top-26 + Math.sin(time*6)*2; ctx.strokeStyle = "#ff5a4f"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(m.x-7, sy-7); ctx.lineTo(m.x+7, sy+7); ctx.moveTo(m.x+7, sy-7); ctx.lineTo(m.x-7, sy+7); ctx.stroke(); ctx.lineWidth = 1; ctx.lineCap = "butt"; } }
   for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-62); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
     const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
@@ -2546,7 +2546,6 @@ function drawMinimap(){
   for(const n of qobjs) if(n.active && needsQItem(n.qitem)) dot(n.x/TILE, n.y/TILE, "#f3dc55", 3);
   for(const n of npcs){ const mk = npcMark(n); dot(n.x/TILE, n.y/TILE, mk ? mk.color : "#8fe39a", 3); }
   if(P.target && !P.target.dead) dot(P.target.x/TILE, P.target.y/TILE, "#ff5a4f", 3);
-  for(const b of mobs) if((b.def.boss||b.elite) && !b.dead) dot(b.x/TILE, b.y/TILE, "#ff3b30", 4);
   const cp = corpsePos(); if(cp) dot(cp.x/TILE, cp.y/TILE, "#d8e8ff", 4);
   dot(px, py, "#ffffff", 4);
 }
@@ -3202,7 +3201,7 @@ function updHUD(dt){
   setW(ri, P[type]/mr); setT($("prest"), `${RES_NAME[type]} ${Math.floor(P[type])} / ${mr}${P.form==="cat"&&P.cp?` · Combo ${P.cp}`:""}`);
   renderEffects($("pbuffs"), playerEffects());
   const t = P.target, tf = $("tframe");
-  if(t && !t.dead){ tf.hidden = false; setT($("tname"), t.name); const tl = $("tlvl"); setT(tl, (t.elite?"Elite ":"")+"Level "+t.lvl); tl.className = "num "+lvlClass(t.lvl);
+  if(t && !t.dead){ tf.hidden = false; setT($("tname"), t.name); const tl = $("tlvl"); setT(tl, (t.def.boss?"Boss ":t.elite?"Elite ":"")+"Level "+t.lvl); tl.className = "num "+lvlClass(t.lvl);
     setW($("thpi"), t.hp/t.maxHp); setT($("thpt"), `${Math.max(0,Math.ceil(t.hp))} / ${t.maxHp}`);
     const st = []; if(t.evading) st.push("Evading"); 
     if(P.autoTarget===t) st.unshift(dist(P,t)-t.r > (autoInfo()||{range:52}).range ? "Attacking – move closer" : "Attacking"); setT($("tdesc"), st.join(" · ") || (t.state==="chase"?"In combat":"Calm")); renderEffects($("tbuffs"), targetEffects(t)); }
