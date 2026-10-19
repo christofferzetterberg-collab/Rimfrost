@@ -46,3 +46,4 @@ The game saves automatically in the browser.
 - **Ground textures** (`assets/environment/ground.png`, made from Screaming Brain Studios hex textures): **CC0**.
 - **Potions** (`assets/potions`): **CC0** (free to use).
 - **Sound effects** (`assets/sfx`, made from "RPG Sound Pack", a spell sound pack and "Level up, Power up, Coin"): **CC0**.
+- **PeerJS** (`assets/lib/peerjs.min.js`, used for co-op): **MIT License**, Copyright (c) 2015 Michelle Bu and Eric Zhang.

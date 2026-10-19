@@ -2666,6 +2666,7 @@ function render(){
     if(P.form) drawBeast(ctx, P.x, P.y, P.form, P.fx); else if(!drawLPC(ctx, playerLook(), P.x, P.y, lpcState(P, P.moving), psx, psy)) drawHero(ctx, P.x, P.y, {race:S.race, cls:S.cls, skin:RACES[S.race].skin, hair:RACES[S.race].hair, body:CLASSES[S.cls].color, fx:P.fx, moving:P.moving, swing:P.swing});
     if(P.hurt>0){ ctx.fillStyle = `rgba(255,60,60,${P.hurt*2})`; ctx.beginPath(); ctx.arc(P.x, P.y-16, 18, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1; }});
+  for(const r of coopVisible()) if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
   for(const p of projs){
@@ -2721,6 +2722,7 @@ function drawMinimap(){
   mmc.fillStyle = "#0b1013"; mmc.fillRect(0,0,120,80);
   mmc.imageSmoothingEnabled = false; mmc.drawImage(mmBase, sx, sy, 60, 40, 0, 0, 120, 80);
   const dot = (x, y, c, s) => { const X = (x-sx)*k, Y = (y-sy)*k; if(X<0||Y<0||X>120||Y>80) return; mmc.fillStyle = c; mmc.fillRect(Math.round(X-s/2), Math.round(Y-s/2), s, s); };
+  for(const r of coopVisible()) dot(r.x/TILE, r.y/TILE, "#5fb0ff", 4);
   for(const n of nodes) if(n.active) dot(n.x/TILE, n.y/TILE, n.def.color, 2);
   for(const n of qobjs) if(n.active && needsQItem(n.qitem)) dot(n.x/TILE, n.y/TILE, "#f3dc55", 3);
   for(const n of npcs){ const mk = npcMark(n); dot(n.x/TILE, n.y/TILE, mk ? mk.color : "#8fe39a", 3); }
@@ -2908,7 +2910,8 @@ function drawLPC(c, look, x, y, st, sx, sy){
 }
 const CASTER_W = {thrust:["WEAPON_staff"]};
 function raceLook(key, outfit, race, extra){ return Object.assign({key, outfit, tint:race==="human"?null:race, body:race==="undead"?"skeleton":null}, extra||{}); }
-function playerLook(){ const cls = S.cls, race = S.race;
+function playerLook(){ return lookFor(S.cls, S.race); }
+function lookFor(cls, race){
   const w = (cls==="warrior"||cls==="paladin") ? {walk:["WEAPON_shield_cutout_body"], slash:["WEAPON_shield_cutout_body"], thrust:["WEAPON_shield_cutout_body"]} : cls==="hunter" ? {bow:["WEAPON_bow","WEAPON_arrow"]} : CASTER_W;
   return raceLook(`p_${cls}_${race}`, cls, race, {weapons:w, big:(cls==="warrior"||cls==="paladin")?BIG_SWORD:null}); }
 function raceScale(race){ return race==="dwarf" ? [1.1, 0.86] : race==="orc" ? [1.06, 1.04] : [1, 1]; }
@@ -3117,7 +3120,7 @@ function menuHTML(){
   return `<h2>Menu</h2><div class="menu-grid">
     <button class="btn pri" data-act="close">Continue Playing</button>
     <button class="btn" data-act="open" data-k="spells">Spellbook <span class="muted">${keyName(KB.spells)}</span></button>
-    ${isTouch ? "" : `<button class="btn" data-act="open" data-k="keys">Keybindings</button>`}
+    ${isTouch ? "" : `<button class="btn" data-act="open" data-k="keys">Keybindings</button><button class="btn ${coopOn()?"glowb":""}" data-act="open" data-k="coop">Co-op${coopOn()?` · ${Object.keys(COOP.remotes).length+1} players`:""}</button>`}
     <button class="btn" data-act="open" data-k="char">Character <span class="muted">${keyName(KB.char)}</span></button>
     <button class="btn" data-act="open" data-k="bag">Bag <span class="muted">${keyName(KB.bag)}</span></button>
     <button class="btn ${left>0&&S.level>=10?"glowb":""}" data-act="open" data-k="talents">Talents <span class="muted">${keyName(KB.talents)}</span>${left>0&&S.level>=10?` · ${left} point${left===1?"":"s"}`:""}</button>
@@ -3533,6 +3536,8 @@ function renderPanel(){
     h += `<h2>Quest Log</h2>`;
     h += act.length ? `<div class="list">${act.map(q=>`<div class="item"><div><b>${esc(q.name)}</b> <span class="muted">· level ${q.lvl} · ${npcName(q.npc)}</span><div class="d">${esc(q.text)}</div>${q.obj.map((o,i)=>`<div class="d" style="color:var(--text)">${esc(objName(o))}: ${qProg(q,i)}/${o[2]}</div>`).join("")}${q.to?`<div class="d" style="color:var(--text)">Turn in to ${esc(npcName(q.to))}</div>`:""}<div class="d">Reward: ${qXP(q)} XP, ${qGold(q)} gold${questGearQ(q)>=0?`, <span style="color:${QUAL[questGearQ(q)].color}">${QUAL[questGearQ(q)].name.toLowerCase()} equipment</span>`:""}</div></div><button class="btn" data-act="abandon" data-id="${q.id}">Abandon</button></div>`).join("")}</div>` : `<div class="muted">You have no active quests. Look for a yellow ! above people in the villages and camps.</div>`;
     h += `<h3>Completed</h3><div class="muted">${QUESTS.filter(q=>S.quests[q.id]?.state==="done").map(q=>q.name).join(", ") || "None yet."}</div>`;
+  } else if(panelKind==="coop"){
+    h += coopHTML();
   } else if(panelKind==="help"){
     h += `<h2>How to Play</h2><div class="list">${isTouch ? `<div class="item"><div><b>Touchscreen</b><div class="d">The joystick in the bottom left moves you. Tap an enemy to select it, then tap <b>Hit</b> to attack (or double-tap the enemy). <b>Target</b> selects the nearest enemy. Tap ✕ in the enemy frame – or empty ground – to clear your target. <b>E</b> talks to people and picks things up. Your spells are in the bottom right; choose which ones are shown in the Spellbook under Menu.</div></div></div>` : ""}
       <div class="item"><div><b>Move</b><div class="d">W A S D or the arrow keys. On mobile: the joystick in the bottom left.</div></div></div>
@@ -3611,6 +3616,9 @@ $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
   if(a==="bind") return;
+  if(a==="coophost"){ coopHost(); return; }
+  if(a==="coopjoin"){ const v = $("coopcode"); coopJoin(v ? v.value : ""); return; }
+  if(a==="coopleave"){ coopLeave(); return; }
   if(a==="enterdg"){ enterDungeon(id); return; }
   if(a==="spiritrez"){ spiritHealerRevive(); return; }
   if(a==="resetdg"){ const D = DUNGEONS[id]; resetDungeon(D); log(`${ZONES[id].name} has been reset.`, "#9fd6e8"); }
@@ -3641,7 +3649,7 @@ $("panel").addEventListener("click", e=>{
   if(a==="respec"){ const c = respecCost();
     if(!respecArm){ respecArm = true; } else if(S.gold >= c && talentsSpent() > 0){ respecArm = false; S.gold -= c; S.talents = {}; snd("respec"); recompute(false); buildHotbar(); log(`Your talents have been reset (${c} gold).`, "#e6bd5c"); burst(P.x, P.y, "#ffd36b", 16); save(true); } }
   else respecArm = false;
-  if(a==="newchar"){ save(true); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
+  if(a==="newchar"){ coopLeave(true); save(true); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
   renderPanel();
 });
 
@@ -3843,7 +3851,7 @@ addEventListener("pagehide", ()=>save());
 let last = 0;
 function loop(ts){
   const dt = Math.min(0.05, (ts - last)/1000 || 0); last = ts;
-  if(running){ update(dt); updHUD(dt); saveT += dt; if(saveT > 5){ saveT = 0; save(); } }
+  if(running){ update(dt); coopUpdate(dt); updHUD(dt); saveT += dt; if(saveT > 5){ saveT = 0; save(); } }
   render();
   if(running && panelKind==="map") drawMapPlayer($("wmap"));
   requestAnimationFrame(loop);
@@ -3858,6 +3866,114 @@ function boot(data){
 }
 window.claude?.hot?.snapshot?.(()=>({save: running && S ? serialize() : null}));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+<script>
+// ======================= CO-OP (PC) – step 1: see each other in the same world =======================
+// One player hosts and gets a short code; friends join with the code. Connections go directly between
+// the browsers (WebRTC via PeerJS). The host relays every player's position to the others.
+const COOP = {peer:null, conns:[], role:null, code:null, status:"", remotes:{}, sendT:0, busy:false};
+const PEER_PREFIX = "rimfrost-coop-v1-";
+function coopLoad(){ return new Promise((ok, no)=>{ if(window.Peer) return ok(); const s = document.createElement("script"); s.src = "assets/lib/peerjs.min.js"; s.onload = ok; s.onerror = ()=>no(new Error("The co-op library could not be loaded")); document.head.appendChild(s); }); }
+function coopNewCode(){ const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c = ""; for(let i=0;i<5;i++) c += A[Math.floor(Math.random()*A.length)]; return c; }
+function coopRefresh(){ if(panelKind==="coop") renderPanel(); }
+function coopOn(){ return COOP.conns.length > 0; }
+function coopErr(e){ const t = e && e.type;
+  COOP.status = t==="peer-unavailable" ? "No game was found with that code." : t==="network" || t==="server-error" || t==="socket-error" || t==="socket-closed" ? "Could not reach the co-op service. Check your internet connection." : t==="browser-incompatible" ? "This browser does not support co-op." : "Something went wrong: " + (t || (e && e.message) || e);
+  COOP.busy = false; coopRefresh(); }
+async function coopHost(){
+  if(COOP.busy) return; COOP.busy = true; coopLeave(true); COOP.status = "Starting…"; coopRefresh();
+  try{ await coopLoad(); }catch(e){ return coopErr(e); }
+  const tryOpen = (n)=>{ COOP.code = coopNewCode(); const peer = new Peer(PEER_PREFIX + COOP.code, window.COOP_SERVER || {debug:0}); COOP.peer = peer; COOP.role = "host";
+    peer.on("open", ()=>{ COOP.busy = false; COOP.status = "Waiting for friends to join…"; coopRefresh(); });
+    peer.on("connection", c=>coopAttach(c));
+    peer.on("disconnected", ()=>{ try{ peer.reconnect(); }catch(e){} });
+    peer.on("error", e=>{ if(e.type==="unavailable-id" && n < 4){ peer.destroy(); tryOpen(n+1); } else coopErr(e); }); };
+  tryOpen(0);
+}
+async function coopJoin(code){
+  code = (code||"").trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); if(code.length !== 5){ COOP.status = "The code has 5 letters or digits."; return coopRefresh(); }
+  if(COOP.busy) return; COOP.busy = true; coopLeave(true); COOP.status = "Connecting…"; coopRefresh();
+  try{ await coopLoad(); }catch(e){ return coopErr(e); }
+  const peer = new Peer(undefined, window.COOP_SERVER || {debug:0}); COOP.peer = peer; COOP.role = "guest"; COOP.code = code;
+  peer.on("open", ()=>{ const c = peer.connect(PEER_PREFIX + code, {reliable:true}); coopAttach(c);
+    setTimeout(()=>{ if(COOP.role==="guest" && !coopOn() && COOP.busy) coopErr({type:"peer-unavailable"}); }, 12000); });
+  peer.on("error", e=>coopErr(e));
+}
+function coopAttach(c){
+  c.on("open", ()=>{ COOP.conns.push(c); COOP.busy = false; COOP.status = "Connected"; coopSendState(true); coopRefresh(); });
+  c.on("data", d=>coopData(c, d));
+  c.on("close", ()=>coopDrop(c));
+  c.on("error", ()=>coopDrop(c));
+}
+function coopDrop(c){
+  const i = COOP.conns.indexOf(c); if(i < 0) return; COOP.conns.splice(i, 1);
+  for(const [id, r] of Object.entries(COOP.remotes)) if(r.via === c.peer){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[id]; if(COOP.role==="host") coopBroadcast({t:"bye", id}); }
+  if(COOP.role==="guest"){ COOP.status = "The host closed the game."; COOP.remotes = {}; }
+  else if(!coopOn()) COOP.status = "Waiting for friends to join…";
+  coopRefresh();
+}
+function coopLeave(silent){
+  for(const c of COOP.conns){ try{ c.close(); }catch(e){} }
+  if(COOP.peer){ try{ COOP.peer.destroy(); }catch(e){} }
+  COOP.peer = null; COOP.conns = []; COOP.role = null; COOP.code = null; COOP.remotes = {};
+  if(!silent){ COOP.status = "You left co-op."; coopRefresh(); }
+}
+function coopBroadcast(msg, except){ for(const c of COOP.conns) if(c !== except && c.open){ try{ c.send(msg); }catch(e){} } }
+function coopData(c, d){
+  if(!d || typeof d !== "object") return;
+  if(COOP.role==="host" && (d.t==="st" || d.t==="bye")) coopBroadcast(d, c);   // relay to the other guests
+  if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[d.id]; } return; }
+  if(d.t!=="st" || !d.id || (COOP.peer && d.id===COOP.peer.id)) return;
+  let r = COOP.remotes[d.id];
+  if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); snd("qaccept"); coopRefresh(); }
+  Object.assign(r, d, {x:r.x, y:r.y, tx:d.x, ty:d.y, seen:performance.now(), via:c.peer});
+  if(Math.hypot(r.tx-r.x, r.ty-r.y) > 400){ r.x = r.tx; r.y = r.ty; }   // teleports and dungeon entries snap
+}
+function coopState(){
+  const act = P.act && P.act.t < P.act.dur ? {anim:P.act.anim, t:P.act.t, dur:P.act.dur} : null;
+  const cast = P.casting ? {kind:P.casting.kind, el:P.casting.el, total:P.casting.total} : null;
+  return {t:"st", id:COOP.peer.id, name:S.name, race:S.race, cls:S.cls, lvl:S.level, x:Math.round(P.x), y:Math.round(P.y), dir:P.dir, fx:P.fx, mv:!!P.moving,
+    hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast};
+}
+function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; coopBroadcast(coopState()); }
+function coopUpdate(dt){
+  if(!coopOn()) return;
+  COOP.sendT -= dt; if(COOP.sendT <= 0){ COOP.sendT = 1/12; coopSendState(); }
+  const now = performance.now();
+  for(const [id, r] of Object.entries(COOP.remotes)){
+    if(now - r.seen > 8000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
+    const k = Math.min(1, dt*12); r.x += (r.tx - r.x)*k; r.y += (r.ty - r.y)*k;
+    if(r.act) r.act.t += dt;
+  }
+}
+function coopVisible(){ return Object.values(COOP.remotes).filter(r=>(r.dg||null) === (P.inDungeon||null)); }
+function drawRemote(c, r){
+  c.globalAlpha = r.ghost ? 0.5 : r.dead ? 0.35 : 1;
+  const st = lpcState({dead:r.dead, ghost:r.ghost, sitting:r.sit, act:r.act, casting:r.cast, dir:r.dir}, r.mv);
+  const [sx, sy] = raceScale(r.race);
+  if(r.form) drawBeast(c, r.x, r.y, r.form, r.fx); else if(!drawLPC(c, lookFor(r.cls, r.race), r.x, r.y, st, sx, sy)) drawHero(c, r.x, r.y, {race:r.race, cls:r.cls, skin:RACES[r.race].skin, hair:RACES[r.race].hair, body:CLASSES[r.cls].color, fx:r.fx, moving:r.mv, swing:0});
+  c.globalAlpha = 1;
+  // name and health
+  const top = r.y - 62; c.textAlign = "center"; c.font = "700 12px 'Alegreya Sans', sans-serif"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,.8)";
+  const label = `${r.name} (${r.lvl})`; c.strokeText(label, r.x, top); c.fillStyle = "#7fc4ff"; c.fillText(label, r.x, top);
+  c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(r.x-22, top+4, 44, 5); c.fillStyle = r.dead ? "#666" : "#4fd06a"; c.fillRect(r.x-22, top+4, 44*Math.max(0, Math.min(1, r.hp/(r.mhp||1))), 5); c.lineWidth = 1;
+}
+function coopHTML(){
+  let h = `<h2>Co-op</h2><div class="muted">Play together with friends on PC. One of you hosts and gets a code, the others join with that code. Right now you can see each other in the world – fighting together comes in a later update.</div>`;
+  if(coopOn() || COOP.role==="host"){
+    if(COOP.role==="host") h += `<h3>Your code</h3><div class="item"><div><b style="font-size:28px;letter-spacing:6px;color:var(--frost)">${COOP.code||"…"}</b><div class="d">Give this code to your friends.</div></div></div>`;
+    else h += `<h3>Joined game</h3><div class="item"><div><b>${COOP.code}</b></div></div>`;
+    const rs = Object.values(COOP.remotes);
+    h += `<h3>Players</h3><div class="list"><div class="item"><div><b>${esc(S.name)}</b> <span class="muted">· level ${S.level} ${CLASSES[S.cls].name} · you</span></div></div>${rs.map(r=>`<div class="item"><div><b style="color:#7fc4ff">${esc(r.name)}</b> <span class="muted">· level ${r.lvl} ${CLASSES[r.cls]?.name||""}${r.dg?` · in ${ZONES[r.dg]?.name||"a dungeon"}`:""}</span></div></div>`).join("")}</div>`;
+    h += `<div class="muted" style="margin:8px 0">${esc(COOP.status)}</div><div class="row"><button class="btn" data-act="coopleave">Leave co-op</button></div>`;
+  } else {
+    h += `<h3>Host a game</h3><div class="row"><button class="btn pri" data-act="coophost" ${COOP.busy?"disabled":""}>Host</button></div>`;
+    h += `<h3>Join a friend</h3><div class="row"><input id="coopcode" maxlength="5" placeholder="Code" autocomplete="off" spellcheck="false" style="text-transform:uppercase;letter-spacing:4px;width:120px;font-size:18px;padding:6px 10px;background:#0d1216;color:var(--text);border:1px solid var(--line);border-radius:6px"><button class="btn" data-act="coopjoin" ${COOP.busy?"disabled":""}>Join</button></div>`;
+    if(COOP.status) h += `<div class="muted" style="margin-top:8px">${esc(COOP.status)}</div>`;
+  }
+  return h;
+}
+addEventListener("beforeunload", ()=>{ if(coopOn()) coopLeave(true); });
 </script>
 <button id="swupdate" hidden>A new version of Rimfrost is available – tap to update</button>
 <script>
