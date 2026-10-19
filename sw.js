@@ -1,6 +1,6 @@
 // Rimfrost service worker: makes the game installable and playable offline.
 // VERSION changes on every build, which is how phones notice that there is an update.
-const VERSION = "rimfrost-20261019204940";
+const VERSION = "rimfrost-20261019210256";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE))); });
 self.addEventListener("activate", e => {

@@ -529,16 +529,16 @@ const AB = {
   roar:{name:"Terrifying Roar", lvl:20, cost:15, res:"rage", cd:30, range:0, school:"phys", icon:"horn", tgt:"self",
     desc:()=>`A roar that stuns all enemies within 90 for 2 sec.`, run:()=>{ring(P.x,P.y,90,"#c89a68");aoe(P.x,P.y,90,m=>stun(m,2));}},
   // cat
-  claw:{name:"Claw", lvl:10, cost:40, res:"energy", range:52, school:"phys", icon:"claw", tgt:"enemy",
+  claw:{name:"Claw", lvl:15, cost:40, res:"energy", range:52, school:"phys", icon:"claw", tgt:"enemy",
     desc:()=>`Claws the target: ${fmt(pow()*1.6)} damage. Grants 1 combo point.`, run:t=>{slash(t);hit(t,pow()*1.6,"phys","claw");addCP();}},
-  rake:{name:"Rake", lvl:12, cost:35, res:"energy", range:52, school:"phys", icon:"claw", tgt:"enemy",
+  rake:{name:"Rake", lvl:16, cost:35, res:"energy", range:52, school:"phys", icon:"claw", tgt:"enemy",
     desc:()=>`${fmt(pow()*0.5)} damage + ${fmt(pow()*1.6)} bleed over 9 sec. Grants 1 combo point.`,
     run:t=>{slash(t);hit(t,pow()*0.5,"phys","rake");dot(t,"rake",pow()*1.6*tmul("rake","phys"),9,"phys");addCP();}},
-  bite:{name:"Death Bite", lvl:14, cost:35, res:"energy", range:52, school:"phys", icon:"fang", tgt:"enemy",
+  bite:{name:"Death Bite", lvl:17, cost:35, res:"energy", range:52, school:"phys", icon:"fang", tgt:"enemy",
     check:()=>P.cp>0||"You need combo points",
     desc:()=>`Consumes combo points: ${fmt(pow()*1.0)} + ${fmt(pow()*0.9)} per point.`,
     run:t=>{slash(t);hit(t,pow()*(1+0.9*P.cp),"phys","bite");P.cp=0;}},
-  dash:{name:"Dash", lvl:16, cost:0, res:"energy", cd:30, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
+  dash:{name:"Dash", lvl:18, cost:0, res:"energy", cd:30, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
     desc:()=>`Run 70% faster for 5 sec.`, run:()=>buff("dash",5)},
   pounce:{name:"Ambush", lvl:20, cost:60, res:"energy", cd:12, range:52, school:"phys", icon:"fang", tgt:"enemy",
     desc:()=>`A surprise strike: ${fmt(pow()*3.0)} damage. Grants 1 combo point.`, run:t=>{slash(t);hit(t,pow()*3.0,"phys","pounce");addCP();}}
@@ -3012,7 +3012,7 @@ function finishRebind(k){
 // ---- icons for the spellbook (cached data urls)
 const ABICO = {};
 function abIconURL(id){ if(ABICO[id]) return ABICO[id]; const a = AB[id], c = document.createElement("canvas"); c.width = c.height = 96;
-  drawIcon(c, a.icon, id==="firearrow"?"#ff7a2e":id==="icearrow"?"#6fc6f0":SCHOOL_COLOR[a.school]==="#f2f2f2"?"#8c939a":SCHOOL_COLOR[a.school]); return ABICO[id] = c.toDataURL(); }
+  const ic = abIcon(id); drawIcon(c, ic[0], ic[1]); return ABICO[id] = c.toDataURL(); }
 
 // ---- panels added by this file
 let spellTab = "main", craftTab = "alch";
@@ -3202,6 +3202,25 @@ let bannerT = 0;
 function showBanner(big, small, dur){ $("banner").innerHTML = `<div class="big">${esc(big)}</div><div class="small">${esc(small||"")}</div>`; bannerT = dur||3; $("banner").style.opacity = 1; }
 
 // ---- icons
+// every ability has its own symbol and colour: [shape, colour]
+const AB_ICON = {
+  fireball:["orb","#ff8a3a"], frostbolt:["shard","#8fd8ff"], fireblast:["burst","#ff5a2a"], frostnova:["snowflake","#bfe9ff"], blizzard:["storm","#5fa8e0"],
+  pyroblast:["flame","#ffb02e"], sparkrain:["spark","#d38cff"], icearmor:["crystal","#7fd0e8"], meteor:["meteor","#d8482a"],
+  heroic:["sword","#c9ced4"], charge:["dash","#e0a060"], shout:["horn","#d8b070"], rend:["drop","#d0453a"], whirlwind:["whirl","#9fb0bc"],
+  execute:["axe","#b03a2e"], shieldbash:["shield","#8a96a2"], secondwind:["heart","#e05a6a"], quake:["quake","#a07850"],
+  steady:["arrow","#c8b48a"], firearrow:["firearrow","#ff7a2e"], icearrow:["icearrow","#6fc6f0"], disengage:["leap","#9ccf8a"], multishot:["multi","#d8c08a"],
+  aimed:["aim","#e8d070"], poison:["poison","#8fd04a"], snare:["trap","#a8946a"], stormarrow:["bolt","#7fb8ff"],
+  smite:["sun","#ffe37a"], heal:["cross","#fff2b0"], swp:["skull","#a77bff"], pws:["shield","#f2ecc8"], mindblast:["mind","#c08cff"],
+  holynova:["nova","#ffd84a"], renew:["halo","#f0dc90"], darkpulse:["pulse","#7a4ad0"], judgment:["eye","#ffbf3a"],
+  wrath:["leaf","#7fdc5a"], touch:["heart","#5fd890"], moonfire:["moon","#d38cff"], rejuv:["sprout","#9cf07a"], roots:["roots","#a0b860"],
+  starfire:["star","#e6b8ff"], hurricane:["tornado","#8fd8c8"], bark:["tree","#b08a58"], bloom:["bloom","#ff9ad0"],
+  bear:["bear","#c89a68"], cat:["cat","#9cb0c0"], leopard:["paw","#ffd36b"],
+  maul:["maul","#d08050"], swipe:["swipe","#c8a070"], frenzy:["plus","#e06060"], bash:["fist","#b89070"], roar:["roar","#e0b050"],
+  claw:["claw","#e2e2e2"], rake:["rake","#c84a4a"], bite:["fang","#f0e0c0"], dash:["boot","#7fd8e8"], pounce:["leap","#e8a050"],
+  palstrike:["sword","#ffe37a"], palheal:["cross","#ffd890"], hammer:["hammer","#ffd060"], holyshield:["shield","#ffe9a0"], crusader:["axe","#f0c040"],
+  consecrate:["ground","#ffd84a"], avenging:["wings","#ffb84a"], bubble:["bubble","#fff6d0"], judge:["scales","#ffcf4a"],
+};
+function abIcon(id){ const a = AB[id], x = AB_ICON[id]; return x || [a.icon, SCHOOL_COLOR[a.school]==="#f2f2f2"?"#8c939a":SCHOOL_COLOR[a.school]]; }
 function drawIcon(cv, icon, color){
   const g = cv.getContext("2d"), s = cv.width; g.clearRect(0,0,s,s);
   const bg = g.createRadialGradient(s*0.35,s*0.3,2,s/2,s/2,s*0.75); bg.addColorStop(0, color); bg.addColorStop(1, "#0d1216"); g.fillStyle = bg; g.fillRect(0,0,s,s);
@@ -3222,7 +3241,9 @@ function drawIcon(cv, icon, color){
     case "horn": g.beginPath(); g.moveTo(-14,8); g.quadraticCurveTo(0,-14,14,-6); g.lineTo(12,4); g.quadraticCurveTo(0,-4,-10,12); g.closePath(); g.fill(); break;
     case "claw": for(let i=-1;i<=1;i++) P_([[i*8-6,-14],[i*8+6,14]]); break;
     case "whirl": g.beginPath(); for(let a=0;a<12;a+=0.2){ const r=2+a*1.3; const x=Math.cos(a)*r, y=Math.sin(a)*r; a?g.lineTo(x,y):g.moveTo(x,y);} g.stroke(); break;
-    case "arrow": case "firearrow": case "icearrow": P_([[-14,14],[12,-12]]); P_([[12,-12],[2,-12],[12,-12],[12,-2]]); P_([[-14,14],[-14,7]]); P_([[-14,14],[-7,14]]); break;
+    case "arrow": case "firearrow": case "icearrow": P_([[-14,14],[12,-12]]); P_([[12,-12],[2,-12],[12,-12],[12,-2]]); P_([[-14,14],[-14,7]]); P_([[-14,14],[-7,14]]);
+      if(icon==="firearrow"){ g.fillStyle="#ffd060"; g.beginPath(); g.moveTo(4,-14); g.quadraticCurveTo(0,-20,6,-22); g.quadraticCurveTo(16,-16,14,-4); g.quadraticCurveTo(8,-6,4,-14); g.fill(); }
+      if(icon==="icearrow"){ g.fillStyle="#e8fbff"; P_([[12,-18],[16,-12],[12,-6],[8,-12]], true); } break;
     case "multi": for(let i=-1;i<=1;i++) P_([[-12+i*6,12+i*0],[8+i*6,-12]]); break;
     case "leap": g.beginPath(); g.moveTo(12,12); g.quadraticCurveTo(0,-20,-12,4); g.stroke(); P_([[-12,4],[-12,-6],[-12,4],[-3,6]]); break;
     case "aim": C(0,0,11); P_([[0,-17],[0,-6]]); P_([[0,6],[0,17]]); P_([[-17,0],[-6,0]]); P_([[6,0],[17,0]]); C(0,0,2.5,true); break;
@@ -3236,11 +3257,39 @@ function drawIcon(cv, icon, color){
     case "bloom": for(let i=0;i<5;i++){ const a=i*Math.PI*0.4; C(Math.cos(a)*8,Math.sin(a)*8,6,true); } g.fillStyle = "#f2e86b"; C(0,0,4,true); break;
     case "roots": for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(i*9,16); g.quadraticCurveTo(i*9+8,0,i*9-2,-15); g.stroke(); } break;
     case "star": { g.beginPath(); for(let i=0;i<10;i++){ const r=i%2?6:16, a=i*Math.PI/5-Math.PI/2; const x=Math.cos(a)*r, y=Math.sin(a)*r; i?g.lineTo(x,y):g.moveTo(x,y);} g.closePath(); g.fill(); } break;
-    case "bear": C(0,5,10,true); C(-11,-7,4.5,true); C(-4,-12,4.5,true); C(4,-12,4.5,true); C(11,-7,4.5,true); break;
+    case "bear": C(-10,-9,5.5,true); C(10,-9,5.5,true); C(0,2,13,true); g.fillStyle="#3a2a1a"; C(-5,-1,2,true); C(5,-1,2,true); g.beginPath(); g.ellipse(0,7,5,3.5,0,0,7); g.fill(); break;
     case "cat": P_([[-13,-14],[-6,-4],[6,-4],[13,-14],[13,4],[0,14],[-13,4]], true); g.fillStyle = "#222"; C(-5,1,2,true); C(5,1,2,true); break;
     case "fist": g.beginPath(); g.roundRect(-11,-10,22,20,5); g.fill(); g.strokeStyle = "#555"; g.lineWidth = 1.5; for(let i=-1;i<=1;i++) P_([[i*6,-10],[i*6,-2]]); break;
     case "fang": P_([[-14,-10],[14,-10],[8,-10],[4,10],[0,-10],[-4,10],[-8,-10]], true); break;
     case "flask": g.fillRect(-3,-15,6,8); g.beginPath(); g.moveTo(-3,-7); g.lineTo(-12,10); g.quadraticCurveTo(0,17,12,10); g.lineTo(3,-7); g.closePath(); g.fill(); break;
+    case "snowflake": for(let i=0;i<6;i++){ const a=i*Math.PI/3, c=Math.cos(a), s2=Math.sin(a); P_([[0,0],[c*16,s2*16]]); P_([[c*9-s2*5,s2*9+c*5],[c*12,s2*12],[c*9+s2*5,s2*9-c*5]]); } break;
+    case "flame": g.beginPath(); g.moveTo(0,16); g.bezierCurveTo(-14,12,-12,-2,-4,-8); g.bezierCurveTo(-4,-2,0,0,2,-2); g.bezierCurveTo(0,-8,4,-14,2,-17); g.bezierCurveTo(12,-10,15,6,0,16); g.fill(); g.fillStyle="#ffcf70"; g.beginPath(); g.ellipse(0,9,4,6,0,0,7); g.fill(); break;
+    case "spark": for(const [x,y,r] of [[-7,-7,7],[7,-2,5],[-2,9,6]]){ g.beginPath(); for(let i=0;i<8;i++){ const rr=i%2?r*0.3:r, a=i*Math.PI/4; i?g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr):g.moveTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);} g.closePath(); g.fill(); } break;
+    case "crystal": P_([[0,-17],[11,-6],[7,15],[-7,15],[-11,-6]], true); g.strokeStyle="#3a7a9a"; g.lineWidth=1.5; P_([[0,-17],[0,15]]); P_([[-11,-6],[11,-6]]); break;
+    case "drop": g.beginPath(); g.moveTo(0,-16); g.bezierCurveTo(6,-6,12,0,12,6); g.arc(0,6,12,0,Math.PI); g.bezierCurveTo(-12,0,-6,-6,0,-16); g.fill(); break;
+    case "heart": g.beginPath(); g.moveTo(0,14); g.bezierCurveTo(-18,2,-14,-16,0,-6); g.bezierCurveTo(14,-16,18,2,0,14); g.fill(); break;
+    case "plus": C(0,0,15); g.fillRect(-3,-10,6,20); g.fillRect(-10,-3,20,6); break;
+    case "quake": g.fillRect(-17,8,34,4); P_([[-12,8],[-6,-2],[-2,4],[3,-10],[7,0],[12,-6]]); P_([[-4,12],[-2,17]]); P_([[6,12],[9,17]]); break;
+    case "poison": g.beginPath(); g.moveTo(0,-16); g.bezierCurveTo(6,-6,12,0,12,6); g.arc(0,6,12,0,Math.PI); g.bezierCurveTo(-12,0,-6,-6,0,-16); g.fill(); g.fillStyle="#2a3a1a"; C(-4,4,2.5,true); C(4,4,2.5,true); g.fillRect(-4,10,8,2); break;
+    case "trap": g.beginPath(); g.arc(0,2,13,Math.PI,0); g.stroke(); for(let i=-2;i<=2;i++) P_([[i*5,2-Math.sqrt(169-(i*5)**2)],[i*5,-2]]); g.fillRect(-16,2,32,4); break;
+    case "bolt": P_([[4,-17],[-8,2],[0,2],[-4,17],[9,-3],[1,-3]], true); break;
+    case "halo": g.beginPath(); g.ellipse(0,-9,12,4,0,0,7); g.stroke(); C(0,5,7,true); break;
+    case "pulse": C(0,0,5,true); for(const r of [10,16]){ g.beginPath(); for(let i=0;i<=16;i++){ const a=i*Math.PI/8, rr=r+(i%2?2:-2); i?g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):g.moveTo(Math.cos(a)*rr,Math.sin(a)*rr);} g.stroke(); } break;
+    case "eye": g.beginPath(); g.moveTo(-16,0); g.quadraticCurveTo(0,-14,16,0); g.quadraticCurveTo(0,14,-16,0); g.fill(); g.fillStyle="#3a2a10"; C(0,0,5,true); for(let i=0;i<5;i++){ const a=-Math.PI*0.15-i*Math.PI*0.175; P_([[Math.cos(a)*12,Math.sin(a)*12-2],[Math.cos(a)*17,Math.sin(a)*17-2]]); } break;
+    case "sprout": P_([[0,16],[0,-2]]); g.beginPath(); g.moveTo(0,0); g.quadraticCurveTo(-14,-2,-12,-14); g.quadraticCurveTo(-2,-12,0,0); g.fill(); g.beginPath(); g.moveTo(0,4); g.quadraticCurveTo(14,2,13,-9); g.quadraticCurveTo(3,-8,0,4); g.fill(); break;
+    case "tornado": for(let i=0;i<5;i++){ const w=16-i*3, y=-13+i*6; g.beginPath(); g.ellipse(i*1.2-2,y,w,2.6,0,0,7); g.stroke(); } break;
+    case "tree": g.fillRect(-4,2,8,15); C(0,-6,10,true); C(-8,0,6,true); C(8,0,6,true); break;
+    case "paw": C(0,6,7,true); C(-9,-3,3.6,true); C(-4,-9,3.6,true); C(4,-9,3.6,true); C(9,-3,3.6,true); P_([[-16,14],[-11,14]]); P_([[11,14],[16,14]]); break;
+    case "maul": C(0,7,9,true); for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(i*7-3,-2); g.lineTo(i*8,-17); g.lineTo(i*7+3,-2); g.fill(); } break;
+    case "swipe": g.beginPath(); g.arc(-4,8,18,-Math.PI*0.55,-Math.PI*0.05); g.stroke(); g.beginPath(); g.arc(-4,8,11,-Math.PI*0.55,-Math.PI*0.05); g.stroke(); P_([[12,0],[15,-6],[8,-4]]); break;
+    case "roar": g.beginPath(); g.moveTo(-14,-8); g.lineTo(-2,-2); g.lineTo(-2,2); g.lineTo(-14,8); g.closePath(); g.fill(); for(const r of [6,11,16]){ g.beginPath(); g.arc(-2,0,r,-0.7,0.7); g.stroke(); } break;
+    case "rake": for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(i*7-8,-14); g.quadraticCurveTo(i*7+4,-2,i*7+4,12); g.stroke(); } g.fillStyle="#7a1a1a"; C(10,14,2.5,true); C(-1,15,2,true); break;
+    case "boot": g.beginPath(); g.moveTo(-6,-15); g.lineTo(4,-15); g.lineTo(4,4); g.lineTo(14,8); g.lineTo(14,14); g.lineTo(-6,14); g.closePath(); g.fill(); P_([[-16,-6],[-10,-6]]); P_([[-17,1],[-10,1]]); P_([[-16,8],[-10,8]]); break;
+    case "hammer": g.fillRect(-2,-4,4,20); g.beginPath(); g.roundRect(-13,-15,26,11,2); g.fill(); break;
+    case "ground": g.fillRect(-17,10,34,5); for(let i=-2;i<=2;i++) P_([[i*6,7],[i*8,-12+Math.abs(i)*4]]); break;
+    case "wings": for(const sx of [-1,1]){ g.beginPath(); g.moveTo(sx*2,4); g.quadraticCurveTo(sx*10,-16,sx*17,-12); g.quadraticCurveTo(sx*15,-2,sx*17,0); g.quadraticCurveTo(sx*12,6,sx*15,10); g.quadraticCurveTo(sx*8,10,sx*2,4); g.fill(); } C(0,4,3,true); break;
+    case "bubble": C(0,0,15); g.globalAlpha=0.35; C(0,0,15,true); g.globalAlpha=1; g.beginPath(); g.arc(0,0,10,Math.PI*1.1,Math.PI*1.45); g.stroke(); break;
+    case "scales": P_([[0,-14],[0,14]]); P_([[-9,14],[9,14]]); P_([[-13,-8],[13,-8]]); P_([[-13,-8],[-17,4],[-9,4],[-13,-8]]); P_([[13,-8],[9,4],[17,4],[13,-8]]); C(0,-14,2.5,true); break;
     default: g.font = "800 20px sans-serif"; g.textAlign = "center"; g.fillText("?",0,7);
   }
   g.restore();
@@ -3254,7 +3303,7 @@ function buildHotbar(){
   currentBar().forEach((id, i)=>{
     const b = document.createElement("button"); b.className = "slot"; b.dataset.i = i;
     if(!id){ b.classList.add("empty"); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span>`); b.title = "Empty slot – place a spell here from the Spellbook"; b.addEventListener("click", ()=>openPanel("spells")); hb.appendChild(b); slotEls.push(null); return; }
-    const a = AB[id]; const c = document.createElement("canvas"); c.width = c.height = 96; drawIcon(c, a.icon, id==="firearrow"?"#ff7a2e":id==="icearrow"?"#6fc6f0":SCHOOL_COLOR[a.school]==="#f2f2f2"?"#8c939a":SCHOOL_COLOR[a.school]);
+    const a = AB[id]; const c = document.createElement("canvas"); c.width = c.height = 96; { const ic = abIcon(id); drawIcon(c, ic[0], ic[1]); }
     b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span><span class="cd"></span>`);
     b.title = `${a.name} – ${a.desc()}`; b.setAttribute("aria-label", a.name);
     b.addEventListener("click", ()=>tryUse(id)); hb.appendChild(b); slotEls.push({b, id, cd:b.querySelector(".cd")});
