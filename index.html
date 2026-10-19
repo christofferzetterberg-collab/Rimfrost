@@ -673,6 +673,8 @@ const NODES = {
 const SKILL_MAX = 200;
 
 const SHOP = [["potHp",12],["potHp2",35],["potHp3",90],["potMana",12],["potMana2",90]];
+const POTION_SHOP = [...SHOP, ["elixir",60],["elixirIron",70],["elixirKeen",70],["elixirSage",70]];
+const ORE_SHOP = [["copper",8],["iron",20],["goldore",40],["obsidian",60],["rimkr",90]];
 const RECIPES = [
   {out:"potHp", n:1, need:{ang:2}},
   {out:"potMana", n:1, need:{ang:1, silver:1}},
@@ -796,13 +798,15 @@ const HUBS = {
   snostugan:{name:"Snow Cabin", x:98, y:48, r:4, kind:"camp"},
   brannmark:{name:"Burnmark", x:30, y:126, r:7, kind:"town", race:"orc"},
   kanjonlagret:{name:"Canyon Camp", x:64, y:112, r:4, kind:"camp"},
-  jarnfastet:{name:"Ironhold", x:102, y:84, r:6, kind:"camp"},
+  jarnfastet:{name:"Rimhaven", x:100, y:87, r:14, kind:"city"},
   traskvakten:{name:"Marshwatch", x:138, y:118, r:5, kind:"camp"},
   askvakten:{name:"Ashwatch", x:150, y:44, r:5, kind:"camp"},
   isporten:{name:"Icegate", x:188, y:90, r:5, kind:"camp"},
   bleksted:{name:"Palestead", x:50, y:164, r:7, kind:"town", race:"undead"},
   benvakten:{name:"Bonewatch", x:92, y:152, r:4, kind:"camp"}
 };
+// Rimhaven, the great city: districts (tile offsets from the centre) with a sign each
+const CITY_SIGNS = [["Mage & Priest Quarter",0,-7.5],["The Barracks",7.5,0],["Hunters' Lodge & Grove",0,7.5],["The Market",-7.5,0]];
 const RACE_HUB = {human:"frostvik", elf:"lovhem", dwarf:"bergsdal", orc:"brannmark", undead:"bleksted"};
 const ROADS = [["frostvik","holgerstuga"],["lovhem","manglanta"],["bergsdal","snostugan"],["brannmark","kanjonlagret"],
   ["holgerstuga","jarnfastet"],["manglanta","jarnfastet"],["snostugan","jarnfastet"],["kanjonlagret","jarnfastet"],
@@ -984,7 +988,22 @@ const NPCS = [];
   trainers("bleksted","undead",["Selma the Gravemage","Rolf the Bonewarrior","Vira the Shadowhunter","Marten the Shadowpriest","Mossa the Druid","Ture the Fallen Knight"]);
   add("benvakten", [{id:"ulvar", name:"Ulvar the Keeper", role:"Quest Giver", color:"#6a6a7a", race:"undead"}]);
   add("kanjonlagret", [{id:"kruk", name:"Kruk the Tracker", role:"Quest Giver", color:"#7a5a3a", race:"orc"}]);
-  add("jarnfastet", [{id:"halvard", name:"Commander Halvard", role:"Quest Giver", color:"#6a7a8a", race:"human"},{id:"arvid", name:"Quartermaster Arvid", role:"Merchant", color:"#c09a40", shop:true, race:"dwarf"}]);
+  { const C = HUBS.jarnfastet, at = (dx,dy) => ({x:C.x+dx, y:C.y+dy});
+    add("jarnfastet", [
+      {id:"aldric", name:"Lord Regent Aldric", role:"Ruler of Rimhaven", color:"#c8a040", race:"human", at:at(-2,-2)},
+      {id:"brenna", name:"Captain Brenna", role:"Captain of the Guard", color:"#8a96a2", race:"dwarf", at:at(2,-2)},
+      {id:"ivo", name:"Loremaster Ivo", role:"Quest Giver", color:"#7a6ab0", race:"elf", at:at(-2,2)},
+      {id:"halvard", name:"Commander Halvard", role:"Quest Giver", color:"#6a7a8a", race:"human", at:at(2,2)},
+      {id:"t_mage", name:"Archmagus Solveig", role:"Mage Trainer", color:CLASSES.mage.color, trains:"mage", race:"human", at:at(-3,-10)},
+      {id:"t_priest", name:"High Priestess Liv", role:"Priest Trainer", color:CLASSES.priest.color, trains:"priest", race:"elf", at:at(3,-10)},
+      {id:"t_warrior", name:"Warlord Bjorn", role:"Warrior Trainer", color:CLASSES.warrior.color, trains:"warrior", race:"orc", at:at(10,-3)},
+      {id:"t_paladin", name:"Lord Commander Eir", role:"Paladin Trainer", color:CLASSES.paladin.color, trains:"paladin", race:"dwarf", at:at(10,3)},
+      {id:"t_hunter", name:"Ranger-Captain Ulf", role:"Hunter Trainer", color:CLASSES.hunter.color, trains:"hunter", race:"undead", at:at(-3,10)},
+      {id:"t_druid", name:"Archdruid Mira", role:"Druid Trainer", color:CLASSES.druid.color, trains:"druid", race:"elf", at:at(3,10)},
+      {id:"armorer", name:"Gerd the Armorer", role:"Weapons & Armor", color:"#9aa4ad", gear:true, cityVendor:true, race:"dwarf", at:at(-10,-4)},
+      {id:"oreman", name:"Hakon the Smith", role:"Blacksmith & Ore", color:"#7a5a40", smith:true, ores:true, race:"human", at:at(-11,-1)},
+      {id:"apoth", name:"Yrsa the Apothecary", role:"Alchemy & Potions", color:"#6ab08a", alch:true, potions:true, race:"elf", at:at(-11,2)},
+      {id:"arvid", name:"Quartermaster Arvid", role:"Merchant", color:"#c09a40", shop:true, race:"dwarf", at:at(-9,5)} ]); }
   add("traskvakten", [{id:"sigvard", name:"Sigvard the Witch Hunter", role:"Quest Giver", color:"#4a5a4a", race:"human"},{id:"mora", name:"Old Mora", role:"Merchant", color:"#8a8a6a", shop:true, race:"orc"}]);
   add("askvakten", [{id:"runa", name:"Runa the Warden", role:"Quest Giver", color:"#8a6a9a", race:"elf"},{id:"siv", name:"Quartermaster Siv", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
   add("isporten", [{id:"hedda", name:"Hedda the Icewarden", role:"Quest Giver", color:"#8ab0c8", race:"dwarf"},{id:"frode", name:"Frode the Merchant", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
@@ -1007,7 +1026,7 @@ const QUESTS = [
   {id:"h10", npc:"holger", lvl:7, req:["h8"], to:"linnea", name:"Silk for Linnea", text:"Linnea in Frostwick makes bandages from fine spider silk. Gather 8 and take them to her.", obj:[["loot","spidersilk",8,"spider",0.5]]},
   {id:"h11", npc:"holger", lvl:7, req:["h8"], name:"The Bandits", text:"Bandits have made camp deep in the forest to the southwest. Kill 8.", obj:[["kill","bandit",8]]},
   {id:"h12", npc:"holger", lvl:9, req:["h11"], name:"Chieftain Grimm", text:"The bandit leader Grimm is dangerous. Get clear when you see the red circle! Defeat him.", obj:[["kill","leader",1]], mult:2, items:{potHp2:2}},
-  {id:"h13", npc:"holger", lvl:10, req:["h12"], to:"halvard", name:"Onward to Ironhold", text:"You have outgrown the forest. Commander Halvard in Ironhold, up in the mountains, needs heroes. Go there.", obj:[], mult:0.4},
+  {id:"h13", npc:"holger", lvl:10, req:["h12"], to:"halvard", name:"Onward to Rimhaven", text:"You have outgrown the forest. Commander Halvard in Rimhaven, the great city in the mountains, needs heroes. Go there.", obj:[], mult:0.4},
   // ---- Elf: Silver Grove (1–5)
   {id:"e1", npc:"ilsa", lvl:1, name:"The Foxes", text:"The forest foxes have started hunting near Leafhome. Drive them off – kill 6.", obj:[["kill","lynx",6]]},
   {id:"e2", npc:"faelin", lvl:1, name:"Morning Dew", text:"Glittering dew gathers on the leaves of the grove. I need 6 drops for a potion.", obj:[["collect","dewdrop",6]], items:{potHp:2}},
@@ -1022,7 +1041,7 @@ const QUESTS = [
   {id:"e10", npc:"lyra", lvl:7, name:"Moonstones", text:"Moonstones light up the forest at night. Gather 6 before the shadows take them.", obj:[["collect","moonstone",6]]},
   {id:"e11", npc:"lyra", lvl:8, to:"faelin", name:"Silverweed for Faelin", text:"Faelin in Leafhome needs silverweed. Pick 5 and take them to him.", obj:[["gather","silver",5]]},
   {id:"e12", npc:"lyra", lvl:9, req:["e9"], name:"Morvel the Nightwatcher", text:"Behind the madness stands Morvel the Nightwatcher. He unleashes a shadow wave – run out of the circle! Defeat him.", obj:[["kill","morvel",1]], mult:2, items:{potHp2:2}},
-  {id:"e13", npc:"lyra", lvl:10, req:["e12"], to:"halvard", name:"The Road to Ironhold", text:"Commander Halvard in Ironhold is gathering heroes from every people. Go there.", obj:[], mult:0.4},
+  {id:"e13", npc:"lyra", lvl:10, req:["e12"], to:"halvard", name:"The Road to Rimhaven", text:"Commander Halvard in Rimhaven is gathering heroes from every people. Go there.", obj:[], mult:0.4},
   // ---- Dwarf: Copper Cliffs (1–5)
   {id:"d1", npc:"hjalmar", lvl:1, name:"The Crag Boars", text:"The crag boars are rooting up the mine road. Kill 6.", obj:[["kill","rocksvin",6]]},
   {id:"d2", npc:"torvald", lvl:1, name:"The First Ore", text:"Every dwarf starts with copper. Mine 6 copper ore.", obj:[["gather","copper",6]]},
@@ -1037,7 +1056,7 @@ const QUESTS = [
   {id:"d10", npc:"sune", lvl:7, req:["d8"], name:"The Frost Kobolds", text:"Frost kobolds are raiding the traps. Kill 10.", obj:[["kill","frostkobold",10]]},
   {id:"d11", npc:"sune", lvl:8, to:"torvald", name:"Iron for Torvald", text:"Torvald in Mountdale wants iron. Mine 5 iron ore and take it to him.", obj:[["gather","iron",5]]},
   {id:"d12", npc:"sune", lvl:9, req:["d10"], name:"Snorre the Kobold King", text:"Snorre the Kobold King leads them. He can unleash an avalanche – stay out of the circle! Defeat him.", obj:[["kill","snorre",1]], mult:2, items:{potHp2:2}},
-  {id:"d13", npc:"sune", lvl:10, req:["d12"], to:"halvard", name:"Down to Ironhold", text:"Commander Halvard in Ironhold needs dwarves like you. Go there.", obj:[], mult:0.4},
+  {id:"d13", npc:"sune", lvl:10, req:["d12"], to:"halvard", name:"Down to Rimhaven", text:"Commander Halvard in Rimhaven needs dwarves like you. Go there.", obj:[], mult:0.4},
   // ---- Orc: Red Plains (1–5)
   {id:"o1", npc:"ragna", lvl:1, name:"The Jackals", text:"The jackals are stealing meat from the camp. Kill 6.", obj:[["kill","jackal",6]]},
   {id:"o2", npc:"urk", lvl:1, name:"Spirit Totems", text:"Our ancestors' totems stand out on the plains. Bring 4 so I can awaken the spirits.", obj:[["collect","totem",4]], items:{potHp:2}},
@@ -1052,7 +1071,7 @@ const QUESTS = [
   {id:"o10", npc:"kruk", lvl:7, req:["o8"], name:"The Sand Golems", text:"Something has awakened the sand golems. Smash 8.", obj:[["kill","sandgolem",8]]},
   {id:"o11", npc:"kruk", lvl:8, name:"The War Banner", text:"The raiders carry a war banner that shows whom they serve. Take it from one of them.", obj:[["loot","warbanner",1,"raider",0.25]]},
   {id:"o12", npc:"kruk", lvl:9, req:["o10"], name:"Warlord Garuk", text:"The banner bears Garuk's mark. He can stomp until the ground shakes – get out of the circle! Defeat him.", obj:[["kill","garuk",1]], mult:2, items:{potHp2:2}},
-  {id:"o13", npc:"kruk", lvl:10, req:["o12"], to:"halvard", name:"To Ironhold", text:"Commander Halvard in Ironhold is gathering strong warriors. Go there.", obj:[], mult:0.4},
+  {id:"o13", npc:"kruk", lvl:10, req:["o12"], to:"halvard", name:"To Rimhaven", text:"Commander Halvard in Rimhaven is gathering strong warriors. Go there.", obj:[], mult:0.4},
   // ---- Undead: Gravelands (1–5)
   {id:"u1", npc:"morten", lvl:1, name:"Rats in the Crypts", text:"The grave rats gnaw on everything, even us. Kill 6 before they breed any further.", obj:[["kill","rat",6]]},
   {id:"u2", npc:"hilde", lvl:1, name:"Graveblooms", text:"Pale graveblooms grow where the dead rest. Pick 6 for me – they hold our bodies together.", obj:[["collect","graveflower",6]], items:{potHp:2}},
@@ -1067,10 +1086,10 @@ const QUESTS = [
   {id:"u10", npc:"ulvar", lvl:7, req:["u8"], name:"The Bone Guardians", text:"Someone has awakened the old bone guardians and turned them against us. Smash 8.", obj:[["kill","boneguard",8]]},
   {id:"u11", npc:"ulvar", lvl:8, name:"The Plague Bears", text:"The plague has reached the bears. They are sick and dangerous – bring down 6.", obj:[["kill","plaguebear",6]]},
   {id:"u12", npc:"ulvar", lvl:9, req:["u10"], name:"Vex the Necromancer", text:"Behind it all stands Vex the Necromancer in the southeast. His death wave strikes everything around him – run out of the circle! Defeat him.", obj:[["kill","vex",1]], mult:2, items:{potHp2:2}},
-  {id:"u13", npc:"ulvar", lvl:10, req:["u12"], to:"halvard", name:"The Road to Ironhold", text:"Commander Halvard in Ironhold welcomes all who can fight, even us undead. Go there.", obj:[], mult:0.4},
+  {id:"u13", npc:"ulvar", lvl:10, req:["u12"], to:"halvard", name:"The Road to Rimhaven", text:"Commander Halvard in Rimhaven welcomes all who can fight, even us undead. Go there.", obj:[], mult:0.4},
   // ---- Iron Ridge (10–15)
   {id:"j1", npc:"halvard", lvl:10, name:"Trolls of Iron Ridge", text:"The mountain trolls are plundering our caravans. Kill 10.", obj:[["kill","troll",10]]},
-  {id:"j2", npc:"halvard", lvl:11, name:"Iron for the Hold", text:"The hold needs iron for new gates. Mine 6 iron ore.", obj:[["gather","iron",6]]},
+  {id:"j2", npc:"halvard", lvl:11, name:"Iron for the Hold", text:"The city needs iron for new gates. Mine 6 iron ore.", obj:[["gather","iron",6]]},
   {id:"j3", npc:"arvid", lvl:12, req:["j1"], name:"Troll Tusks", text:"Troll tusks fetch a high price in the south. Get me 6.", obj:[["loot","trolltusk",6,"troll",0.5]]},
   {id:"j4", npc:"halvard", lvl:13, req:["j1"], name:"Hearts of Stone", text:"Stone golems have awakened in the mountains. Smash 8.", obj:[["kill","golem",8]]},
   {id:"j5", npc:"halvard", lvl:13, name:"The Runestones", text:"Ancient runestones lie scattered across the mountains. Bring 5 so our scholars can decipher them.", obj:[["collect","runestone",5]]},
@@ -1164,7 +1183,7 @@ Object.assign(QITEMS, {
 });
 // layout: rooms in order (0 = entrance), puzzle = lever/rune room; gate closes the way out of that room until it is solved
 const DUNGEONS = {
-  d_mine:{hub:"jarnfastet", ent:{x:111, y:78}, oy:2, floor:"T_ROCK", wall:"T_CLIFF", obst:"T_BOULDER", lever:"Lever", gate:"Mine Gate",
+  d_mine:{hub:"jarnfastet", ent:{x:116, y:75}, oy:2, floor:"T_ROCK", wall:"T_CLIFF", obst:"T_BOULDER", lever:"Lever", gate:"Mine Gate",
     pack:["gruvkobold","gruvspindel","stenvakt"], mini:["krakk","grottbjorn"], boss:"djuptjur", puzzles:["lever","rune"],
     keeper:{id:"dk_mine", name:"Torgny the Mine Warden", role:"Entrance: The Iron Mine", race:"dwarf", color:"#a0683a"},
     intro:"The old iron mine is crawling with kobolds – and something far larger lurks in its depths."},
@@ -1183,9 +1202,9 @@ const DUNGEONS = {
 };
 for(const [id,D] of Object.entries(DUNGEONS)){ D.id = id; NPCS.push({...D.keeper, dungeon:id, at:{x:D.ent.x-2, y:D.ent.y+2}}); }
 QUESTS.push(
-  {id:"m1", npc:"halvard", lvl:12, name:"Kobolds of the Mine", text:"The Iron Mine is full of kobolds. Go in through the mine entrance east of the hold and kill 8 mine kobolds.", obj:[["kill","gruvkobold",8]]},
+  {id:"m1", npc:"halvard", lvl:12, name:"Kobolds of the Mine", text:"The Iron Mine is full of kobolds. Go in through the mine entrance east of the city and kill 8 mine kobolds.", obj:[["kill","gruvkobold",8]]},
   {id:"m2", npc:"halvard", lvl:13, name:"The Foreman's Keys", text:"Foreman Krakk carries the keys to the whole mine. Take them from him.", obj:[["loot","krakkkey",1,"krakk",1]]},
-  {id:"m3", npc:"halvard", lvl:14, name:"The Bull from the Deep", text:"Deep within the Iron Mine lives a monstrous bull. Kill it so the hold can mine iron again.", obj:[["kill","djuptjur",1]]},
+  {id:"m3", npc:"halvard", lvl:14, name:"The Bull from the Deep", text:"Deep within the Iron Mine lives a monstrous bull. Kill it so Rimhaven can mine iron again.", obj:[["kill","djuptjur",1]]},
   {id:"t1", npc:"sigvard", lvl:17, name:"The Temple Cult", text:"Marsh cultists have seized the Drowned Temple south of the camp. Kill 8 of them.", obj:[["kill","kultist",8]]},
   {id:"t2", npc:"sigvard", lvl:18, name:"The Witch's Eye", text:"Hagga the Marsh Witch sees everything through her glass eye. Take it from her.", obj:[["loot","haggaeye",1,"hagga",1]]},
   {id:"t3", npc:"sigvard", lvl:19, name:"The Sunken Prophet", text:"The prophet in the temple's depths must be stopped. Defeat him.", obj:[["kill","profeten",1]]},
@@ -1195,6 +1214,44 @@ QUESTS.push(
   {id:"v1", npc:"hedda", lvl:27, name:"Vault Guardian", text:"Ice guardians watch over the Frost Vault north of the gate. Smash 8 of them.", obj:[["kill","isvaktare",8]]},
   {id:"v2", npc:"hedda", lvl:28, name:"Skrymer's Horn", text:"Skrymer the Rime Troll blows a horn that wakes the queen. Take the horn.", obj:[["loot","skrymerhorn",1,"skrymer",1]]},
   {id:"v3", npc:"hedda", lvl:29, name:"The Ice Queen", text:"Skadi the Ice Queen must not fully awaken. Defeat her in the Frost Vault.", obj:[["kill","skadi",1]]}
+);
+// ---- Rimhaven (city) and new village quests
+Object.assign(QITEMS, {
+  warplans:{name:"Ironclan War Plans"}, golemheart:{name:"Sentinel Heart"}, stoneheart:{name:"Gargoyle Heartstone"},
+  spidervenom:{name:"Spider Venom Sac"}, stolengoods:{name:"Stolen Goods"}, shadowpelt:{name:"Shadow Wolf Pelt"}, talisman:{name:"Druid Talisman"},
+  beargrease:{name:"Bear Grease"}, kcandle:{name:"Kobold Candle"}, golemgrit:{name:"Golem Grit"}, raidermap:{name:"Raider's Map"},
+  plaguesample:{name:"Plague Sample"}, familyring:{name:"Family Ring"}, goblintotem:{name:"Goblin Totem"}, houndfang:{name:"Ash Hound Fang"},
+  frostpelt:{name:"Frost Wolf Pelt"}, icecore:{name:"Ice Golem Core"}
+});
+QUESTS.push(
+  // Rimhaven
+  {id:"c1", npc:"brenna", lvl:11, name:"The Ironclan Raiders", text:"Ironclan warriors raid every caravan bound for Rimhaven. Kill 10 of them in Iron Ridge.", obj:[["kill","orcwar",10]]},
+  {id:"c2", npc:"ivo", lvl:12, req:["c1"], name:"Plans of War", text:"The Ironclan must have a plan. Find their war plans on one of their warriors.", obj:[["loot","warplans",1,"orcwar",0.3]]},
+  {id:"c3", npc:"brenna", lvl:13, name:"Spiders in the Mine", text:"Huge spiders have nested in the Iron Mine east of the city. Kill 10 mine spiders.", obj:[["kill","gruvspindel",10]]},
+  {id:"c4", npc:"ivo", lvl:14, name:"Hearts of the Sentinels", text:"The stone sentinels of the Iron Mine carry glowing hearts. Bring me 4 for my studies.", obj:[["loot","golemheart",4,"stenvakt",0.5]]},
+  {id:"c5", npc:"brenna", lvl:18, name:"The Drowned", text:"The drowned walk the halls of the Drowned Temple in Mistmarsh. Lay 10 of them to rest.", obj:[["kill","drunknad",10]]},
+  {id:"c6", npc:"aldric", lvl:19, name:"The Marsh Drake", text:"A great drake terrorizes the roads of Mistmarsh. Slay it and Rimhaven will remember your name.", obj:[["kill","dragon",1]], mult:1.5},
+  {id:"c7", npc:"ivo", lvl:21, name:"Heartstones", text:"The ash gargoyles carry heartstones that keep them alive. Bring me 5 from Ashfields.", obj:[["loot","stoneheart",5,"gargoyle",0.5]]},
+  {id:"c8", npc:"brenna", lvl:23, name:"Hounds of the Forge", text:"Fire hounds guard the Ember Forge in Ashfields. Kill 10 of them.", obj:[["kill","eldhund",10]]},
+  {id:"c9", npc:"brenna", lvl:27, name:"Wolves of the Vault", text:"Frost wargs prowl the Frost Vault beyond Icegate. Kill 10.", obj:[["kill","frostulv",10]]},
+  {id:"c10", npc:"aldric", lvl:29, req:["c6"], name:"Champion of Rimhaven", text:"The great ice bear of the Frost Vault is a terror of legend. Bring it down and become Rimhaven's champion.", obj:[["kill","valvbjorn",1]], mult:2},
+  // villages and camps
+  {id:"x1", npc:"holger", lvl:6, name:"Venom for Antidotes", text:"Spider bites are killing the woodcutters. Bring me 6 venom sacs so I can make antidotes.", obj:[["loot","spidervenom",6,"spider",0.5]]},
+  {id:"x2", npc:"holger", lvl:8, name:"Stolen Goods", text:"The bandits have robbed half the valley. Take back 5 bundles of stolen goods.", obj:[["loot","stolengoods",5,"bandit",0.45]]},
+  {id:"x3", npc:"lyra", lvl:6, name:"Shadow Pelts", text:"Shadow wolf pelts keep a scout hidden at night. Bring me 6.", obj:[["loot","shadowpelt",6,"shadewolf",0.5]]},
+  {id:"x4", npc:"lyra", lvl:8, name:"The Lost Talismans", text:"The lost druids still wear the talismans of the grove. Bring 5 back so they can be cleansed.", obj:[["loot","talisman",5,"lostdruid",0.5]]},
+  {id:"x5", npc:"sune", lvl:6, name:"Bear Grease", text:"Nothing keeps out the cold like bear grease. Get me 5 pots from the ice bears.", obj:[["loot","beargrease",5,"icebear",0.5]]},
+  {id:"x6", npc:"sune", lvl:8, name:"Stolen Light", text:"The frost kobolds steal our candles. Take 8 back from them.", obj:[["loot","kcandle",8,"frostkobold",0.6]]},
+  {id:"x7", npc:"kruk", lvl:7, name:"Golem Grit", text:"The grit inside the sand golems makes the best whetstones. Bring me 6 handfuls.", obj:[["loot","golemgrit",6,"sandgolem",0.5]]},
+  {id:"x8", npc:"kruk", lvl:9, name:"The Raider's Map", text:"One of the raiders carries a map of all their hideouts. Find it.", obj:[["loot","raidermap",1,"raider",0.2]], mult:1.2},
+  {id:"x9", npc:"ulvar", lvl:7, name:"Plague Samples", text:"I must understand the plague. Bring me 5 samples from the plague bears.", obj:[["loot","plaguesample",5,"plaguebear",0.5]]},
+  {id:"x10", npc:"ulvar", lvl:8, name:"Family Rings", text:"The grave robbers have stolen rings from our dead. Take back 4.", obj:[["loot","familyring",4,"robber",0.4]]},
+  {id:"x11", npc:"sigvard", lvl:16, name:"The Goblin Warband", text:"A goblin warband gathers in the marsh. Kill 12 marsh goblins.", obj:[["kill","goblin",12]]},
+  {id:"x12", npc:"mora", lvl:17, name:"Goblin Totems", text:"The goblin shamans carve totems from bog oak. Bring me 5 and I will pay well.", obj:[["loot","goblintotem",5,"goblinshaman",0.5]]},
+  {id:"x13", npc:"siv", lvl:21, name:"Ash Hound Fangs", text:"Ash hound fangs never stop glowing. Bring me 6.", obj:[["loot","houndfang",6,"hound",0.5]]},
+  {id:"x14", npc:"runa", lvl:22, name:"Gargoyles of Ashfields", text:"Ash gargoyles swoop down on our patrols. Smash 10 of them.", obj:[["kill","gargoyle",10]]},
+  {id:"x15", npc:"frode", lvl:26, name:"Frost Wolf Pelts", text:"Travellers freeze on the road to Icegate. Bring me 6 frost wolf pelts for cloaks.", obj:[["loot","frostpelt",6,"frostwolf",0.5]]},
+  {id:"x16", npc:"hedda", lvl:28, name:"Cores of Living Ice", text:"The ice golems have hearts of pure cold. Bring me 5 cores.", obj:[["loot","icecore",5,"icegolem",0.5]]}
 );
 </script>
 <script>
@@ -1275,6 +1332,7 @@ function genWorld(){
   // hubs: cobble discs, houses, decorations
   deco = [];
   for(const [id,h] of Object.entries(HUBS)){
+    if(h.kind==="city"){ buildCity(id, h, set, roadTiles); continue; }
     for(let y=h.y-h.r;y<=h.y+h.r;y++) for(let x=h.x-h.r;x<=h.x+h.r;x++) if(Math.hypot(x-h.x,y-h.y)<h.r+0.5){ set(x,y,T_COBBLE); zmap[y*MW+x]=id; }
     const spots = h.kind==="town" ? [[-7,-6],[4,-6],[-7,4],[4,4],[-2,-8],[-2,6],[-9,-1],[6,-1]] : [[-3,-h.r-1],[1,-h.r-1]];
     let made = 0;
@@ -1295,6 +1353,29 @@ function genWorld(){
   carveDungeons();
 }
 
+// the great city: a walled disc with gates where the roads come in, a plaza, streets and blocks of houses
+function buildCity(id, h, set, roadTiles){
+  const R = h.r, ang = (x,y) => Math.atan2(y-h.y, x-h.x), adiff = (a,b) => Math.abs(((a-b+Math.PI*3)%(Math.PI*2))-Math.PI);
+  // gates: one wherever a road crosses the wall ring
+  const hits = [];
+  for(let y=h.y-R-2;y<=h.y+R+2;y++) for(let x=h.x-R-2;x<=h.x+R+2;x++){ const d = Math.hypot(x-h.x,y-h.y); if(d >= R && d < R+2 && roadTiles.has(y*MW+x)) hits.push(ang(x,y)); }
+  const gates = []; for(const a of hits.sort((p,q)=>p-q)){ const g = gates.find(g=>adiff(g.a/g.n, a) < 0.45); if(g){ g.a += a; g.n++; } else gates.push({a, n:1}); }
+  const gA = gates.map(g=>g.a/g.n), halfW = 1.8/R;
+  const onStreet = (x,y,w) => gA.some(a=>{ const dx = x-h.x, dy = y-h.y, t = dx*Math.cos(a)+dy*Math.sin(a); return t > -1 && Math.abs(-dx*Math.sin(a)+dy*Math.cos(a)) < w; });
+  for(let y=h.y-R-2;y<=h.y+R+2;y++) for(let x=h.x-R-2;x<=h.x+R+2;x++){ const d = Math.hypot(x-h.x,y-h.y);
+    if(d < R+1.6){ set(x,y,T_COBBLE); zmap[y*MW+x]=id; }
+    if(d >= R+0.4 && d < R+1.6 && !gA.some(a=>adiff(a, ang(x,y)) < halfW)) set(x,y,T_CWALL); }
+  const keep = NPCS.filter(n=>n.at && n.hub===id).map(n=>[n.at.x, n.at.y]);
+  for(let gy=h.y-R; gy<=h.y+R; gy++) for(let gx=h.x-R; gx<=h.x+R; gx++){
+    let ok = true;
+    for(let j=-1;j<=2&&ok;j++) for(let i=-1;i<=3&&ok;i++){ const x=gx+i, y=gy+j, d=Math.hypot(x-h.x,y-h.y), core = i>=0 && i<=2 && j>=0 && j<=1;
+      if(map[y*MW+x]===T_HOUSE || (core && (d > R-1 || d < 5 || onStreet(x,y,1.3) || keep.some(([kx,ky])=>Math.abs(kx-x)<=1 && Math.abs(ky-y)<=1)))) ok = false; }
+    if(ok) for(let j=0;j<2;j++) for(let i=0;i<3;i++) set(gx+i,gy+j,T_HOUSE); }
+  deco.push({k:"fountain", x:h.x*TILE+16, y:h.y*TILE+16});
+  for(const [dx,dy] of [[-4,-4],[4,-4],[-4,4],[4,4]]) deco.push({k:"brazier", x:(h.x+dx)*TILE+16, y:(h.y+dy)*TILE+16});
+  for(const a of gA) for(const s of [-1,1]){ const r = R+0.2, x = h.x+Math.cos(a)*r - Math.sin(a)*s*(halfW*R+0.6), y = h.y+Math.sin(a)*r + Math.cos(a)*s*(halfW*R+0.6); deco.push({k:"brazier", x:x*TILE+16, y:y*TILE+16}); }
+  for(const [txt,dx,dy] of CITY_SIGNS) deco.push({k:"sign", text:txt, x:(h.x+dx)*TILE+16, y:(h.y+dy)*TILE+16});
+}
 // random reachable tile matching a predicate
 const R = rng(2024);
 function pickTile(pred, tries=6000){
@@ -1665,15 +1746,15 @@ function useItem(k){
 function addItem(k, n){ S.bag[k] = (S.bag[k]||0) + n; }
 function removeItem(k, n){ S.bag[k] = (S.bag[k]||0) - n; if(S.bag[k] <= 0) delete S.bag[k]; }
 function startGather(n){
-  if(n.qitem){ if(!needsQItem(n.qitem)) return err("You don't need this right now"); P.casting = {kind:"gather", node:n, total:1.2, el:0, label:"Picking up "+n.def.name}; return; }
+  if(n.qitem){ if(!needsQItem(n.qitem)) return err("You don't need this right now"); if(P.combatT > 0) return err("You cannot pick that up in combat"); P.casting = {kind:"gather", node:n, total:1.2, el:0, label:"Picking up "+n.def.name}; return; }
   const d = n.def, sk = S.skills[d.skill];
   if(sk < d.req) return err(`Requires ${d.skill==="mining"?"Mining":"Herbalism"} ${d.req} (you have ${sk})`);
   P.casting = {kind:"gather", node:n, total:1.6, el:0, label:(d.skill==="mining"?"Mining ":"Gathering ")+ITEMS[d.item].name};
 }
 function finishGather(n){
   if(!n.active) return;
-  if(n.qitem){ n.active = false; n.respawn = 25; snd("loot"); S.qbag[n.qitem] = (S.qbag[n.qitem]||0) + 1; floatText(n.x, n.y-24, "+1 "+n.def.name, "#f2e2a0"); burst(n.x, n.y, "#f2e2a0", 10); questProgressLog(n.qitem); refreshTracker(); return; }
-  const d = n.def; n.active = false; n.respawn = 45; snd(d.skill==="mining" ? "mine" : "herb");
+  if(n.qitem){ n.active = false; n.respawn = 180; snd("loot"); S.qbag[n.qitem] = (S.qbag[n.qitem]||0) + 1; floatText(n.x, n.y-24, "+1 "+n.def.name, "#f2e2a0"); burst(n.x, n.y, "#f2e2a0", 10); questProgressLog(n.qitem); refreshTracker(); return; }
+  const d = n.def; n.active = false; n.respawn = 300; snd(d.skill==="mining" ? "mine" : "herb");
   const qty = Math.random()<0.25 ? 2 : 1; addItem(d.item, qty);
   floatText(n.x, n.y-24, `+${qty} ${ITEMS[d.item].name}`, "#f2e2a0");
   const sk = S.skills[d.skill], diff = sk - d.req;
@@ -1827,7 +1908,7 @@ function updPlayer(dt){
     const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
     moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true;
   }
-  if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.el >= P.casting.total) completeCast(); }
+  if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.kind==="gather" && P.casting.node.qitem && P.combatT > 0){ P.casting = null; err("You cannot pick that up in combat"); } else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
   if(P.combatT > 0 && !mobs.some(m=>m.state==="chase" && !m.dead)) P.combatT = Math.min(P.combatT, 0.25);   // no enemy is after you: combat ends right away
   P.combatT -= dt; const inC = P.combatT > 0;
@@ -2025,7 +2106,7 @@ function questGearQ(q){ const num = +q.id.replace(/\D/g,""); const last = !QUEST
 function questGear(q){ const qq = questGearQ(q); if(qq < 0) return null; return makeGear({q:qq, il:q.lvl + 1, cls:S.cls}); }
 
 // vendor stock: stable per vendor, class and level band
-function vendorLevel(n){ const z = zinfo(zoneAtTile(Math.floor(n.x/TILE), Math.floor(n.y/TILE))); const max = z && z.lv ? z.lv[1] : 5; return Math.max(1, Math.min(max, Math.max(S.level, 3))); }
+function vendorLevel(n){ if(n.cityVendor) return Math.max(1, Math.min(MAX_LVL, S.level)); const z = zinfo(parentZone(zoneAtTile(Math.floor(n.x/TILE), Math.floor(n.y/TILE)))); const max = z && z.lv ? z.lv[1] : 5; return Math.max(1, Math.min(max, Math.max(S.level, 3))); }
 function vendorStock(n){
   const il = vendorLevel(n), r = mulberry(hashStr(n.id + S.cls + il));
   const out = [];
@@ -2532,6 +2613,8 @@ function drawDeco(c, d){
   else if(d.k==="fire"||d.k==="brazier"){ if(d.k==="brazier"){ c.fillStyle = "#3b3b40"; c.fillRect(d.x-6, d.y-6, 12, 12); } else { c.fillStyle = "#4a3221"; c.fillRect(d.x-10, d.y+2, 20, 4); }
     for(let i=0;i<3;i++){ const f = Math.sin(time*9+i*2)*2; c.fillStyle = ["#ff7a2e","#ffb347","#ffe08a"][i]; c.beginPath(); c.moveTo(d.x-7+i*2, d.y+2); c.quadraticCurveTo(d.x+f, d.y-20+i*5, d.x+7-i*2, d.y+2); c.fill(); }
     const g = c.createRadialGradient(d.x,d.y,2,d.x,d.y,70); g.addColorStop(0,"rgba(255,160,70,.25)"); g.addColorStop(1,"rgba(255,160,70,0)"); c.fillStyle = g; c.beginPath(); c.arc(d.x,d.y,70,0,7); c.fill(); }
+  else if(d.k==="sign"){ c.fillStyle = "#5a3e26"; c.fillRect(d.x-2, d.y-22, 4, 24); c.fillStyle = "#8a6440"; c.fillRect(d.x-15, d.y-30, 30, 12); c.strokeStyle = "#3a2716"; c.strokeRect(d.x-15.5, d.y-30.5, 31, 13);
+    c.font = "700 12px 'Alegreya Sans', sans-serif"; c.textAlign = "center"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,.85)"; c.strokeText(d.text, d.x, d.y-36); c.fillStyle = "#f2e2a0"; c.fillText(d.text, d.x, d.y-36); c.lineWidth = 1; }
   else if(d.k==="grave"){ c.fillStyle = "#6d7078"; c.beginPath(); c.roundRect(d.x-7, d.y-16, 14, 18, [7,7,0,0]); c.fill(); c.fillStyle = "#555860"; c.fillRect(d.x-1, d.y-12, 2, 8); c.fillRect(d.x-4, d.y-10, 8, 2); }
 }
 function lvlClass(l){ const d = l - S.level; return d>=4?"lvl-red":d>=2?"lvl-orange":d>=-2?"lvl-yellow":d>-6?"lvl-green":"lvl-gray"; }
@@ -2679,7 +2762,7 @@ function drawWorldMap(cv){
     g.font = `700 ${Math.max(11, k*5.5)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)";
     const hb = Object.values(HUBS).find(h=>h.zone===id) || {x:z.c[0], y:z.c[1]}; const x = hb.x*k, y = hb.y*k - 40; g.strokeText(z.name, x, y); g.fillStyle = "#fff"; g.fillText(z.name, x, y);
     g.font = `700 ${Math.max(10, k*4.4)}px 'Alegreya Sans', sans-serif`; g.strokeText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); g.fillStyle = col; g.fillText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); }
-  for(const h of Object.values(HUBS)){ const x = h.x*k, y = h.y*k; g.fillStyle = "#e8e0d0"; g.strokeStyle = "#000"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, h.kind==="town"?4.5:3, 0, 7); g.fill(); g.stroke();
+  for(const h of Object.values(HUBS)){ const x = h.x*k, y = h.y*k; g.fillStyle = "#e8e0d0"; g.strokeStyle = "#000"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, h.kind==="city"?7:h.kind==="town"?4.5:3, 0, 7); g.fill(); g.stroke();
     g.font = `600 ${Math.max(9, k*3.6)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; g.strokeText(h.name, x, y+11); g.fillStyle = "#e8e0d0"; g.fillText(h.name, x, y+11); }
   const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
   act.forEach((q,i)=>{ const sp = questSpot(q); if(!sp) return; const x = sp.x*k, y = sp.y*k;
@@ -3429,7 +3512,7 @@ function renderPanel(){
       <div class="item"><div><b>Experience</b><div class="d">You level up by killing monsters, completing quests and gathering ore and herbs. The max level is 30. Monsters 5 levels below you give no XP, and monsters above your level are harder to hit and hit harder.</div></div></div>
       <div class="item"><div><b>Quests</b><div class="d">Yellow ! = a quest for your level. Gray ! = the quest is too easy and gives less XP. Red ! = your level is too low to take it. ? = ready to turn in. You can do quests in every race's starting zone.</div></div></div>
       <div class="item"><div><b>Map</b><div class="d">Press M to see the whole world, every zone and where your quests take place.</div></div></div>
-      <div class="item"><div><b>Trainers</b><div class="d">You learn new abilities from your class trainer. There are trainers in all four home villages. Training costs gold. A blue ! above a trainer means there is something new to learn.</div></div></div>
+      <div class="item"><div><b>Trainers</b><div class="d">You learn new abilities from your class trainer. There are trainers in every home village and in the great city of Rimhaven, in the middle of the world. Training costs gold. A blue ! above a trainer means there is something new to learn.</div></div></div>
       <div class="item"><div><b>Rest</b><div class="d">Press X (or choose it in the Menu) to sit down. You then regain health and mana 2.5 times faster. It only works out of combat, at least 5 seconds after the fight has ended. You stand up when you move, attack, use an ability or are attacked.</div></div></div>
       <div class="item"><div><b>Equipment</b><div class="d">Enemies can drop equipment, and some quests reward it. Vendors sell common and uncommon equipment for your class. Press B and then "Equip" to use it, and C to see what you are wearing. Qualities from worst to best: gray, white, green, blue, purple, orange. Purple and orange cannot be bought – they must be found.</div></div></div>
       <div class="item"><div><b>Talents</b><div class="d">From level 10 you earn talent points (press N) that make your abilities or your hero stronger. There are not enough points for every talent, so you have to choose. If you want to redistribute them, your class trainer can reset your talents for a fee based on your level.</div></div></div>
@@ -3469,11 +3552,14 @@ function renderPanel(){
       h += `<h3>Sell</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sell all junk (${junk} gold)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sell 1 (${ITEMS[k].sell} gold)</button></div>`).join("") || `<div class="muted">Nothing to sell.</div>`}</div>`;
       h += vendorGearHTML(n);
     }
+    if(n.gear) h += vendorGearHTML(n);
+    if(n.potions || n.ores){ const L = n.potions ? POTION_SHOP : ORE_SHOP;
+      h += `<h3>${n.potions?"Potions & Elixirs":"Ore"}</h3><div class="list">${L.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span>${ITEMS[k].desc?`<div class="d">${ITEMS[k].desc}</div>`:""}</div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold>=p?"":"disabled"}>Buy</button></div>`).join("")}</div>`; }
     if(n.smith){ const c = smithCost(S.weapon);
       h += `<h3>Smithy</h3><div class="item"><div style="display:flex;align-items:center">${wIco(WICON[S.cls],40)}<div><b>${WEAPON_NAMES[S.cls]} +${S.weapon}</b><div class="d">${c ? `Upgrade to +${S.weapon+1} (more damage): ${c.n} ${ITEMS[c.ore].name} and ${c.gold} gold. You have ${S.bag[c.ore]||0} ${ITEMS[c.ore].name.toLowerCase()}.` : "Your weapon is fully upgraded."}</div></div></div>${c?`<button class="btn pri" data-act="upgrade" ${((S.bag[c.ore]||0)>=c.n && S.gold>=c.gold)?"":"disabled"}>Upgrade</button>`:""}</div>`; }
     if(n.alch){
       h += `<h3>Alchemy</h3><div class="list">${RECIPES.map((r,i)=>{ const ok = Object.entries(r.need).every(([k,v])=>(S.bag[k]||0)>=v); return `<div class="item"><div style="display:flex;align-items:center">${icoHTML(r.out)}<div><b>${ITEMS[r.out].name}</b><div class="d">${Object.entries(r.need).map(([k,v])=>`${v} ${ITEMS[k].name} (have ${S.bag[k]||0})`).join(" + ")} · ${ITEMS[r.out].desc}</div></div></div><button class="btn" data-act="craft" data-i="${i}" ${ok?"":"disabled"}>Brew</button></div>`; }).join("")}</div>`; }
-    if(!n.dungeon && !n.trains && !n.shop && !n.smith && !n.alch && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">I have nothing more for you right now, ${esc(S.name)}.</p>`;
+    if(!n.dungeon && !n.trains && !n.shop && !n.smith && !n.alch && !n.gear && !n.potions && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">I have nothing more for you right now, ${esc(S.name)}.</p>`;
   } else if(panelKind==="map"){
     const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
     h += `<h2>Map</h2><canvas id="wmap" width="1040" style="display:block;width:100%;border-radius:6px;border:1px solid var(--line)"></canvas>`;
