@@ -1676,7 +1676,7 @@ function tryUse(id){
   if(P[type] < cost) return err(`Not enough ${RES_NAME[type].toLowerCase()}`);
   const ct = castTime(id);
   if(!a.offGcd) P.gcd = 1.0;
-  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; if(a.school!=="phys") snd("cast"); }
+  if(ct > 0){ P.casting = {kind:"spell", id, t, total:ct, el:0, label:a.name}; if(t) P.dir = dirOf(t.x-P.x, t.y-P.y); if(a.school!=="phys") snd("cast"); }
   else { P[type] -= cost; finishAbility(id, t); }
 }
 function finishAbility(id, t){
@@ -1700,6 +1700,7 @@ function completeCast(){
   const type = resType(), cost = costOf(c.id);
   if(P[type] < cost) return err(`Not enough ${RES_NAME[type].toLowerCase()}`);
   P[type] -= cost; finishAbility(c.id, t);
+  if(S.cls==="hunter" && P.act && P.act.anim==="bow") P.act.t = P.act.dur*9/13;   // the bow is already drawn: just release
 }
 function autoInfo(){
   if(P.form==="bear") return {range:55, spd:2.0, mult:1.0, rage:8};
@@ -2881,7 +2882,9 @@ function lpcState(e, moving){
   if(e.dead && !e.ghost) return {anim:"hurt", frame:5, dir:0};
   if(e.sitting) return {anim:"hurt", frame:3, dir:0};
   if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
-  if(e.casting && e.casting.kind==="spell") return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2};
+  if(e.casting && e.casting.kind==="spell"){ const a = AB[e.casting.id];
+    if(e===P && S.cls==="hunter" && a && a.school!=="holy"){ const k = Math.min(1, e.casting.el/e.casting.total); return {anim:"bow", frame:Math.min(8, Math.floor(k*9)), dir:e.dir||2}; }   // drawing the bow
+    return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2}; }
   if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir||2};
   if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir||2};
   return {anim:"walk", frame:0, dir:e.dir==null?2:e.dir};
