@@ -230,6 +230,9 @@ body.touch #interact{right:max(152px,calc(env(safe-area-inset-right,0px) + 152px
 }
 body.touch .menu-grid .muted{display:none}
 body.touch.pnl #joy, body.touch.pnl #atkbtn, body.touch.pnl #tabbtn, body.touch.pnl #interact, body.touch.pnl #bottom{display:none}
+body.touch :is(#frames,#side,#log,#bottom,#joy,#interact,#tabbtn,#atkbtn,#swupdate){zoom:.8}
+body.touch :is(#panel > *,#dead .box,#create .wrap){zoom:.8}
+body.touch .panel{padding:12px 13px}
 @media (prefers-reduced-motion:reduce){#log div{animation:none}.bar i{transition:none}}
 </style>
 
@@ -3525,7 +3528,7 @@ $("tclear").addEventListener("click", e=>{ e.stopPropagation(); setTarget(null);
 const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
 if(isTouch){ document.body.classList.add("touch"); $("side").appendChild($("menu")); $("menu").hidden = false; $("joy").hidden = false; $("interact").hidden = false; $("tabbtn").hidden = false; $("atkbtn").hidden = false; }
 (function(){ const j = $("joy"), k = j.querySelector("i"); let id = null;
-  const mv = e=>{ const r = j.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const l = Math.hypot(dx,dy), mx = 45; if(l > mx){ dx = dx/l*mx; dy = dy/l*mx; } joy.x = dx/mx; joy.y = dy/mx; k.style.transform = `translate(${dx}px,${dy}px)`; };
+  const mv = e=>{ const r = j.getBoundingClientRect(), z = r.width/(j.offsetWidth||r.width); let dx = (e.clientX-(r.left+r.width/2))/z, dy = (e.clientY-(r.top+r.height/2))/z; const l = Math.hypot(dx,dy), mx = 45; if(l > mx){ dx = dx/l*mx; dy = dy/l*mx; } joy.x = dx/mx; joy.y = dy/mx; k.style.transform = `translate(${dx}px,${dy}px)`; };
   j.addEventListener("pointerdown", e=>{ id = e.pointerId; j.setPointerCapture(id); mv(e); });
   j.addEventListener("pointermove", e=>{ if(e.pointerId===id) mv(e); });
   const end = e=>{ if(e.pointerId!==id) return; id = null; joy.x = joy.y = 0; k.style.transform = ""; };
