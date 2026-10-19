@@ -2182,6 +2182,7 @@ function releaseSpirit(){
   if(dg && P.inDungeon){ const D = DUNGEONS[dg];
     for(const m of mobs) if(m.def.dg===dg && !m.dead){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
     DSTATE[dg].keep = true; P.inDungeon = null; }
+  if(P.form){ P.form = null; recompute(false); }
   const sp = ghostSpawnPoint(); P.x = sp.x; P.y = sp.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0;
   S.death.ghost = true; showSpiritHealers(true);
   document.getElementById("dead").hidden = true;
@@ -2704,7 +2705,7 @@ function lpcSheet(look, anim){
 function dirOf(dx, dy){ return Math.abs(dx) > Math.abs(dy) ? (dx<0?1:3) : (dy<0?0:2); }
 function setAct(e, anim){ if(anim) e.act = {anim, t:0, dur:ACT_DUR[anim]}; }
 function lpcState(e, moving){
-  if(e.dead) return {anim:"hurt", frame:5, dir:0};
+  if(e.dead && !e.ghost) return {anim:"hurt", frame:5, dir:0};
   if(e.sitting) return {anim:"hurt", frame:3, dir:0};
   if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
   if(e.casting && e.casting.kind==="spell") return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2};
