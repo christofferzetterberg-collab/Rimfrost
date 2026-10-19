@@ -269,7 +269,7 @@ body.touch.pnl #joy, body.touch.pnl #atkbtn, body.touch.pnl #tabbtn, body.touch.
 </div>
 
 <div id="panel" class="panel" hidden></div>
-<div id="dead" hidden><div class="box"><h2>You have died</h2><p class="muted">Release your spirit to return to the nearest village or camp, then run back to your corpse to come back to life.</p><button class="btn pri" id="revive">Release Spirit</button></div></div>
+<div id="dead" hidden><div class="box"><h2>You are dead</h2><button class="btn pri" id="revive">Release Spirit</button></div></div>
 <div id="joy" hidden><i></i></div>
 <button id="interact" hidden>E</button>
 <button id="tabbtn" hidden>Target</button>
@@ -474,7 +474,7 @@ const AB = {
     desc:()=>`Instantly heals you for ${fmt(P.maxHp*0.4*(1+0.1*T("impRejuv")))} health.`,
     run:()=>{healP(P.maxHp*0.4*(1+0.1*T("impRejuv")));burst(P.x,P.y,"#9cf07a",16);}},
   // ---- Paladin
-  palstrike:{name:"Holy Strike", lvl:1, cost:12, range:52, school:"holy", icon:"sword", tgt:"enemy",
+  palstrike:{name:"Holy Strike", lvl:1, cost:12, cd:8, range:52, school:"holy", icon:"sword", tgt:"enemy",
     desc:()=>`A strike charged with holy light: ${fmt(spow()*1.5)} damage.`,
     run:t=>{slash(t);hit(t,spow()*1.5,"holy","palstrike");}},
   palheal:{name:"Light's Mending", lvl:2, cost:25, cast:2.5, range:0, school:"holy", icon:"cross", tgt:"self",
@@ -1303,7 +1303,9 @@ function critChance(m, school){
   return c;
 }
 function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.6*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
-function costOf(id){ let c = AB[id].cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); return Math.round(c); }
+// mana costs grow with level so a spell always costs the same share of your base mana as it did at level 1
+function manaScale(){ return (100 + S.level*22) / 122; }
+function costOf(id){ const a = AB[id]; let c = a.cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); if((a.res||CLASSES[S.cls].res)==="mana") c *= manaScale(); return Math.round(c); }
 function castTime(id){ const a = AB[id]; let c = a.cast||0; if(!c) return 0;
   if(["fireball","frostbolt","pyroblast"].includes(id)) c -= 0.25*T("quickCast");
   if(["wrath","starfire"].includes(id)) c -= 0.15*T("naturesGrace");
@@ -2183,8 +2185,7 @@ function releaseSpirit(){
   const sp = ghostSpawnPoint(); P.x = sp.x; P.y = sp.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0;
   S.death.ghost = true; showSpiritHealers(true);
   document.getElementById("dead").hidden = true;
-  showBanner("You are a spirit", dg ? `Enter ${ZONES[dg].name} to return to life` : "Run back to your corpse to resurrect", 4);
-  log(dg ? `Your spirit stands outside ${ZONES[dg].name}. Enter the dungeon to return to life.` : "Your spirit has been released. Run back to your corpse (shown on the map) to resurrect, or talk to a Spirit Healer.", "#bfe6ff");
+  showBanner("You are a spirit", "", 3);
   save(true);
 }
 function resurrect(msg, hpPct){
