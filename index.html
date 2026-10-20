@@ -342,6 +342,8 @@ const CLASSES = {
   druid:{name:"Druid", color:"#b8742f", res:"mana", hp:1.05, armor:0.95},
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
+// Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
+const CLASS_DMG = {mage:1.35, warrior:1, hunter:1, priest:1, druid:1, paladin:0.70};
 const RES_COLOR = {mana:"var(--mana)", rage:"var(--rage)", focus:"var(--focus)", energy:"var(--energy)"};
 const RES_NAME = {mana:"Mana", rage:"Rage", focus:"Focus", energy:"Energy"};
 const SCHOOL_COLOR = {fire:"#ff8a3a", frost:"#8fd8ff", arcane:"#d38cff", nature:"#7fdc5a", holy:"#ffe37a", shadow:"#a77bff", phys:"#f2f2f2"};
@@ -1465,7 +1467,7 @@ function addRes(type, n){ P[type] = clamp(P[type]+n, 0, maxRes(type)); }
 function pow(){ return 6 + S.level*2.6 + S.weapon*2.5 + gearStat("pow"); }
 function spow(){ return (6 + S.level*2.6 + S.weapon*2.5 + gearStat("sp")) * (P && P.buffs && P.buffs.sage ? 1.2 : 1); }
 function teff(k){ if(!S) return 0; let v=0; for(const t of TALENTS[S.cls]) if(t.eff&&t.eff[k]) v += t.eff[k]*T(t.id); return v; }
-function genMult(){ let m=1+teff("dmg"); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
+function genMult(){ let m=(1+teff("dmg")) * (CLASS_DMG[S.cls]||1); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
 function tmul(ab, school){
   let m = 1;
   if(S.cls==="mage"){ if(school==="fire") m*=1+0.08*T("impFire"); if(school==="frost") m*=1+0.08*T("iceShards"); }
@@ -4207,7 +4209,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     const T0 = testing; if(!T0) return; testing = null; clearInterval(T0.iv); err = T0.err;
     const secs = Math.max(0.1, time - T0.t0), total = T0.mobs.reduce((a,m)=>a+m.maxHp, 0), left = T0.mobs.reduce((a,m)=>a+(m.dead?0:m.hp), 0);
     const kill = outcome==="win", dps = (total-left)/secs, c = CLASSES[S.cls].name;
-    const txt = `${c} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%`;
+    const txt = `${c} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%${T0.mana ? " | mana left "+Math.round(P.mana/P.maxMana*100)+"%"+(T0.oom!=null ? " (empty at "+T0.oom.toFixed(0)+"s)" : "") : ""}`;
     results.push({txt}); if(results.length > 40) results.shift(); saveRes(); console.log("[dev test]", txt);
     mobs = mobs.filter(m=>!m._dev); P.target = null; P.autoTarget = null; projs = []; zones = [];
     if(P.dead){ P.dead = false; P.ghost = false; S.death = null; showSpiritHealers(false); const d = document.getElementById("dead"); if(d) d.hidden = true; }
@@ -4222,6 +4224,9 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(time - T0.t0 > 120){ finishTest("timeout"); return; }
     if(P.hp < T0.last) T0.lost += T0.last - P.hp; else T0.healed += P.hp - T0.last;
     T0.last = P.hp; T0.minHp = Math.min(T0.minHp, P.hp/P.maxHp);
+    if(T0.mana && T0.oom == null && P.mana < P.maxMana*0.1) T0.oom = time - T0.t0;
+    { const mh = alive.reduce((a,m)=>a+m.hp,0); if(mh < T0.mobHp - 0.5 || T0.lost > T0.lostSeen){ T0.lastProg = time; } T0.mobHp = mh; T0.lostSeen = T0.lost; }
+    if(time - T0.lastProg > 6){ T0.lastProg = time; alive.forEach((m,i)=>{ m.x = m.hx = P.x + 55 + i*20; m.y = m.hy = P.y; aggro(m); }); }   // monster stuck? bring it to you
     if(P.sitting) standUp();
     if(!P.target || P.target.dead || !alive.includes(P.target)) P.target = alive.sort((a,b)=>dist(P,a)-dist(P,b))[0];
     if(autoInfo() && P.autoTarget !== P.target) P.autoTarget = P.target;
@@ -4249,7 +4254,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     const spots = [[200,0],[-200,0],[0,200],[0,-200],[130,0],[-130,0],[0,130],[0,-130]];
     const sp = spots.find(([dx,dy])=>!collides(P.x+dx, P.y+dy, 12)) || [130,0];
     const ms = []; for(let i=0;i<n;i++){ const m = makeMob(type, 0, 0, L); m.x = m.hx = P.x+sp[0]+(i-(n-1)/2)*26*(sp[0]===0?1:0); m.y = m.hy = P.y+sp[1]+(i-(n-1)/2)*26*(sp[0]===0?0:1); m._dev = true; mobs.push(m); ms.push(m); aggro(m); }
-    testing = {mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err};
+    testing = {mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err, mana:resType()==="mana", oom:null, lastProg:time, mobHp:ms.reduce((a,m)=>a+m.hp,0), sp:sp};
     err = ()=>{};   // keep the bot from spamming "not ready" text
     testing.iv = setInterval(botTick, 50);
     log(`[dev] Test started: ${S.cls} L${L} vs ${nm}.`, "#ffd36b");
