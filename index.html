@@ -4197,11 +4197,14 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     warrior: {def:[["secondwind",0.5]], heal:[], buff:[["shout","shout"]], dmg:[["execute"],["quake"],["rend",9],["heroic"]]},
     hunter:  {def:[], heal:[], buff:[], dmg:[["stormarrow"],["aimed"],["firearrow"],["poison",12],["steady"]]},
     priest:  {def:[["pws",0.7],["renew",0.8,12]], heal:[["heal",0.45]], buff:[], dmg:[["judgment"],["mindblast"],["swp",12],["darkpulse"],["holynova"],["smite"]]},
-    druid:   {def:[["bark",0.7]], heal:[["touch",0.45],["bloom",0.5]], buff:[], dmg:[["starfire"],["hurricane"],["moonfire",9],["wrath"]]},
+    druid:   {def:[["bark",0.8],["rejuv",0.7,12]], heal:[["bloom",0.5],["touch",0.4]], buff:[], dmg:[["starfire"],["hurricane"],["moonfire",9],["wrath"]]},
+    druid_bear: {def:[["frenzy",0.3]], heal:[], buff:[], dmg:[["bash"],["roar",0,"multi"],["swipe",0,"multi"],["maul"]]},
+    druid_cat:  {def:[], heal:[], buff:[], dmg:[["bite",0,"cp3"],["rake",9],["claw"]]},
     paladin: {def:[["holyshield",0.7],["bubble",0.25]], heal:[["palheal",0.45]], buff:[["avenging","avenging"]], dmg:[["judge"],["crusader"],["palstrike"],["hammer"],["consecrate"]]}
   };
   const SCEN = {n1:["1 normal monster", "wolf", 1], n3:["3 normal monsters", "wolf", 3], e1:["1 elite monster", "oldgray", 1]};
   const scen = sel(Object.entries(SCEN).map(([k,v])=>[k, v[0]]));
+  const formSel = sel([["caster","Druid: caster"],["bear","Druid: bear"],["cat","Druid: wolf"]]);
   const resBox = document.createElement("pre"); resBox.style.cssText = "white-space:pre-wrap;margin:4px 0;color:#cfe0e6;font:11px monospace;max-height:160px;overflow:auto";
   let results = []; try{ results = JSON.parse(localStorage.getItem("rimfrost_dev_results")||"[]"); }catch(e){}
   const showRes = ()=>{ resBox.textContent = results.length ? results.map(r=>r.txt).join("\n") : "No tests yet."; };
@@ -4211,10 +4214,11 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     const T0 = testing; if(!T0) return; testing = null; clearInterval(T0.iv); err = T0.err;
     const secs = Math.max(0.1, time - T0.t0), total = T0.mobs.reduce((a,m)=>a+m.maxHp, 0), left = T0.mobs.reduce((a,m)=>a+(m.dead?0:m.hp), 0);
     const kill = outcome==="win", dps = (total-left)/secs, c = CLASSES[S.cls].name;
-    const txt = `${c} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%${T0.mana ? " | mana left "+Math.round(P.mana/P.maxMana*100)+"%"+(T0.oom!=null ? " (empty at "+T0.oom.toFixed(0)+"s)" : "") : ""}`;
+    const txt = `${c}${T0.form ? " ("+T0.form+")" : ""} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%${T0.mana ? " | mana left "+Math.round(P.mana/P.maxMana*100)+"%"+(T0.oom!=null ? " (empty at "+T0.oom.toFixed(0)+"s)" : "") : ""}`;
     results.push({txt}); if(results.length > 40) results.shift(); saveRes(); console.log("[dev test]", txt);
     mobs = mobs.filter(m=>!m._dev); P.target = null; P.autoTarget = null; projs = []; zones = [];
     if(P.dead){ P.dead = false; P.ghost = false; S.death = null; showSpiritHealers(false); const d = document.getElementById("dead"); if(d) d.hidden = true; }
+    if(S.cls==="druid" && P.form) setForm(null);
     P.hp = P.maxHp; P.mana = P.maxMana; P.cds = {}; P.gcd = 0; P.shield = 0; P.casting = null; log("[dev] "+txt, "#ffd36b");
   }
   function botTick(){
@@ -4233,7 +4237,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(!P.target || P.target.dead || !alive.includes(P.target)) P.target = alive.sort((a,b)=>dist(P,a)-dist(P,b))[0];
     if(autoInfo() && P.autoTarget !== P.target) P.autoTarget = P.target;
     if(P.casting) return;
-    const cfg = ROT[S.cls]; if(!cfg) return; const hpf = P.hp / P.maxHp, last = T0.used;
+    const cfg = ROT[S.cls==="druid" && P.form ? "druid_"+P.form : S.cls]; if(!cfg) return; const hpf = P.hp / P.maxHp, last = T0.used;
     const tryOne = (id, minGap)=>{
       if(!S.learned.includes(id) || (P.cds[id]||0) > 0 || S.level < AB[id].lvl) return false;
       if(minGap && last[id] != null && time - last[id] < minGap) return false;
@@ -4244,7 +4248,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     for(const [id, at] of cfg.heal) if(hpf < at && tryOne(id)) return;
     for(const [id, at, gap] of cfg.def) if(hpf < at && tryOne(id, gap)) return;
     for(const [id, key] of cfg.buff) if(!P.buffs[key] && tryOne(id)) return;
-    for(const [id, gap] of cfg.dmg) if(tryOne(id, gap)) return;
+    for(const [id, gap, cond] of cfg.dmg){ if(cond==="multi" && alive.length < 2) continue; if(cond==="cp3" && (P.cp||0) < 3) continue; if(tryOne(id, gap)) return; }
   }
   function startTest(){
     if(testing){ finishTest("timeout"); return; }
@@ -4252,17 +4256,18 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(P.dead) return log("[dev] Revive first.", "#ff8a7a");
     if(nearHub(P.x/TILE, P.y/TILE, 2)) return log("[dev] Walk out of town / camp first - monsters give up at the gates.", "#ff8a7a");
     const [nm, type, n] = SCEN[scen.value], L = Math.max(1, Math.min(MAX_LVL, lv.value|0));
-    setLevel(L); P.cds = {}; P.gcd = 0; P.shield = 0; P.buffs = {}; P.hp = P.maxHp; P.mana = P.maxMana; if(resType()==="rage") P.rage = 0; if(resType()==="focus") P.focus = 100;
+    setLevel(L); if(S.cls==="druid"){ const f = formSel.value==="caster" ? null : formSel.value; if(P.form !== f) setForm(f); } P.cds = {}; P.gcd = 0; P.shield = 0; P.buffs = {}; P.hp = P.maxHp; P.mana = P.maxMana; if(resType()==="rage") P.rage = 0; if(resType()==="focus") P.focus = 100;
     const spots = [[200,0],[-200,0],[0,200],[0,-200],[130,0],[-130,0],[0,130],[0,-130]];
     const sp = spots.find(([dx,dy])=>!collides(P.x+dx, P.y+dy, 12)) || [130,0];
     const ms = []; for(let i=0;i<n;i++){ const m = makeMob(type, 0, 0, L); m.x = m.hx = P.x+sp[0]+(i-(n-1)/2)*26*(sp[0]===0?1:0); m.y = m.hy = P.y+sp[1]+(i-(n-1)/2)*26*(sp[0]===0?0:1); m._dev = true; mobs.push(m); ms.push(m); aggro(m); }
-    testing = {mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err, mana:resType()==="mana", oom:null, lastProg:time, mobHp:ms.reduce((a,m)=>a+m.hp,0), sp:sp};
+    testing = {form:P.form, mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err, mana:resType()==="mana", oom:null, lastProg:time, mobHp:ms.reduce((a,m)=>a+m.hp,0), sp:sp};
     err = ()=>{};   // keep the bot from spamming "not ready" text
     testing.iv = setInterval(botTick, 50);
     log(`[dev] Test started: ${S.cls} L${L} vs ${nm}.`, "#ffd36b");
   }
   const sh = document.createElement("div"); sh.textContent = "Balance test (current character)"; sh.style.cssText = "margin-top:8px;font-weight:700;color:#ffd36b"; box.appendChild(sh);
   row(scen, btn("Run", startTest));
+  row(formSel);
   row(btn("Copy results", ()=>{ const t = results.map(r=>r.txt).join("\n"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>log("[dev] Results copied.", "#ffd36b")).catch(()=>prompt("Copy:", t)); }), btn("Clear", ()=>{ results = []; saveRes(); }));
   box.appendChild(resBox); showRes();
   const note = document.createElement("div"); note.textContent = "Changes are saved with your character like normal play. Use a test character."; note.style.cssText = "color:#93a4ad;margin-top:6px"; box.appendChild(note);
