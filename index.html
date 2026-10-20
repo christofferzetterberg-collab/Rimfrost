@@ -1612,7 +1612,7 @@ function killMob(m){
   m.respawn = m.def.dg ? 1e9 : m.def.boss ? 600 : m.elite ? 360 : 180;
   if(P.target === m) P.target = null;
   const n = coopKillShare(m); m.threat = null;   // in co-op: everyone nearby shares the kill
-  if(n > 0) killRewards(m, n);
+  if(n > 0) killRewards(m, n); else if(m.def.dg) dungeonKill(m);   // host outside the dungeon: still record the progress
 }
 function killRewards(m, share){
   if(P.target === m) P.target = null;
@@ -2184,6 +2184,7 @@ const DG_W = 102, DG_H = 40;
 const TILE_BY_NAME = () => ({T_ROCK, T_CRYPT, T_ASH, T_SNOW, T_CLIFF, T_CWALL, T_ICE, T_BOULDER, T_WATER, T_LAVA, T_SPINE});
 const ROOM_SIZES = [[8,8],[10,9],[11,10],[10,10],[11,10],[10,9],[14,13]];
 let dobjs = [];                 // levers, runes, tablets, portals inside dungeons
+let MOB_GEN = 0;                // bumped whenever monsters are rebuilt (invalidates the co-op id cache)
 const DSTATE = {};              // per dungeon: {keep, done}
 const RUNE_COL = [["Red","#e0453a"],["Blue","#3f86e0"],["Green","#3fbf5a"],["Yellow","#f0d040"]];
 
@@ -2226,10 +2227,11 @@ function carveDungeons(){
 }
 function setGate(D, g, closed){ for(const [x,y] of g.tiles) map[y*MW+x] = closed ? T_GATE : D.L.floor; }
 // (re)build a dungeon: fresh monsters, closed gates, unsolved puzzles
-function resetDungeon(D){
-  mobs = mobs.filter(m=>m.def.dg !== D.id); dobjs = dobjs.filter(o=>o.dg !== D.id);
-  const L = D.L, r = L.rooms, rr = rng(hashStr(D.id) ^ Math.floor(Math.random()*1e9)), lv = ZONES[D.id].lv;
-  const put = (type, tx, ty, lvl) => { const m = makeMob(type, tx, ty, lvl); mobs.push(m); return m; };
+function resetDungeon(D, seed){
+  MOB_GEN++; mobs = mobs.filter(m=>m.def.dg !== D.id); dobjs = dobjs.filter(o=>o.dg !== D.id);
+  const L = D.L, r = L.rooms, rr = rng(hashStr(D.id) ^ (D.seed = (seed == null ? Math.floor(Math.random()*1e9) : seed))), lv = ZONES[D.id].lv;
+  let nc = 0; const nb = 100000 + Object.keys(DUNGEONS).indexOf(D.id)*1000;   // co-op: same ids on every computer
+  const put = (type, tx, ty, lvl) => { const m = makeMob(type, tx, ty, lvl); m.nid = nb + nc++; mobs.push(m); return m; };
   const pack = (room, n) => { const rm = r[room]; for(let i=0;i<n;i++){ const a = i/n*Math.PI*2 + 0.4, tx = Math.round(rm.cx + Math.cos(a)*2.2), ty = Math.round(rm.cy + Math.sin(a)*2); put(D.pack[(room+i)%3], tx, ty, lv[0] + Math.floor(rr()*(lv[1]-lv[0]))); } };
   pack(1, 3); pack(2, 2); pack(4, 3);
   put(D.mini[0], r[3].cx, r[3].cy, MOBS[D.mini[0]].lv[0]); pack(3, 2);
@@ -2241,7 +2243,7 @@ function resetDungeon(D){
   // puzzles: room 2 and room 4
   D.puzzles.forEach((kind, pi)=>{ const rm = r[pi===0 ? 2 : 4], gate = D.gates[pi];
     if(kind === "lever"){ [[1,1],[rm.w-2,1],[1,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"lever", gate:pi, i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16})); }
-    else { const order = [0,1,2,3].sort(()=>rr()-0.5); D.order = D.order || []; D.order[pi] = order; D.prog = D.prog || []; D.prog[pi] = 0;
+    else { const order = [0,1,2,3]; for(let k=3;k>0;k--){ const j = Math.floor(rr()*(k+1)); [order[k], order[j]] = [order[j], order[k]]; } D.order = D.order || []; D.order[pi] = order; D.prog = D.prog || []; D.prog[pi] = 0;
       [[1,1],[rm.w-2,1],[1,rm.h-2],[rm.w-2,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"rune", gate:pi, c:i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16}));
       dobjs.push({dg:D.id, kind:"tablet", gate:pi, x:(rm.cx)*TILE+16, y:(rm.y+1)*TILE+16}); }
     gate.open = false; });
@@ -2251,17 +2253,19 @@ function resetDungeon(D){
 function spawnDungeons(){ dobjs = []; for(const D of Object.values(DUNGEONS)){ resetDungeon(D); dobjs.push({dg:null, dgEnt:D.id, kind:"entrance", x:D.ent.x*TILE+16, y:D.ent.y*TILE+16}); } }
 
 // ---- puzzles
-function openGate(D, pi){ const g = D.gates[pi]; if(g.open) return; g.open = true; setGate(D, g, false); snd("door"); setTimeout(()=>snd("solved"), 250);
+function openGate(D, pi, quiet){ const g = D.gates[pi]; if(g.open) return; g.open = true; setGate(D, g, false); if(quiet) return; snd("door"); setTimeout(()=>snd("solved"), 250);
   const [gx, gy] = g.tiles[1]; ring(gx*TILE+16, gy*TILE+16, 70, "#ffd36b"); showBanner(`The ${D.gate} opens!`, "The way forward is clear", 3); log(`The ${D.gate} has opened.`, "#7be08a"); }
-function useDObj(o){
-  const D = DUNGEONS[o.dg];
+// remote = this action was done by a co-op friend (no damage to you; quiet = you are not inside that dungeon)
+function useDObj(o, remote){
+  const D = DUNGEONS[o.dg], q = !!remote && P.inDungeon !== o.dg;
   if(o.kind === "entrance") return openPanel("npc", DUNGEONS[o.dgEnt].keeper.id);
   if(o.kind === "exit" || o.kind === "exitEnd") return leaveDungeon(false);
   if(o.kind === "lever"){
-    if(o.on) return; o.on = true; burst(o.x, o.y-10, "#ffd36b", 10); snd("lever");
+    if(o.on) return; o.on = true; if(!remote) coopDgEvent(o);
+    if(!q){ burst(o.x, o.y-10, "#ffd36b", 10); snd("lever"); }
     const all = dobjs.filter(x=>x.dg===o.dg && x.kind==="lever" && x.gate===o.gate), n = all.filter(x=>x.on).length;
-    floatText(o.x, o.y-40, `${D.lever} ${n}/${all.length}`, "#ffd36b");
-    if(n === all.length) openGate(D, o.gate);
+    if(!q) floatText(o.x, o.y-40, `${D.lever} ${n}/${all.length}`, "#ffd36b");
+    if(n === all.length) openGate(D, o.gate, q);
   }
   if(o.kind === "tablet"){
     const ord = D.order[o.gate].map(i=>RUNE_COL[i][0]).join(" → ");
@@ -2270,10 +2274,12 @@ function useDObj(o){
   if(o.kind === "rune"){
     if(o.on || D.gates[o.gate].open) return;
     const want = D.order[o.gate][D.prog[o.gate]];
-    if(o.c === want){ o.on = true; D.prog[o.gate]++; snd("rune", {rate:0.9 + D.prog[o.gate]*0.08}); burst(o.x, o.y-10, RUNE_COL[o.c][1], 12); floatText(o.x, o.y-40, RUNE_COL[o.c][0], RUNE_COL[o.c][1]);
-      if(D.prog[o.gate] >= 4) openGate(D, o.gate); }
+    if(!remote) coopDgEvent(o);
+    if(o.c === want){ o.on = true; D.prog[o.gate]++; if(!q){ snd("rune", {rate:0.9 + D.prog[o.gate]*0.08}); burst(o.x, o.y-10, RUNE_COL[o.c][1], 12); floatText(o.x, o.y-40, RUNE_COL[o.c][0], RUNE_COL[o.c][1]); }
+      if(D.prog[o.gate] >= 4) openGate(D, o.gate, q); }
     else { D.prog[o.gate] = 0; dobjs.filter(x=>x.dg===o.dg && x.kind==="rune" && x.gate===o.gate).forEach(x=>x.on=false);
-      floatText(o.x, o.y-40, "Wrong order! The runes go dark.", "#ff6b5e"); snd("fail"); burst(o.x, o.y-10, "#ff5a40", 12); playerDamage(P.maxHp*0.08, null); }
+      if(!q){ floatText(o.x, o.y-40, "Wrong order! The runes go dark.", "#ff6b5e"); snd("fail"); burst(o.x, o.y-10, "#ff5a40", 12); }
+      if(!remote) playerDamage(P.maxHp*0.08, null); }
   }
 }
 // ---- boss / progress
@@ -2281,18 +2287,31 @@ function dungeonKill(m){
   const D = DUNGEONS[m.def.dg]; if(!D) return;
   if(m.def.boss){ DSTATE[D.id].done = true; const br = D.L.rooms[D.L.rooms.length-1];
     dobjs.push({dg:D.id, kind:"exitEnd", x:(br.x+br.w-3)*TILE+16, y:br.cy*TILE+16});
-    setTimeout(()=>showBanner(`${ZONES[D.id].name} cleared!`, "A portal out has opened", 5), 1500); log(`You have cleared ${ZONES[D.id].name}! Step into the portal to leave.`, "#7be08a"); }
+    if(P.inDungeon===D.id){ setTimeout(()=>showBanner(`${ZONES[D.id].name} cleared!`, "A portal out has opened", 5), 1500); log(`You have cleared ${ZONES[D.id].name}! Step into the portal to leave.`, "#7be08a"); } }
 }
 function camBounds(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x0:L.x0*TILE, y0:L.y0*TILE, x1:Math.min(MW, L.x0+DG_W)*TILE, y1:(L.y0+DG_H)*TILE}; } return {x0:0, y0:0, x1:OW*TILE, y1:MH*TILE}; }
 function mapRegion(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x:L.x0, y:L.y0, w:Math.min(MW, L.x0+DG_W)-L.x0, h:DG_H}; } return {x:0, y:0, w:OW, h:MH}; }
 // ---- entering and leaving
+// In co-op a guest first asks the host for the dungeon's seed and progress, so everybody walks the same dungeon.
 function enterDungeon(id){
   const D = DUNGEONS[id]; if(!D) return;
   if(P.ghost){ if(!S.death || S.death.dg !== id) return err("You are a spirit – find your corpse first"); }
   else if(P.dead) return;
-  if(!DSTATE[id] || !DSTATE[id].keep || DSTATE[id].done) resetDungeon(D);
+  if(COOP.role === "guest" && coopOn()){
+    if(COOP.dgWait) return;
+    COOP.dgWait = id; closePanel(); log(`Entering ${ZONES[id].name}…`, "#9fd6e8");
+    coopBroadcast({t:"dgreq", dg:id});
+    clearTimeout(COOP.dgWaitT); COOP.dgWaitT = setTimeout(()=>{ if(COOP.dgWait === id){ COOP.dgWait = null; err("The host did not answer – try again"); } }, 5000);
+    return; }
+  enterDungeonLocal(id, false);
+}
+function enterDungeonLocal(id, synced){
+  const D = DUNGEONS[id]; if(!D) return;
+  if(P.ghost){ if(!S.death || S.death.dg !== id) return err("You are a spirit – find your corpse first"); }
+  else if(P.dead) return;
+  if(!synced && (!DSTATE[id] || !DSTATE[id].keep || DSTATE[id].done) && !coopRemoteIn(id)) resetDungeon(D);
   closePanel(); P.casting = null; P.autoTarget = null; P.target = null; projs = []; zones = [];
-  for(const m of mobs) if(m.state==="chase") evade(m);
+  for(const m of mobs) if(m.state==="chase" && !coopMob(m)) evade(m);
   const r0 = D.L.rooms[0]; P.x = (r0.cx)*TILE+16; P.y = (r0.cy)*TILE+16; P.inDungeon = id; DSTATE[id].keep = false;
   snd("dg_enter");
   showBanner(ZONES[id].name, `Dungeon · level ${ZONES[id].lv[0]}–${ZONES[id].lv[1]}`, 4);
@@ -2303,14 +2322,14 @@ function enterDungeon(id){
 function placeAtEntrance(D){ P.x = D.ent.x*TILE+16; P.y = (D.ent.y+1)*TILE+16; }
 function leaveDungeon(){
   const D = DUNGEONS[P.inDungeon]; if(!D) return;
-  for(const m of mobs) if(m.def.dg===D.id && m.state==="chase") evade(m);
+  for(const m of mobs) if(m.def.dg===D.id && m.state==="chase" && !coopMob(m)) evade(m);
   P.inDungeon = null; P.target = null; P.autoTarget = null; projs = []; zones = [];
   placeAtEntrance(D); DSTATE[D.id].keep = false; snd("door");
   showBanner(ZONES[parentZone(zoneAtTile(D.ent.x, D.ent.y))]?.name || "", "You left the dungeon", 3); save(true);
 }
 function reviveFromDungeon(){
   const D = DUNGEONS[P.inDungeon]; P.inDungeon = null;
-  for(const m of mobs) if(m.def.dg===D.id && !m.dead){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
+  for(const m of mobs) if(m.def.dg===D.id && !m.dead && !coopRemoteIn(D.id)){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
   DSTATE[D.id].keep = true;     // progress stays: dead monsters stay dead and opened gates stay open
   placeAtEntrance(D);
   P.hp = P.maxHp*0.6; P.mana = P.maxMana*0.6; P.target = null; P.shield = 0;
@@ -2381,7 +2400,7 @@ function releaseSpirit(){
   if(!P.dead || P.ghost || !S.death) return;
   const dg = S.death.dg;
   if(dg && P.inDungeon){ const D = DUNGEONS[dg];
-    for(const m of mobs) if(m.def.dg===dg && !m.dead){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
+    for(const m of mobs) if(m.def.dg===dg && !m.dead && !coopRemoteIn(dg)){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
     DSTATE[dg].keep = true; P.inDungeon = null; }
   if(P.form){ P.form = null; recompute(false); } snd("spirit");
   const sp = ghostSpawnPoint(); P.x = sp.x; P.y = sp.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0;
@@ -3643,7 +3662,7 @@ $("panel").addEventListener("click", e=>{
   if(a==="coopleave"){ coopLeave(); return; }
   if(a==="enterdg"){ enterDungeon(id); return; }
   if(a==="spiritrez"){ spiritHealerRevive(); return; }
-  if(a==="resetdg"){ const D = DUNGEONS[id]; resetDungeon(D); log(`${ZONES[id].name} has been reset.`, "#9fd6e8"); }
+  if(a==="resetdg"){ if(coopOn() && (COOP.role==="guest" || coopRemoteIn(id))) return err("Only the host can reset it, and not while a friend is inside"); const D = DUNGEONS[id]; resetDungeon(D); log(`${ZONES[id].name} has been reset.`, "#9fd6e8"); }
   if(a==="open"){ openPanel(k); return; }
   if(a==="rest"){ closePanel(); toggleRest(); return; }
   if(a==="rebind"){ startRebind(k); return; }
@@ -3923,7 +3942,7 @@ async function coopJoin(code){
   peer.on("error", e=>coopErr(e));
 }
 function coopAttach(c){
-  c.on("open", ()=>{ COOP.conns.push(c); COOP.busy = false; COOP.status = "Connected"; coopSendState(true); coopRefresh(); });
+  c.on("open", ()=>{ if(COOP.role==="guest" && P && P.inDungeon) leaveDungeon(); COOP.conns.push(c); COOP.busy = false; COOP.status = "Connected"; coopSendState(true); coopRefresh(); });
   c.on("data", d=>coopData(c, d));
   c.on("close", ()=>coopDrop(c));
   c.on("error", ()=>coopDrop(c));
@@ -3931,22 +3950,25 @@ function coopAttach(c){
 function coopDrop(c){
   const i = COOP.conns.indexOf(c); if(i < 0) return; COOP.conns.splice(i, 1);
   for(const [id, r] of Object.entries(COOP.remotes)) if(r.via === c.peer){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[id]; if(COOP.role==="host") coopBroadcast({t:"bye", id}); }
-  if(COOP.role==="guest"){ COOP.status = "The host closed the game."; COOP.remotes = {}; }
+  if(COOP.role==="guest"){ COOP.status = "The host closed the game."; COOP.remotes = {}; COOP.dgWait = null; if(P && P.inDungeon) leaveDungeon(); }
   else if(!coopOn()) COOP.status = "Waiting for friends to join…";
   coopRefresh();
 }
 function coopLeave(silent){
   for(const c of COOP.conns){ try{ c.close(); }catch(e){} }
   if(COOP.peer){ try{ COOP.peer.destroy(); }catch(e){} }
-  COOP.peer = null; COOP.conns = []; COOP.role = null; COOP.code = null; COOP.remotes = {};
+  COOP.dgWait = null; COOP.peer = null; COOP.conns = []; COOP.role = null; COOP.code = null; COOP.remotes = {};
   if(!silent){ COOP.status = "You left co-op."; coopRefresh(); }
 }
 function coopBroadcast(msg, except){ for(const c of COOP.conns) if(c !== except && c.open){ try{ c.send(msg); }catch(e){} } }
 function coopData(c, d){
   if(!d || typeof d !== "object") return;
-  if(COOP.role==="host" && (d.t==="st" || d.t==="bye")) coopBroadcast(d, c);   // relay to the other guests
+  if(COOP.role==="host" && (d.t==="st" || d.t==="bye" || d.t==="dgo")) coopBroadcast(d, c);   // relay to the other guests
   if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[d.id]; } return; }
   if(d.t==="op"){ if(COOP.role==="host") coopHostOp(d); return; }
+  if(d.t==="dgreq"){ if(COOP.role==="host") coopHostDgReq(c, d); return; }
+  if(d.t==="dgst"){ if(COOP.role==="guest") coopDgEnter(d); return; }
+  if(d.t==="dgo"){ if(COOP.role==="host" || (P && P.inDungeon===d.dg)) coopDgRemote(d); return; }
   if(d.t==="hit"){ if(d.to===coopMyId()){ const m = coopMobByNid(d.nid); playerDamage(d.dmg, m, d.kind); } else if(COOP.role==="host") coopSendTo(d.to, d); return; }
   if(d.t==="kill"){ if(d.to && d.to.includes(coopMyId())){ const m = coopMobByNid(d.nid); if(m) killRewards(m, d.n); } return; }
   if(d.t==="mobs"){ if(COOP.role==="guest") coopApplyMobs(d.m); return; }
@@ -3980,10 +4002,10 @@ let COOP_ATK = null;                       // who is attacking right now (set wh
 const coopMyId = () => (COOP.peer && COOP.peer.id) || "me";
 const coopIsMe = () => !COOP_ATK || COOP_ATK === coopMyId();
 const coopAttacker = () => COOP_ATK || coopMyId();
-const coopMob = m => !!(m && coopOn() && m.nid != null && !m.def.dg);
+const coopMob = m => !!(m && coopOn() && m.nid != null);   // overworld and dungeon monsters are shared; the host runs them
 const coopGuestMob = m => COOP.role==="guest" && coopMob(m);
 function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId(); }
-function coopMobByNid(nid){ if(!COOP.nidMap || COOP.nidMap.n !== mobs.length){ COOP.nidMap = {n:mobs.length}; for(const m of mobs) if(m.nid != null) COOP.nidMap[m.nid] = m; } return COOP.nidMap[nid]; }
+function coopMobByNid(nid){ if(!COOP.nidMap || COOP.nidMap.n !== mobs.length || COOP.nidMap.g !== MOB_GEN){ COOP.nidMap = {n:mobs.length, g:MOB_GEN}; for(const m of mobs) if(m.nid != null) COOP.nidMap[m.nid] = m; } return COOP.nidMap[nid]; }
 function coopSendTo(id, msg){ const r = COOP.remotes[id]; const c = r && COOP.conns.find(c=>c.peer===r.via); if(c && c.open){ try{ c.send(msg); }catch(e){} } }
 function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(); const r = COOP.remotes[id];
   const tank = id===coopMyId() ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
@@ -4002,15 +4024,18 @@ function coopHostOp(d){ const m = coopMobByNid(d.nid); if(!m || m.dead) return; 
   finally{ COOP_ATK = null; } }
 // who shares a kill: everyone alive within reach in the open world. Returns the host's own share count (0 = the host gets nothing).
 function coopKillShare(m){ if(!coopMob(m) || COOP.role!=="host") return 1;
-  const near = e => (e.dg||null)===null && Math.hypot(e.x-m.x, e.y-m.y) < 1500;
-  const meIn = !P.dead && !P.inDungeon && near({x:P.x, y:P.y, dg:null});
+  const dg = m.def.dg || null;   // in a dungeon everybody inside shares the kill; in the open world everybody within reach
+  const near = e => (e.dg||null)===dg && (dg || Math.hypot(e.x-m.x, e.y-m.y) < 1500);
+  const meIn = !P.dead && (P.inDungeon||null)===dg && near({x:P.x, y:P.y, dg});
   const ids = Object.values(COOP.remotes).filter(r=>!r.dead && near(r)).map(r=>r.id);
   const n = ids.length + (meIn ? 1 : 0); if(ids.length) coopBroadcast({t:"kill", nid:m.nid, n, to:ids});
   return meIn ? n : 0; }
 // host → guests: states of the monsters near any guest, 10 times a second
 const MOB_ST = {idle:0, chase:1, return:2};
-function coopHostMobs(){ const near = Object.values(COOP.remotes).filter(r=>!r.dg); if(!near.length) return; const out = [];
-  for(const m of mobs){ if(m.nid == null || m.def.dg) continue; if(!near.some(r=>Math.abs(r.x-m.x) < 1100 && Math.abs(r.y-m.y) < 800)) continue;
+function coopHostMobs(){ const rs = Object.values(COOP.remotes); if(!rs.length) return; const near = rs.filter(r=>!r.dg), inDg = new Set(rs.filter(r=>r.dg).map(r=>r.dg)); const out = [];
+  for(const m of mobs){ if(m.nid == null) continue;
+    if(m.def.dg){ if(!inDg.has(m.def.dg)) continue; }   // a dungeon someone is inside: send all its monsters
+    else if(!near.some(r=>Math.abs(r.x-m.x) < 1100 && Math.abs(r.y-m.y) < 800)) continue;
     const ac = m.act && m.act.t < m.act.dur ? [m.act.anim, +m.act.t.toFixed(2), m.act.dur] : 0;
     out.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.hp), MOB_ST[m.state]||0, m.dead?1:0, m.dir||0, m.fx||1, m.walk?1:0, m.tgtId||0, m.tele ? [Math.round(m.tele.x), Math.round(m.tele.y), m.tele.r, +m.tele.t.toFixed(2), m.tele.max] : 0, ac, +m.stunT.toFixed(1), +m.rootT.toFixed(1), +m.slowT.toFixed(1), m.dots.map(d=>d.key)]); }
   coopBroadcast({t:"mobs", m:out}); }
@@ -4090,6 +4115,30 @@ function coopHTML(){
   }
   return h;
 }
+
+// ---------- step 4: dungeons. The host owns every dungeon. A guest asks for its seed + progress, builds the same dungeon, and then
+// the host's monsters, the levers/runes and the kill rewards work just like in the open world.
+const coopRemoteIn = dg => coopOn() && Object.values(COOP.remotes).some(r=>(r.dg||null)===dg);
+function dgSnap(D){ return {done:!!DSTATE[D.id].done, gates:D.gates.map(g=>g.open?1:0), prog:(D.prog||[]).map(v=>v||0),
+  objs:dobjs.filter(o=>o.dg===D.id).map(o=>o.on?1:0), dead:mobs.filter(m=>m.def.dg===D.id).map(m=>m.dead?1:0)}; }
+function dgApply(D, s){ if(!s) return;
+  D.gates.forEach((g,i)=>{ if(s.gates[i]){ g.open = true; setGate(D, g, false); } });
+  (s.prog||[]).forEach((v,i)=>{ if(D.prog) D.prog[i] = v; });
+  dobjs.filter(o=>o.dg===D.id).forEach((o,i)=>{ if(s.objs[i]) o.on = true; });
+  const dm = mobs.filter(m=>m.def.dg===D.id); (s.dead||[]).forEach((v,i)=>{ if(v && dm[i]){ dm[i].dead = true; dm[i].hp = 0; } });
+  if(s.done){ DSTATE[D.id].done = true; const br = D.L.rooms[D.L.rooms.length-1]; dobjs.push({dg:D.id, kind:"exitEnd", x:(br.x+br.w-3)*TILE+16, y:br.cy*TILE+16}); } }
+function coopHostDgReq(c, d){ const D = DUNGEONS[d.dg]; if(!D) return;
+  const st = DSTATE[d.dg], inside = P.inDungeon===d.dg || coopRemoteIn(d.dg);
+  if(!inside && (!st || !st.keep || st.done)) resetDungeon(D);   // nobody inside and no saved progress: fresh dungeon
+  DSTATE[d.dg].keep = false;
+  try{ c.send({t:"dgst", dg:d.dg, seed:D.seed, snap:dgSnap(D)}); }catch(e){} }
+function coopDgEnter(d){ if(COOP.dgWait !== d.dg) return; COOP.dgWait = null; clearTimeout(COOP.dgWaitT);
+  const D = DUNGEONS[d.dg]; if(!D || (P.dead && !P.ghost)) return;
+  resetDungeon(D, d.seed); dgApply(D, d.snap); enterDungeonLocal(d.dg, true); }
+function coopDgEvent(o){ if(!coopOn()) return; coopBroadcast({t:"dgo", dg:o.dg, kind:o.kind, gate:o.gate, i:o.i, c:o.c}); }
+function coopDgRemote(d){ if(!DUNGEONS[d.dg]) return;
+  const o = dobjs.find(x=>x.dg===d.dg && x.kind===d.kind && x.gate===d.gate && (d.kind==="lever" ? x.i===d.i : x.c===d.c));
+  if(o) useDObj(o, true); }
 addEventListener("beforeunload", ()=>{ if(coopOn()) coopLeave(true); });
 </script>
 <button id="swupdate" hidden>A new version of Rimfrost is available – tap to update</button>
