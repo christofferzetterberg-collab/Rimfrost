@@ -336,7 +336,7 @@ const RACE_CLASSES = {
 };
 const CLASSES = {
   mage:{name:"Mage", color:"#4a7be0", res:"mana", hp:0.9, armor:1},
-  warrior:{name:"Warrior", color:"#b0763a", res:"rage", hp:1.25, armor:0.85},
+  warrior:{name:"Warrior", color:"#b0763a", res:"rage", hp:1.25, armor:0.80},
   hunter:{name:"Hunter", color:"#5f8f3e", res:"focus", hp:1.05, armor:0.92},
   priest:{name:"Priest", color:"#ecebe2", res:"mana", hp:0.95, armor:1},
   druid:{name:"Druid", color:"#b8742f", res:"mana", hp:1.05, armor:0.95},
@@ -1487,7 +1487,7 @@ function critChance(m, school){
   if(S.cls==="mage" && m && (m.slowT>0||m.rootT>0)) c += 0.12*T("shatter");
   return c;
 }
-function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.6*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
+function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.7*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
 // mana costs grow with level so a spell always costs the same share of your base mana as it did at level 1
 function manaScale(){ return (100 + S.level*22) / 122 * MANA_COST_MULT; }
 function costOf(id){ const a = AB[id]; let c = a.cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); if((a.res||CLASSES[S.cls].res)==="mana") c *= manaScale(); return Math.round(c); }
