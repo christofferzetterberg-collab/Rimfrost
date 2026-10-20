@@ -4156,5 +4156,41 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   }).catch(()=>{});
 }
 </script>
+<script>
+// ===== DEV TOOLS =====  Only active when the page is opened with ?dev at the end of the address (e.g. https://.../Rimfrost/?dev).
+// Press the ` key (the one under Esc) to show/hide the panel. Normal players never see it.
+(function(){
+  if(!/[?&]dev(=|&|$)/.test(location.search)) return;
+  const box = document.createElement("div"); box.hidden = true;
+  box.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:99999;width:240px;max-height:85vh;overflow:auto;background:rgba(10,14,20,.95);color:#dfe8ec;border:1px solid #ffd36b;border-radius:8px;padding:8px;font:12px sans-serif";
+  const row = (...els) => { const d = document.createElement("div"); d.style.cssText = "display:flex;gap:4px;margin:4px 0;align-items:center"; els.forEach(e=>d.appendChild(e)); box.appendChild(d); return d; };
+  const btn = (txt, fn) => { const b = document.createElement("button"); b.textContent = txt; b.style.cssText = "flex:1;padding:4px 6px;cursor:pointer"; b.onclick = ()=>{ try{ if(!S || !P){ return; } fn(); }catch(e){ console.error(e); } }; return b; };
+  const num = (v, w) => { const i = document.createElement("input"); i.type = "number"; i.value = v; i.style.cssText = "width:"+(w||60)+"px"; return i; };
+  const sel = opts => { const s = document.createElement("select"); s.style.cssText = "flex:1;min-width:0"; opts.forEach(([v,t])=>{ const o = document.createElement("option"); o.value = v; o.textContent = t; s.appendChild(o); }); return s; };
+  const title = document.createElement("div"); title.textContent = "DEV TOOLS  (` to hide)"; title.style.cssText = "font-weight:700;color:#ffd36b"; box.appendChild(title);
+
+  function setLevel(n){ n = Math.max(1, Math.min(MAX_LVL, n|0)); S.level = n; S.xp = 0;
+    for(const id of allBarIds()) if(AB[id].lvl <= n && !S.learned.includes(id)){ S.learned.push(id); autoPlace(id); }
+    recompute(true); P.hp = P.maxHp; P.mana = P.maxMana; buildHotbar(); log(`[dev] Level set to ${n}, all abilities learned.`, "#ffd36b"); }
+  const lv = num(MAX_LVL, 50);
+  row(lv, btn("Set level", ()=>setLevel(+lv.value)), btn("Max", ()=>{ lv.value = MAX_LVL; setLevel(MAX_LVL); }));
+  row(btn("+10 000 gold", ()=>{ S.gold += 10000; }), btn("Heal full", ()=>{ if(!P.dead){ P.hp = P.maxHp; P.mana = P.maxMana; } }));
+  const god = document.createElement("input"); god.type = "checkbox"; const gl = document.createElement("label"); gl.append(god, " God mode (never die)");
+  row(gl);
+  setInterval(()=>{ if(god.checked && typeof P !== "undefined" && P && !P.dead){ P.hp = P.maxHp; } }, 100);
+  row(btn("Kill target", ()=>{ if(P.target && !P.target.dead) damageMob(P.target, 1e7, false, "phys"); }));
+
+  const hubs = sel(Object.entries(HUBS).map(([id,h])=>[id, h.name]));
+  row(hubs, btn("Go", ()=>{ if(P.inDungeon) leaveDungeon(false); const h = HUBS[hubs.value]; P.x = h.x*TILE+16; P.y = (h.y+2)*TILE+16; }));
+  const dgs = sel(Object.keys(DUNGEONS).map(id=>[id, ZONES[id] ? ZONES[id].name : id]));
+  row(dgs, btn("Enter", ()=>{ if(P.inDungeon) leaveDungeon(false); enterDungeon(dgs.value); }));
+  const items = sel(Object.keys(ITEMS).sort().map(id=>[id, ITEMS[id].name || id])), qty = num(1, 44);
+  row(items, qty, btn("Give", ()=>{ addItem(items.value, Math.max(1, qty.value|0)); log(`[dev] +${qty.value} ${ITEMS[items.value].name||items.value}`, "#ffd36b"); }));
+  const note = document.createElement("div"); note.textContent = "Changes are saved with your character like normal play. Use a test character."; note.style.cssText = "color:#93a4ad;margin-top:6px"; box.appendChild(note);
+
+  document.body.appendChild(box);
+  addEventListener("keydown", e=>{ if(e.key === "`" && e.target.tagName !== "INPUT" && e.target.tagName !== "SELECT"){ box.hidden = !box.hidden; e.preventDefault(); } }, true);
+})();
+</script>
 </body>
 </html>
