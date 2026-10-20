@@ -343,6 +343,8 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
+// Balance: PLAYER_DMG scales ALL player damage (every class). MANA_COST_MULT scales every mana cost, so you can cast more before running dry.
+const PLAYER_DMG = 0.8, MANA_COST_MULT = 0.5;
 const CLASS_DMG = {mage:1.35, warrior:1, hunter:1, priest:1, druid:1, paladin:0.70};
 const RES_COLOR = {mana:"var(--mana)", rage:"var(--rage)", focus:"var(--focus)", energy:"var(--energy)"};
 const RES_NAME = {mana:"Mana", rage:"Rage", focus:"Focus", energy:"Energy"};
@@ -1467,7 +1469,7 @@ function addRes(type, n){ P[type] = clamp(P[type]+n, 0, maxRes(type)); }
 function pow(){ return 6 + S.level*2.6 + S.weapon*2.5 + gearStat("pow"); }
 function spow(){ return (6 + S.level*2.6 + S.weapon*2.5 + gearStat("sp")) * (P && P.buffs && P.buffs.sage ? 1.2 : 1); }
 function teff(k){ if(!S) return 0; let v=0; for(const t of TALENTS[S.cls]) if(t.eff&&t.eff[k]) v += t.eff[k]*T(t.id); return v; }
-function genMult(){ let m=(1+teff("dmg")) * (CLASS_DMG[S.cls]||1); if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
+function genMult(){ let m=(1+teff("dmg")) * (CLASS_DMG[S.cls]||1) * PLAYER_DMG; if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
 function tmul(ab, school){
   let m = 1;
   if(S.cls==="mage"){ if(school==="fire") m*=1+0.08*T("impFire"); if(school==="frost") m*=1+0.08*T("iceShards"); }
@@ -1487,7 +1489,7 @@ function critChance(m, school){
 }
 function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.6*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
 // mana costs grow with level so a spell always costs the same share of your base mana as it did at level 1
-function manaScale(){ return (100 + S.level*22) / 122; }
+function manaScale(){ return (100 + S.level*22) / 122 * MANA_COST_MULT; }
 function costOf(id){ const a = AB[id]; let c = a.cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); if((a.res||CLASSES[S.cls].res)==="mana") c *= manaScale(); return Math.round(c); }
 function castTime(id){ const a = AB[id]; let c = a.cast||0; if(!c) return 0;
   if(["fireball","frostbolt","pyroblast"].includes(id)) c -= 0.25*T("quickCast");
