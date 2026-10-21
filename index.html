@@ -433,7 +433,7 @@ const AB = {
   poison:{name:"Poison Arrow", lvl:18, cost:30, minRange:50, range:320, school:"nature", icon:"poison", tgt:"enemy",
     desc:()=>`A poisoned arrow: ${fmt(spow()*2.6)} poison damage over 12 sec.`,
     run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",spow()*2.6,12,"nature"),"arrow")},
-  snare:{name:"Snare", lvl:22, cost:25, cd:20, range:320, school:"nature", icon:"roots", tgt:"enemy",
+  snare:{name:"Snare", lvl:22, cost:25, cd:20, minRange:50, range:320, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Throws a snare that holds the target in place for 6 sec.`,
     run:t=>{root(t,6);burst(t.x,t.y,"#c8a070",10);}},
   stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, minRange:50, range:340, school:"nature", icon:"storm", tgt:"enemy",
@@ -1737,7 +1737,7 @@ function completeCast(){
   P.castDone = {label:c.label, t:0.3};
   if(c.kind === "gather") return finishGather(c.node);
   const a = AB[c.id], t = c.t;
-  if(a.tgt==="enemy"){ if(!t || t.dead) return; if(dist(P,t)-t.r > a.range+40) return err("Too far away"); }
+  if(a.tgt==="enemy"){ if(!t || t.dead) return; if(dist(P,t)-t.r > a.range+40) return err("Too far away"); if(a.minRange && dist(P,t)-t.r < a.minRange) return err("Too close"); }
   { const fr = coopFriendRange(c.id); if(fr) return err(fr); }
   const type = resType(), cost = costOf(c.id);
   if(P[type] < cost) return err(`Not enough ${RES_NAME[type].toLowerCase()}`);
@@ -1748,7 +1748,7 @@ function autoInfo(){
   if(P.form==="bear") return {range:55, spd:2.0, mult:1.0, rage:8};
   if(P.form==="cat") return {range:52, spd:1.1, mult:0.55};
   if(S.cls==="warrior") return {range:52, spd:2.2, mult:1.0, rage:9};
-  if(S.cls==="hunter") return {range:320, spd:2.0, mult:0.85, ranged:true};
+  if(S.cls==="hunter") return {range:320, minRange:50, spd:2.0, mult:0.85, ranged:true};
   if(S.cls==="paladin") return {range:52, spd:2.4, mult:1.0};
   return {range:52, spd:2.4, mult:0.6};
 }
@@ -1758,6 +1758,7 @@ function autoAttack(dt){
   if(P.form==="leopard") return;
   if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
+  if(ai.minRange && dist(P,t) - t.r < ai.minRange) return;
   P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
   if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
   snd(ai.ranged ? "bow" : "swing", {vol:0.8});
@@ -1954,6 +1955,7 @@ function updPlayer(dt){
     const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
     moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true; P.lastMv = {x:ix/il, y:iy/il};
   }
+  if(P.casting && P.casting.kind==="spell"){ const _a = AB[P.casting.id], _t = P.casting.t; if(_a && _a.minRange && _t && !_t.dead && dist(P,_t)-_t.r < _a.minRange) cancelCast("Too close"); }
   if(P.casting){ P.casting.el += dt; if(P.casting.kind==="gather" && !P.casting.node.active) P.casting = null; else if(P.casting.kind==="gather" && P.casting.node.qitem && P.combatT > 0){ P.casting = null; err("You cannot pick that up in combat"); } else if(P.casting.el >= P.casting.total) completeCast(); }
   autoAttack(dt);
   if(P.combatT > 0 && !mobs.some(m=>m.state==="chase" && !m.dead && coopTargetsMe(m))) P.combatT = Math.min(P.combatT, 0.25);   // no enemy is after you: combat ends right away
