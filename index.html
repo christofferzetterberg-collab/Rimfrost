@@ -2017,12 +2017,12 @@ function updMob(m, dt){
 // ======================= HUNTER PETS =======================
 // One pet at a time. Bear = tank (hits and Growl draw aggro), Wolf = damage. Called with a long cast, out of combat only.
 const PET_CAST = 10;                       // seconds to call a pet
-const GROWL_CD = 8, GROWL_TAUNT = 5;       // bear taunt: cooldown / how long enemies are forced onto the bear
+const GROWL_CD = 12, GROWL_TAUNT = 5;       // bear taunt: cooldown / how long enemies are forced onto the bear
 // hp = pet health as a share of your max health, taken = share of incoming damage the pet takes, coef = attack power per hit,
 // atk = seconds between hits, threat = aggro generated per damage the pet deals, ownerThreat = how much of YOUR damage counts as aggro while this pet is out
 const PETS = {
-  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.6, taken:0.7, coef:0.18, atk:2.0, threat:6,   ownerThreat:0.6},
-  wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.33, atk:1.5, threat:0.5, ownerThreat:1}
+  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.2, taken:0.85, coef:0.18, atk:2.0, threat:6,   ownerThreat:0.6},
+  wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.45, atk:1.5, threat:0.5, ownerThreat:1}
 };
 let pet = null, PET_ATK = false;
 function petFight(){ const dg = P.inDungeon||null; return P.combatT > 0 || mobs.some(m=>!m.dead && m.state==="chase" && (m.def.dg||null)===dg && dist(m,P) < 900); }
