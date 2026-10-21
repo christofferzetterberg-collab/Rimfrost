@@ -3029,12 +3029,12 @@ function setAct(e, anim){ if(anim) e.act = {anim, t:0, dur:ACT_DUR[anim]}; }
 function lpcState(e, moving){
   if(e.dead && !e.ghost) return {anim:"hurt", frame:5, dir:0};
   if(e.sitting) return {anim:"hurt", frame:3, dir:0};
-  if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
+  if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir==null?2:e.dir}; }
   if(e.casting && e.casting.kind==="spell"){ const a = AB[e.casting.id];
-    if(e===P && S.cls==="hunter" && a && a.school!=="holy" && a.tgt==="enemy"){ const k = Math.min(1, e.casting.el/e.casting.total); return {anim:"bow", frame:Math.min(8, Math.floor(k*9)), dir:e.dir||2}; }   // drawing the bow
-    return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2}; }
-  if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir||2};
-  if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir||2};
+    if(e===P && S.cls==="hunter" && a && a.school!=="holy" && a.tgt==="enemy"){ const k = Math.min(1, e.casting.el/e.casting.total); return {anim:"bow", frame:Math.min(8, Math.floor(k*9)), dir:e.dir==null?2:e.dir}; }   // drawing the bow
+    return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir==null?2:e.dir}; }
+  if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir==null?2:e.dir};
+  if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir==null?2:e.dir};
   return {anim:"walk", frame:0, dir:e.dir==null?2:e.dir};
 }
 function drawLPC(c, look, x, y, st, sx, sy){
