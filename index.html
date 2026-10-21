@@ -412,7 +412,7 @@ const AB = {
     run:()=>{ring(P.x,P.y,100,"#c8a070");aoe(P.x,P.y,100,m=>{hit(m,pow()*2.0,"phys","quake");slow(m,0.5,4);});}},
 
   // ---- Hunter
-  raptor:{name:"Raptor Strike", lvl:1, cost:15, cd:6, range:70, school:"phys", icon:"claw", tgt:"enemy",
+  raptor:{name:"Raptor Strike", lvl:1, cost:15, cd:6, range:70, school:"phys", icon:"axe", tgt:"enemy",
     desc:()=>`A quick melee strike for when enemies get too close: ${fmt(pow()*1.3)} damage.`,
     run:t=>{ hit(t,pow()*1.3,"phys","raptor"); }},
   wingclip:{name:"Wing Clip", lvl:3, cost:10, cd:12, range:70, school:"phys", icon:"boot", tgt:"enemy",
@@ -574,7 +574,7 @@ Object.assign(AB, {
   callbear:{name:"Call Bear", lvl:5, cost:0, cast:10, range:0, school:"nature", icon:"bear", tgt:"self",
     desc:()=>`Call a bear to your side (${PET_CAST} sec cast, out of combat only). The bear holds the attention of enemies: Growl taunts what it is fighting and Sweep hits everything around it. Only one pet at a time.`,
     check:()=>petCallCheck("bear"), run:()=>petCall("bear")},
-  dismisspet:{name:"Dismiss Pet", lvl:5, cost:0, range:0, school:"nature", icon:"boot", tgt:"self",
+  dismisspet:{name:"Dismiss Pet", lvl:5, cost:0, range:0, school:"nature", icon:"dismiss", tgt:"self",
     desc:()=>`Send your pet away (out of combat only). You can call a new one afterwards.`,
     check:()=>!pet ? "You have no pet" : petFight() ? "You cannot dismiss your pet in combat" : true, run:()=>petDismiss()},
   mendpet:{name:"Mend Pet", lvl:7, cost:20, cd:12, range:0, school:"nature", icon:"bloom", tgt:"self",
@@ -1735,8 +1735,9 @@ function finishAbility(id, t){
   if(id==="pyroblast" && P.buffs.hotstreak) delete P.buffs.hotstreak;
   { const ft = coopFriendTarget(id); if(ft) coopCastOn(ft, a, t); else a.run(t); }
   { const as = AB_SND[id]; if(as) snd(as[0]); if(id==="whirlwind"){ setTimeout(()=>snd("swing"),150); setTimeout(()=>snd("swing"),300); } }
-  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? (a.range<=60 ? "slash" : "bow") : null) : "cast"); }
+  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? (a.range<=70 ? "slash" : "bow") : null) : "cast"); }
   if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
+  if(S.cls==="hunter" && P.act && P.act.anim==="slash") P.act.dur = HUNTER_MELEE_DUR;   // quicker melee swing for hunters
   if(t) P.combatT = 6;
   if(t && P.target !== t) setTarget(t);
 }
@@ -1768,8 +1769,9 @@ function autoAttack(dt){
   if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
   const mel = !!(ai.minRange && dist(P,t) - t.r < ai.minRange);   // too close to shoot: hunter strikes in melee instead
-  P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
-  if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? (mel ? "thrust" : "bow") : "thrust");
+  P.autoT = mel ? HUNTER_MELEE_SPD : ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
+  if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? (mel ? "slash" : "bow") : "thrust");
+  if(mel && P.act && P.act.anim==="slash") P.act.dur = HUNTER_MELEE_DUR;
   snd(ai.ranged && !mel ? "bow" : "swing", {vol:0.8});
   if(mel) hit(t, pow()*0.6, "phys", "auto");
   else if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
@@ -2948,6 +2950,7 @@ const LPC_FILES = {"bow": {"characters": ["BELT_leather", "BELT_rope", "BODY_ani
 const ANIMS = {walk:{dir:"walkcycle", frames:9, body:"BODY_male"}, slash:{dir:"slash", frames:6, body:"BODY_human"}, cast:{dir:"spellcast", frames:7, body:"BODY_male"},
   bow:{dir:"bow", frames:13, body:"BODY_animation"}, thrust:{dir:"thrust", frames:8, body:"BODY_animation"}, hurt:{dir:"hurt", frames:6, body:"BODY_male", oneRow:true}};
 const ACT_DUR = {slash:0.42, cast:0.5, bow:0.65, thrust:0.45};
+const HUNTER_MELEE_DUR = 0.26, HUNTER_MELEE_SPD = 1.5;   // hunter melee swings: animation length / seconds between auto strikes
 const OUTFITS = {
   warrior:["FEET_plate_armor_shoes","LEGS_plate_armor_pants","TORSO_plate_armor_torso","TORSO_plate_armor_arms_shoulders","HANDS_plate_armor_gloves","HEAD_plate_armor_helmet"],
   hunter:["BEHIND_quiver","FEET_shoes_brown","LEGS_pants_greenish","TORSO_leather_armor_shirt_white","TORSO_leather_armor_torso","TORSO_leather_armor_shoulders","TORSO_leather_armor_bracers","BELT_leather","HEAD_leather_armor_hat"],
@@ -3028,7 +3031,7 @@ function lpcState(e, moving){
   if(e.sitting) return {anim:"hurt", frame:3, dir:0};
   if(e.act && e.act.t < e.act.dur){ const N = ANIMS[e.act.anim].frames; return {anim:e.act.anim, frame:Math.min(N-1, Math.floor(e.act.t/e.act.dur*N)), dir:e.dir||2}; }
   if(e.casting && e.casting.kind==="spell"){ const a = AB[e.casting.id];
-    if(e===P && S.cls==="hunter" && a && a.school!=="holy"){ const k = Math.min(1, e.casting.el/e.casting.total); return {anim:"bow", frame:Math.min(8, Math.floor(k*9)), dir:e.dir||2}; }   // drawing the bow
+    if(e===P && S.cls==="hunter" && a && a.school!=="holy" && a.tgt==="enemy"){ const k = Math.min(1, e.casting.el/e.casting.total); return {anim:"bow", frame:Math.min(8, Math.floor(k*9)), dir:e.dir||2}; }   // drawing the bow
     return {anim:"cast", frame:2 + Math.floor(time*8)%4, dir:e.dir||2}; }
   if(e.casting && e.casting.kind==="gather") return {anim:"thrust", frame:Math.floor(time*10)%8, dir:e.dir||2};
   if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir||2};
@@ -3458,6 +3461,7 @@ function showBanner(big, small, dur){ $("banner").innerHTML = `<div class="big">
 const AB_ICON = {
   fireball:["orb","#ff8a3a"], frostbolt:["shard","#8fd8ff"], fireblast:["burst","#ff5a2a"], frostnova:["snowflake","#bfe9ff"], blizzard:["storm","#5fa8e0"],
   pyroblast:["flame","#ffb02e"], sparkrain:["spark","#d38cff"], icearmor:["crystal","#7fd0e8"], meteor:["meteor","#d8482a"],
+  dismisspet:["dismiss","#8a9199"],
   heroic:["sword","#c9ced4"], charge:["dash","#e0a060"], shout:["horn","#d8b070"], rend:["drop","#d0453a"], whirlwind:["whirl","#9fb0bc"],
   execute:["axe","#b03a2e"], shieldbash:["shield","#8a96a2"], secondwind:["heart","#e05a6a"], quake:["quake","#a07850"],
   steady:["arrow","#c8b48a"], firearrow:["firearrow","#ff7a2e"], icearrow:["icearrow","#6fc6f0"], disengage:["leap","#9ccf8a"], multishot:["multi","#d8c08a"],
@@ -3509,6 +3513,9 @@ function drawIcon(cv, icon, color){
     case "bloom": for(let i=0;i<5;i++){ const a=i*Math.PI*0.4; C(Math.cos(a)*8,Math.sin(a)*8,6,true); } g.fillStyle = "#f2e86b"; C(0,0,4,true); break;
     case "roots": for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(i*9,16); g.quadraticCurveTo(i*9+8,0,i*9-2,-15); g.stroke(); } break;
     case "star": { g.beginPath(); for(let i=0;i<10;i++){ const r=i%2?6:16, a=i*Math.PI/5-Math.PI/2; const x=Math.cos(a)*r, y=Math.sin(a)*r; i?g.lineTo(x,y):g.moveTo(x,y);} g.closePath(); g.fill(); } break;
+    case "dismiss":   // a small bear and a small wolf side by side
+      g.save(); g.translate(-9,2); g.scale(0.55,0.55); C(-10,-9,5.5,true); C(10,-9,5.5,true); C(0,2,13,true); g.fillStyle="#3a3f45"; C(-5,-1,2.2,true); C(5,-1,2.2,true); g.beginPath(); g.ellipse(0,7,5,3.5,0,0,7); g.fill(); g.restore();
+      g.save(); g.translate(10,2); g.scale(0.62,0.62); g.fillStyle="rgba(255,255,255,.92)"; P_([[-13,-14],[-6,-4],[6,-4],[13,-14],[13,4],[0,14],[-13,4]], true); g.fillStyle="#3a3f45"; C(-5,1,2.2,true); C(5,1,2.2,true); g.restore(); break;
     case "bear": C(-10,-9,5.5,true); C(10,-9,5.5,true); C(0,2,13,true); g.fillStyle="#3a2a1a"; C(-5,-1,2,true); C(5,-1,2,true); g.beginPath(); g.ellipse(0,7,5,3.5,0,0,7); g.fill(); break;
     case "cat": P_([[-13,-14],[-6,-4],[6,-4],[13,-14],[13,4],[0,14],[-13,4]], true); g.fillStyle = "#222"; C(-5,1,2,true); C(5,1,2,true); break;
     case "fist": g.beginPath(); g.roundRect(-11,-10,22,20,5); g.fill(); g.strokeStyle = "#555"; g.lineWidth = 1.5; for(let i=-1;i<=1;i++) P_([[i*6,-10],[i*6,-2]]); break;
