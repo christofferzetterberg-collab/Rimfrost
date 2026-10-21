@@ -412,31 +412,31 @@ const AB = {
     run:()=>{ring(P.x,P.y,100,"#c8a070");aoe(P.x,P.y,100,m=>{hit(m,pow()*2.0,"phys","quake");slow(m,0.5,4);});}},
 
   // ---- Hunter
-  steady:{name:"Steady Shot", lvl:1, cost:0, cast:1.5, range:320, school:"phys", icon:"arrow", tgt:"enemy",
+  steady:{name:"Steady Shot", lvl:1, cost:0, cast:1.5, minRange:50, range:320, school:"phys", icon:"arrow", tgt:"enemy",
     desc:()=>`A steady shot that deals ${fmt(pow()*1.3)} damage and gives you 12 focus. You must stand still while aiming.`,
     run:t=>{ addRes("focus", 12); proj(t,"#e9e2c8",4,()=>hit(t,pow()*1.3,"phys","steady"),"arrow"); }},
-  firearrow:{name:"Fire Arrow", lvl:2, cost:30, cd:6, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
+  firearrow:{name:"Fire Arrow", lvl:2, cost:30, cd:6, minRange:50, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
     desc:()=>`A burning arrow: ${fmt(spow()*1.1)} damage and sets the target ablaze (${fmt(spow()*1.4)} over 6 sec).`,
     run:t=>proj(t,"#ff7a2e",5,()=>{hit(t,spow()*1.1,"fire","firearrow");dot(t,"burn",spow()*1.4*(1+0.15*T("fireArrows")),6,"fire");},"arrow")},
-  icearrow:{name:"Ice Arrow", lvl:4, cost:30, cd:8, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
+  icearrow:{name:"Ice Arrow", lvl:4, cost:30, cd:8, minRange:50, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
     desc:()=>`A freezing arrow: ${fmt(spow()*1.4)} damage and slows the target by 60% for ${6+T("iceArrows")} sec.`,
     run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,spow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
   disengage:{name:"Disengage", lvl:6, cost:0, cd:15, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
     desc:()=>`Leaps swiftly backwards, opposite to the way you last moved.`,
     run:()=>{const m=P.lastMv;let dx,dy;if(m){dx=-m.x;dy=-m.y;}else{const t=P.target&&!P.target.dead?P.target:null;dx=t?P.x-t.x:-P.fx;dy=t?P.y-t.y:0;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
-  multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, range:320, school:"phys", icon:"multi", tgt:"enemy",
+  multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, minRange:50, range:320, school:"phys", icon:"multi", tgt:"enemy",
     desc:()=>`Fires three arrows at the target and up to two enemies near it, ${fmt(pow()*1.2)} damage each.`,
     run:t=>{const near=mobs.filter(m=>m!==t&&!m.dead&&dist(m,t)<130).slice(0,2);[t,...near].forEach(m=>proj(m,"#e9e2c8",4,()=>hit(m,pow()*1.2,"phys","multishot"),"arrow"));}},
-  aimed:{name:"Aimed Shot", lvl:14, cost:45, cd:10, cast:2.5, range:340, school:"phys", icon:"aim", tgt:"enemy",
+  aimed:{name:"Aimed Shot", lvl:14, cost:45, cd:10, cast:2.5, minRange:50, range:340, school:"phys", icon:"aim", tgt:"enemy",
     desc:()=>`A carefully aimed shot: ${fmt(pow()*4.0)} damage.`,
     run:t=>proj(t,"#fff3c4",6,()=>hit(t,pow()*4.0,"phys","aimed"),"arrow")},
-  poison:{name:"Poison Arrow", lvl:18, cost:30, range:320, school:"nature", icon:"poison", tgt:"enemy",
+  poison:{name:"Poison Arrow", lvl:18, cost:30, minRange:50, range:320, school:"nature", icon:"poison", tgt:"enemy",
     desc:()=>`A poisoned arrow: ${fmt(spow()*2.6)} poison damage over 12 sec.`,
     run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",spow()*2.6,12,"nature"),"arrow")},
   snare:{name:"Snare", lvl:22, cost:25, cd:20, range:320, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Throws a snare that holds the target in place for 6 sec.`,
     run:t=>{root(t,6);burst(t.x,t.y,"#c8a070",10);}},
-  stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, range:340, school:"nature", icon:"storm", tgt:"enemy",
+  stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, minRange:50, range:340, school:"nature", icon:"storm", tgt:"enemy",
     desc:()=>`An arrow charged with lightning: ${fmt(spow()*5.0)} damage.`,
     run:t=>proj(t,"#e8f4ff",7,()=>{hit(t,spow()*5.0,"nature","stormarrow");burst(t.x,t.y,"#e8f4ff",18);},"arrow")},
 
@@ -2017,12 +2017,12 @@ function updMob(m, dt){
 // ======================= HUNTER PETS =======================
 // One pet at a time. Bear = tank (hits and Growl draw aggro), Wolf = damage. Called with a long cast, out of combat only.
 const PET_CAST = 10;                       // seconds to call a pet
-const GROWL_CD = 12, GROWL_TAUNT = 5;       // bear taunt: cooldown / how long enemies are forced onto the bear
+const GROWL_CD = 12, GROWL_TAUNT = 3;       // bear taunt: cooldown / how long enemies are forced onto the bear
 // hp = pet health as a share of your max health, taken = share of incoming damage the pet takes, coef = attack power per hit,
 // atk = seconds between hits, threat = aggro generated per damage the pet deals, ownerThreat = how much of YOUR damage counts as aggro while this pet is out
 const PETS = {
-  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.2, taken:0.85, coef:0.18, atk:2.0, threat:6,   ownerThreat:0.6},
-  wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.24, atk:1.1, threat:0.5, ownerThreat:1}
+  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.2, taken:0.85, coef:0.18, atk:2.0, threat:4,   ownerThreat:0.8},
+  wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.20, atk:1.1, threat:0.5, ownerThreat:1}
 };
 let pet = null, PET_ATK = false;
 function petFight(){ const dg = P.inDungeon||null; return P.combatT > 0 || mobs.some(m=>!m.dead && m.state==="chase" && (m.def.dg||null)===dg && dist(m,P) < 900); }
@@ -2070,7 +2070,7 @@ function updPet(dt){
       if(pet.atkT <= 0){ pet.atkT = d.atk; pet.swing = 0.2;
         petStrike(t, d.coef); if(pet.kind==="bear") pet.res = Math.min(100, pet.res + 8); }
       // Claw (wolf, 40 energy): an extra hit on top of the normal attacks
-      if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); petStrike(t, 0.7); } }
+      if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); petStrike(t, 0.55); } }
   } else if(dist(pet,P) > 70){ steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, dist(pet,P) > 200 ? d.sp*1.3 : d.sp); pet.walk = true; }
 }
 // ---- effects
