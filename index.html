@@ -412,31 +412,37 @@ const AB = {
     run:()=>{ring(P.x,P.y,100,"#c8a070");aoe(P.x,P.y,100,m=>{hit(m,pow()*2.0,"phys","quake");slow(m,0.5,4);});}},
 
   // ---- Hunter
-  steady:{name:"Steady Shot", lvl:1, cost:0, cast:1.5, minRange:50, range:320, school:"phys", icon:"arrow", tgt:"enemy",
+  raptor:{name:"Raptor Strike", lvl:1, cost:15, cd:6, range:70, school:"phys", icon:"claw", tgt:"enemy",
+    desc:()=>`A quick melee strike for when enemies get too close: ${fmt(pow()*1.3)} damage.`,
+    run:t=>{ hit(t,pow()*1.3,"phys","raptor"); }},
+  wingclip:{name:"Wing Clip", lvl:3, cost:10, cd:12, range:70, school:"phys", icon:"boot", tgt:"enemy",
+    desc:()=>`A melee strike that cripples the target: ${fmt(pow()*0.8)} damage and slows it by 60% for 8 sec. Only works up close.`,
+    run:t=>{ hit(t,pow()*0.8,"phys","wingclip"); slow(t,0.6,8); }},
+  steady:{name:"Steady Shot", lvl:1, cost:0, cast:1.5, minRange:70, range:320, school:"phys", icon:"arrow", tgt:"enemy",
     desc:()=>`A steady shot that deals ${fmt(pow()*1.3)} damage and gives you 12 focus. You must stand still while aiming.`,
     run:t=>{ addRes("focus", 12); proj(t,"#e9e2c8",4,()=>hit(t,pow()*1.3,"phys","steady"),"arrow"); }},
-  firearrow:{name:"Fire Arrow", lvl:2, cost:30, cd:6, minRange:50, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
+  firearrow:{name:"Fire Arrow", lvl:2, cost:30, cd:6, minRange:70, range:320, school:"fire", icon:"firearrow", tgt:"enemy",
     desc:()=>`A burning arrow: ${fmt(spow()*1.1)} damage and sets the target ablaze (${fmt(spow()*1.4)} over 6 sec).`,
     run:t=>proj(t,"#ff7a2e",5,()=>{hit(t,spow()*1.1,"fire","firearrow");dot(t,"burn",spow()*1.4*(1+0.15*T("fireArrows")),6,"fire");},"arrow")},
-  icearrow:{name:"Ice Arrow", lvl:4, cost:30, cd:8, minRange:50, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
+  icearrow:{name:"Ice Arrow", lvl:4, cost:30, cd:8, minRange:70, range:320, school:"frost", icon:"icearrow", tgt:"enemy",
     desc:()=>`A freezing arrow: ${fmt(spow()*1.4)} damage and slows the target by 60% for ${6+T("iceArrows")} sec.`,
     run:t=>proj(t,"#8fd8ff",5,()=>{hit(t,spow()*1.4,"frost","icearrow");slow(t,0.6,6+T("iceArrows"));},"arrow")},
   disengage:{name:"Disengage", lvl:6, cost:0, cd:15, range:0, school:"phys", icon:"leap", tgt:"self", offGcd:true,
     desc:()=>`Leaps swiftly backwards, opposite to the way you last moved.`,
     run:()=>{const m=P.lastMv;let dx,dy;if(m){dx=-m.x;dy=-m.y;}else{const t=P.target&&!P.target.dead?P.target:null;dx=t?P.x-t.x:-P.fx;dy=t?P.y-t.y:0;}const l=Math.hypot(dx,dy)||1;P.leap={vx:dx/l*520,vy:dy/l*520,t:0.32};}},
-  multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, minRange:50, range:320, school:"phys", icon:"multi", tgt:"enemy",
+  multishot:{name:"Triple Shot", lvl:10, cost:40, cd:8, minRange:70, range:320, school:"phys", icon:"multi", tgt:"enemy",
     desc:()=>`Fires three arrows at the target and up to two enemies near it, ${fmt(pow()*1.2)} damage each.`,
     run:t=>{const near=mobs.filter(m=>m!==t&&!m.dead&&dist(m,t)<130).slice(0,2);[t,...near].forEach(m=>proj(m,"#e9e2c8",4,()=>hit(m,pow()*1.2,"phys","multishot"),"arrow"));}},
-  aimed:{name:"Aimed Shot", lvl:14, cost:45, cd:10, cast:2.5, minRange:50, range:340, school:"phys", icon:"aim", tgt:"enemy",
+  aimed:{name:"Aimed Shot", lvl:14, cost:45, cd:10, cast:2.5, minRange:70, range:340, school:"phys", icon:"aim", tgt:"enemy",
     desc:()=>`A carefully aimed shot: ${fmt(pow()*4.0)} damage.`,
     run:t=>proj(t,"#fff3c4",6,()=>hit(t,pow()*4.0,"phys","aimed"),"arrow")},
-  poison:{name:"Poison Arrow", lvl:18, cost:30, minRange:50, range:320, school:"nature", icon:"poison", tgt:"enemy",
+  poison:{name:"Poison Arrow", lvl:18, cost:30, minRange:70, range:320, school:"nature", icon:"poison", tgt:"enemy",
     desc:()=>`A poisoned arrow: ${fmt(spow()*2.6)} poison damage over 12 sec.`,
     run:t=>proj(t,"#7fdc5a",5,()=>dot(t,"poison",spow()*2.6,12,"nature"),"arrow")},
-  snare:{name:"Snare", lvl:22, cost:25, cd:20, minRange:50, range:320, school:"nature", icon:"roots", tgt:"enemy",
+  snare:{name:"Snare", lvl:22, cost:25, cd:20, minRange:70, range:320, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Throws a snare that holds the target in place for 6 sec.`,
     run:t=>{root(t,6);burst(t.x,t.y,"#c8a070",10);}},
-  stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, minRange:50, range:340, school:"nature", icon:"storm", tgt:"enemy",
+  stormarrow:{name:"Storm Arrow", lvl:26, cost:50, cd:20, minRange:70, range:340, school:"nature", icon:"storm", tgt:"enemy",
     desc:()=>`An arrow charged with lightning: ${fmt(spow()*5.0)} damage.`,
     run:t=>proj(t,"#e8f4ff",7,()=>{hit(t,spow()*5.0,"nature","stormarrow");burst(t.x,t.y,"#e8f4ff",18);},"arrow")},
 
@@ -568,6 +574,9 @@ Object.assign(AB, {
   callbear:{name:"Call Bear", lvl:5, cost:0, cast:10, range:0, school:"nature", icon:"bear", tgt:"self",
     desc:()=>`Call a bear to your side (${PET_CAST} sec cast, out of combat only). The bear holds the attention of enemies: Growl taunts what it is fighting and Sweep hits everything around it. Only one pet at a time.`,
     check:()=>petCallCheck("bear"), run:()=>petCall("bear")},
+  dismisspet:{name:"Dismiss Pet", lvl:5, cost:0, range:0, school:"nature", icon:"boot", tgt:"self",
+    desc:()=>`Send your pet away (out of combat only). You can call a new one afterwards.`,
+    check:()=>!pet ? "You have no pet" : petFight() ? "You cannot dismiss your pet in combat" : true, run:()=>petDismiss()},
   mendpet:{name:"Mend Pet", lvl:7, cost:20, cd:12, range:0, school:"nature", icon:"bloom", tgt:"self",
     desc:()=>`Heals your pet for 40% of its health.`,
     check:()=>(pet && !pet.dead) ? true : "You have no pet", run:()=>petMend()},
@@ -578,7 +587,7 @@ Object.assign(AB, {
 const BARS = {
   mage:["fireball","frostbolt","fireblast","frostnova","blizzard","pyroblast","sparkrain","icearmor","meteor"],
   warrior:["heroic","charge","shout","rend","whirlwind","execute","shieldbash","secondwind","quake"],
-  hunter:["steady","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow","callbear","mendpet","callwolf"],
+  hunter:["steady","raptor","wingclip","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow","callbear","dismisspet","mendpet","callwolf"],
   priest:["smite","heal","swp","pws","mindblast","holynova","renew","darkpulse","judgment"],
   druid:["wrath","touch","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat","leopard"],
   druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat","leopard"],
@@ -1726,7 +1735,7 @@ function finishAbility(id, t){
   if(id==="pyroblast" && P.buffs.hotstreak) delete P.buffs.hotstreak;
   { const ft = coopFriendTarget(id); if(ft) coopCastOn(ft, a, t); else a.run(t); }
   { const as = AB_SND[id]; if(as) snd(as[0]); if(id==="whirlwind"){ setTimeout(()=>snd("swing"),150); setTimeout(()=>snd("swing"),300); } }
-  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? "bow" : null) : "cast"); }
+  if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? (a.range<=60 ? "slash" : "bow") : null) : "cast"); }
   if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
   if(t) P.combatT = 6;
   if(t && P.target !== t) setTarget(t);
@@ -1748,7 +1757,7 @@ function autoInfo(){
   if(P.form==="bear") return {range:55, spd:2.0, mult:1.0, rage:8};
   if(P.form==="cat") return {range:52, spd:1.1, mult:0.55};
   if(S.cls==="warrior") return {range:52, spd:2.2, mult:1.0, rage:9};
-  if(S.cls==="hunter") return {range:320, minRange:50, spd:2.0, mult:0.85, ranged:true};
+  if(S.cls==="hunter") return {range:320, minRange:70, spd:2.0, mult:0.85, ranged:true};
   if(S.cls==="paladin") return {range:52, spd:2.4, mult:1.0};
   return {range:52, spd:2.4, mult:0.6};
 }
@@ -1758,11 +1767,12 @@ function autoAttack(dt){
   if(P.form==="leopard") return;
   if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
-  if(ai.minRange && dist(P,t) - t.r < ai.minRange) return;
+  const mel = !!(ai.minRange && dist(P,t) - t.r < ai.minRange);   // too close to shoot: hunter strikes in melee instead
   P.autoT = ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
-  if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? "bow" : "thrust");
-  snd(ai.ranged ? "bow" : "swing", {vol:0.8});
-  if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
+  if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? (mel ? "thrust" : "bow") : "thrust");
+  snd(ai.ranged && !mel ? "bow" : "swing", {vol:0.8});
+  if(mel) hit(t, pow()*0.6, "phys", "auto");
+  else if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
   else { hit(t, pow()*ai.mult, "phys", "auto"); if(ai.rage) addRes("rage", ai.rage); }
   P.combatT = 6;
 }
@@ -2035,6 +2045,7 @@ function petCallCheck(kind){ if(coopOn()) return "Pets are not available in co-o
   if(pet && !pet.dead && pet.kind===kind) return `Your ${PETS[kind].name.toLowerCase()} is already with you`; return true; }
 function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a pet right now");
   S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
+function petDismiss(){ if(!pet) return; floatText(pet.x, pet.y-40, PETS[pet.kind].name+" dismissed", "#9fd6e8", true); burst(pet.x, pet.y-10, "#9fd6e8", 10); log(`You dismiss your ${PETS[pet.kind].name.toLowerCase()}.`, "#9fd6e8"); pet = null; S.petType = null; }
 function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
 function petDamage(raw, src){ if(!pet || pet.dead) return; const amt = Math.max(1, Math.round(raw*PETS[pet.kind].taken));
   pet.hp -= amt; pet.flash = 0.12; if(pet.kind==="bear") pet.res = Math.min(100, pet.res+5); floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
@@ -3280,7 +3291,7 @@ function spellsHTML(){
   let h = `<h2>Spellbook</h2><div class="muted">Drag a spell's icon to a slot on the bar below. You can also drag between slots to move them, or drag a slot off the bar to empty it. You learn new spells from your class trainer.</div>`;
   if(tabs.length > 1) h += `<div class="row" style="margin-top:8px">${tabs.map(t=>`<button class="btn ${t===key?"pri":""}" data-act="spelltab" data-k="${t}">${TAB_NAME[t]}</button>`).join("")}</div>`;
   h += `<div class="barprev" data-bar="${key}">${bar.map((id,i)=>`<div class="bp ${id?"has":""}" data-slot="${i}" ${id?`data-sid="${id}"`:""} title="${id?esc(AB[id].name):"Empty slot"}">${id?`<img src="${abIconURL(id)}" alt="" draggable="false">`:""}<span>${keyName(KB["bar"+(i+1)])}</span></div>`).join("")}</div>`;
-  const list = barSource(key);
+  const list = barSource(key).slice().sort((x,y)=>AB[x].lvl-AB[y].lvl);
   h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id);
     const meta = [ `level ${a.lvl}`, a.cost ? `${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}` : "", a.cast ? `${a.cast} sec cast` : "instant", a.cd ? `${a.cd} sec cooldown` : "", a.range ? `range ${a.range}` : "" ].filter(Boolean).join(" · ");
     const side = learned ? `<span class="muted" style="font-size:12px;flex:none">${slot>=0 ? `On slot ${keyName(KB["bar"+(slot+1)])}` : "Not on the bar"}</span>` : `<span class="muted" style="font-size:12px;flex:none">${S.level >= a.lvl ? "Learn from your trainer" : `Unlocks at level ${a.lvl}`}</span>`;
