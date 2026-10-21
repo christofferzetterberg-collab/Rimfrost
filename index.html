@@ -563,10 +563,22 @@ const AB = {
     desc:()=>`A surprise strike: ${fmt(pow()*3.0)} damage. Grants 1 combo point.`, run:t=>{slash(t);hit(t,pow()*3.0,"phys","pounce");addCP();}}
 };
 
+// Hunter pets: one at a time. Call Bear (tank) / Call Wolf (damage) take PET_CAST seconds and only work out of combat.
+Object.assign(AB, {
+  callbear:{name:"Call Bear", lvl:5, cost:0, cast:10, range:0, school:"nature", icon:"bear", tgt:"self",
+    desc:()=>`Call a bear to your side (${PET_CAST} sec cast, out of combat only). The bear holds the attention of enemies and growls to taunt them. Only one pet at a time.`,
+    check:()=>petCallCheck("bear"), run:()=>petCall("bear")},
+  mendpet:{name:"Mend Pet", lvl:7, cost:20, cd:12, range:0, school:"nature", icon:"bloom", tgt:"self",
+    desc:()=>`Heals your pet for 40% of its health.`,
+    check:()=>(pet && !pet.dead) ? true : "You have no pet", run:()=>petMend()},
+  callwolf:{name:"Call Wolf", lvl:10, cost:0, cast:10, range:0, school:"nature", icon:"cat", tgt:"self",
+    desc:()=>`Call a wolf to your side (${PET_CAST} sec cast, out of combat only). The wolf fights for you and adds damage. Only one pet at a time.`,
+    check:()=>petCallCheck("wolf"), run:()=>petCall("wolf")}
+});
 const BARS = {
   mage:["fireball","frostbolt","fireblast","frostnova","blizzard","pyroblast","sparkrain","icearmor","meteor"],
   warrior:["heroic","charge","shout","rend","whirlwind","execute","shieldbash","secondwind","quake"],
-  hunter:["steady","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow"],
+  hunter:["steady","firearrow","icearrow","disengage","multishot","aimed","poison","snare","stormarrow","callbear","mendpet","callwolf"],
   priest:["smite","heal","swp","pws","mindblast","holynova","renew","darkpulse","judgment"],
   druid:["wrath","touch","moonfire","rejuv","roots","starfire","hurricane","bark","bloom","bear","cat","leopard"],
   druid_bear:["maul","swipe","frenzy","bash","roar","bear","cat","leopard"],
@@ -1459,7 +1471,7 @@ function makeMob(type, tx, ty, lvl){
     atkT:0, wanderT:rand(1,4), wx:null, wy:null, specT:d.special?d.special.every:0, tele:null, dead:false, respawn:0, fx:1, flash:0, swing:0, evading:false, ph:Math.random()*6};
   m.hp = m.maxHp; return m;
 }
-function respawnMob(m){ Object.assign(m, {dead:false, hp:m.maxHp, x:m.hx, y:m.hy, state:"idle", dots:[], slowT:0, rootT:0, stunT:0, tele:null, evading:false}); }
+function respawnMob(m){ Object.assign(m, {thMe:0, thPet:0, tauntT:0, dead:false, hp:m.maxHp, x:m.hx, y:m.hy, state:"idle", dots:[], slowT:0, rootT:0, stunT:0, tele:null, evading:false}); }
 
 // ======================= STATS =======================
 function resType(){ return P.form==="bear"?"rage" : P.form==="cat"?"energy" : CLASSES[S.cls].res; }
@@ -1571,6 +1583,7 @@ function damageMob(m, amt, crit, school){
   if(m.dead) return;
   if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school]); return; }
   m.hp -= amt; m.flash = 0.12; anchor(m); coopThreat(m, amt);
+  if(!coopMob(m) && pet){ if(PET_ATK) m.thPet = (m.thPet||0) + amt*PETS[pet.kind].threat; else m.thMe = (m.thMe||0) + amt*(pet.dead ? 1 : PETS[pet.kind].ownerThreat); }
   floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit);
   engage(m);
   if(m.hp <= 0) killMob(m);
@@ -1615,7 +1628,7 @@ function killMob(m){
   m.dead = true; m.hp = 0; m.dots = []; m.tele = null; m.state = "idle"; mobSnd(m, "death");
   m.respawn = m.def.dg ? 1e9 : m.def.boss ? 600 : m.elite ? 360 : 180;
   if(P.target === m) P.target = null;
-  const n = coopKillShare(m); m.threat = null;   // in co-op: everyone nearby shares the kill
+  const n = coopKillShare(m); m.threat = null; m.thMe = m.thPet = 0; m.tauntT = 0;   // in co-op: everyone nearby shares the kill
   if(n > 0) killRewards(m, n); else if(m.def.dg) dungeonKill(m);   // host outside the dungeon: still record the progress
 }
 function killRewards(m, share){
@@ -1679,7 +1692,7 @@ function reviveOld(){
   showBanner(sp.name, "You have been resurrected", 2.5);
   save(true);
 }
-function evade(m){ if(coopGuestMob(m)) return; m.threat = null; m.state = "return"; m.evading = true; m.dots = []; m.tele = null; }
+function evade(m){ if(coopGuestMob(m)) return; m.threat = null; m.thMe = m.thPet = 0; m.tauntT = 0; m.state = "return"; m.evading = true; m.dots = []; m.tele = null; }
 
 // ---- abilities
 function tryUse(id){
@@ -1883,6 +1896,7 @@ function update(dt){
   time += dt;
   updPlayer(dt);
   for(const m of mobs) updMob(m, dt);
+  updPet(dt);
   // separation between chasing mobs
   const act = mobs.filter(m=>!m.dead && m.state==="chase");
   for(let i=0;i<act.length;i++) for(let j=i+1;j<act.length;j++){ const a=act[i], b=act[j], d=dist(a,b), min=a.r+b.r; if(d<min && d>0.01){ const push=(min-d)/2, ux=(a.x-b.x)/d, uy=(a.y-b.y)/d; moveEnt(a, ux*push, uy*push); moveEnt(b, -ux*push, -uy*push); } }
@@ -1962,7 +1976,7 @@ function updMob(m, dt){
   m.flash = Math.max(0, m.flash-dt); m.swing = Math.max(0, m.swing-dt); if(m.act) m.act.t += dt;
   for(const d of m.dots){ d.tick -= dt; if(d.tick <= 0){ d.tick += 1; d.left -= 1; COOP_ATK = d.owner || null; damageMob(m, Math.max(1, Math.round(d.per)), false, d.school); COOP_ATK = null; if(m.dead) return; } }
   m.dots = m.dots.filter(d=>d.left>0);
-  m.slowT = Math.max(0, m.slowT-dt); m.rootT = Math.max(0, m.rootT-dt); m.stunT = Math.max(0, m.stunT-dt);
+  m.slowT = Math.max(0, m.slowT-dt); m.rootT = Math.max(0, m.rootT-dt); m.stunT = Math.max(0, m.stunT-dt); m.tauntT = Math.max(0, (m.tauntT||0)-dt);
   const TG = mobTarget(m), T = TG ? TG.e : null; m.tgtId = TG ? TG.id : null;
   const dp = T ? dist(m, T) : 1e9;
   const spd = m.sp * (m.slowT>0 ? 1-m.slowPct : 1);
@@ -1976,7 +1990,7 @@ function updMob(m, dt){
     if(!T){ evade(m); return; }
     if(m.lx === undefined) anchor(m);
     if(time - m.lastHit > 8 && (Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || dp > 380)){ evade(m); log(`${m.name} gives up and returns.`, "#93a4ad"); return; }
-    if(TG.me) P.combatT = Math.max(P.combatT, 2);
+    if(TG.me || TG.pet) P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
       if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; for(const c of mobCands(m)) if(Math.hypot(c.e.x-m.tele.x, c.e.y-m.tele.y) < m.tele.r + 11) mobAttack(m, c, m.dmg*sp.mult, null); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
@@ -1999,6 +2013,59 @@ function updMob(m, dt){
   }
 }
 
+
+// ======================= HUNTER PETS =======================
+// One pet at a time. Bear = tank (hits and Growl draw aggro), Wolf = damage. Called with a long cast, out of combat only.
+const PET_CAST = 10;                       // seconds to call a pet
+const GROWL_CD = 8, GROWL_TAUNT = 5;       // bear taunt: cooldown / how long enemies are forced onto the bear
+// hp = pet health as a share of your max health, taken = share of incoming damage the pet takes, coef = attack power per hit,
+// atk = seconds between hits, threat = aggro generated per damage the pet deals, ownerThreat = how much of YOUR damage counts as aggro while this pet is out
+const PETS = {
+  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.6, taken:0.7, coef:0.18, atk:2.0, threat:6,   ownerThreat:0.6},
+  wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.33, atk:1.5, threat:0.5, ownerThreat:1}
+};
+let pet = null, PET_ATK = false;
+function petFight(){ const dg = P.inDungeon||null; return P.combatT > 0 || mobs.some(m=>!m.dead && m.state==="chase" && (m.def.dg||null)===dg && dist(m,P) < 900); }
+function petMake(kind){ const d = PETS[kind], mh = Math.round(P.maxHp*d.hp);
+  return {kind, name:d.name, type:d.type, def:{color:d.color, shape:d.shape}, r:d.r, x:P.x-26*(P.fx||1), y:P.y+10, fx:P.fx||1, ph:Math.random()*6.28, hp:mh, maxHp:mh, dead:false,
+    walk:false, swing:0, flash:0, rootT:0, slowT:0, stunT:0, state:"follow", atkT:1, growl:3, dg:P.inDungeon||null, lvl:S.level, _S:S}; }
+function petCallCheck(kind){ if(coopOn()) return "Pets are not available in co-op yet"; if(petFight()) return "You cannot call a pet in combat";
+  if(pet && !pet.dead && pet.kind===kind) return `Your ${PETS[kind].name.toLowerCase()} is already with you`; return true; }
+function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a pet right now");
+  S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
+function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
+function petDamage(raw, src){ if(!pet || pet.dead) return; const amt = Math.max(1, Math.round(raw*PETS[pet.kind].taken));
+  pet.hp -= amt; pet.flash = 0.12; floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
+  if(pet.hp <= 0){ pet.hp = 0; pet.dead = true; log(`Your ${pet.name.toLowerCase()} has fallen. Call it again when the fight is over.`, "#ff8a7a"); for(const m of mobs) if(m.tgtId === "pet") m.tgtId = null; } }
+function updPet(dt){
+  if(!running || !P || !S) return;
+  if(S.cls !== "hunter" || coopOn()){ pet = null; return; }
+  if(pet && pet._S !== S) pet = null;
+  if(!pet){ if(S.petType && PETS[S.petType] && !P.dead) pet = petMake(S.petType); if(!pet) return; }
+  const d = PETS[pet.kind], dg = P.inDungeon||null;
+  { const mh = Math.round(P.maxHp*d.hp); if(mh !== pet.maxHp){ pet.hp = Math.min(mh, pet.hp*mh/pet.maxHp); pet.maxHp = mh; } }
+  pet.lvl = S.level; pet.flash = Math.max(0, pet.flash-dt); pet.swing = Math.max(0, pet.swing-dt); pet.atkT -= dt; pet.growl = Math.max(0, pet.growl-dt);
+  if(pet.dg !== dg || dist(pet,P) > 900){ pet.dg = dg; pet.x = P.x - 26*(P.fx||1); pet.y = P.y + 10; pet.path = null; }
+  if(pet.dead) return;
+  const fight = petFight();
+  if(!fight) pet.hp = Math.min(pet.maxHp, pet.hp + pet.maxHp*0.08*dt);
+  // who to fight: what you are attacking, otherwise the nearest enemy that is after you
+  let t = (P.target && !P.target.dead && !P.target.evading && P.combatT > 0 && (P.target.def.dg||null)===dg && dist(P.target,P) < 600) ? P.target : null;
+  if(!t){ let bd = 420; for(const m of mobs){ if(m.dead || m.evading || m.state!=="chase" || (m.def.dg||null)!==dg) continue; const dd = dist(m,P); if(dd < bd){ bd = dd; t = m; } } }
+  if(pet.kind==="bear" && pet.growl <= 0 && t){
+    const near = mobs.filter(m=>!m.dead && !m.evading && m.state==="chase" && (m.def.dg||null)===dg && dist(m,pet) < 170);
+    if(near.length){ pet.growl = GROWL_CD; for(const m of near){ m.tauntT = GROWL_TAUNT; m.thPet = Math.max(m.thPet||0, (m.thMe||0)*1.3 + 40); }
+      floatText(pet.x, pet.y-pet.r-30, "Growl!", "#e6bd5c", true); ring(pet.x, pet.y, 60, "#e6bd5c"); pet.swing = 0.25; } }
+  pet.walk = false; pet.state = t ? "chase" : "follow";
+  if(t){
+    const reach = pet.r + t.r + 12;
+    if(dist(pet,t) > reach){ steer(pet, t.x, t.y, dt, d.sp); pet.walk = true; }
+    else { pet.fx = t.x < pet.x ? -1 : 1;
+      if(pet.atkT <= 0){ pet.atkT = d.atk; pet.swing = 0.2;
+        const amt = Math.max(1, Math.round(pow()*d.coef*genMult()*rand(0.92,1.08)*lvlPenalty(t)));
+        PET_ATK = true; try{ damageMob(t, amt, false, "phys"); } finally{ PET_ATK = false; } } }
+  } else if(dist(pet,P) > 70){ steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, dist(pet,P) > 200 ? d.sp*1.3 : d.sp); pet.walk = true; }
+}
 // ---- effects
 function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, big}); }
 function burst(x, y, color, n){ const el = fxEl(color); if(el) sfx("explo", el, x, y, 30+n*2.2, 0.55); for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
@@ -2711,6 +2778,7 @@ function render(){
     if(P.hurt>0){ ctx.fillStyle = `rgba(255,60,60,${P.hurt*2})`; ctx.beginPath(); ctx.arc(P.x, P.y-16, 18, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1; }});
   for(const r of coopVisible()) if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
+  if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)) ents.push({y:pet.y, f:()=>drawMob(ctx, pet)});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
   for(const p of projs){
@@ -2729,6 +2797,9 @@ function render(){
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
     ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.def.boss?" Boss":m.elite?" Elite":""})`, m.x, top-6);
     if(m===P.autoTarget){ const sy = top-26 + Math.sin(time*6)*2; ctx.strokeStyle = "#ff5a4f"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(m.x-7, sy-7); ctx.lineTo(m.x+7, sy+7); ctx.moveTo(m.x+7, sy-7); ctx.lineTo(m.x-7, sy+7); ctx.stroke(); ctx.lineWidth = 1; ctx.lineCap = "butt"; } }
+  if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)){ const CLp = CREATURE_LOOK[pet.type]; const top = pet.y - (CLp ? CREATURES[CLp.c].h*(CLp.s||1) : 30) - 4;
+    ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(pet.x-20, top-2, 40, 5); ctx.fillStyle = "#62d36b"; ctx.fillRect(pet.x-20, top-2, 40*Math.max(0,pet.hp/pet.maxHp), 5);
+    ctx.fillStyle = "#8fe39a"; ctx.fillText(`${pet.name} (${S.level})`, pet.x, top-6); }
   for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-62); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
     const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
   // interaction hint
@@ -2985,7 +3056,8 @@ const CREATURE_LOOK = {
   wolf:{c:"Wolf"}, oldgray:{c:"Wolf", tint:["#ffffff",0.55], s:1.25}, boar:{c:"Boar"}, lynx:{c:"Fox", tint:["#d8b070",0.35], s:1.1},
   shadewolf:{c:"Wolf", tint:["#6a4aa0",0.35]}, rocksvin:{c:"Boar", tint:["#9aa0a8",0.5]}, icebear:{c:"Bear", tint:["#ffffff",0.6], s:1.1},
   jackal:{c:"Fox", tint:["#e0c080",0.4]}, bristle:{c:"Boar", tint:["#2a1a10",0.3]}, hound:{c:"Wolf", tint:["#d0441a",0.4], s:1.1},
-  frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}, rat:{c:"Rabbit", tint:["#4a4a50",0.6], s:0.85}, plaguewolf:{c:"Wolf", tint:["#7a9a40",0.4]}, plaguebear:{c:"Bear", tint:["#6a8a40",0.35], s:1.1}
+  frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}, rat:{c:"Rabbit", tint:["#4a4a50",0.6], s:0.85}, plaguewolf:{c:"Wolf", tint:["#7a9a40",0.4]}, plaguebear:{c:"Bear", tint:["#6a8a40",0.35], s:1.1},
+  petbear:{c:"Bear", s:1.0}, petwolf:{c:"Wolf", tint:["#e6d3a8",0.3]}
 };
 const CSHEETS = {};
 function creatureSheet(c, file, tint){
@@ -3852,7 +3924,7 @@ $("atkbtn").addEventListener("click", ()=>startAttack());
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null}; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
@@ -4016,12 +4088,16 @@ function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(); 
   m.threat = m.threat || {}; m.threat[id] = (m.threat[id]||0) + amt*(tank ? 2 : 1); }
 function mobCands(m){ const L = [], dg = m.def.dg || null;
   if(!P.dead && (!coopMob(m) || (P.inDungeon||null) === dg)) L.push({id:coopMyId(), e:P, me:true});
+  if(pet && !pet.dead && !coopMob(m) && pet.dg === dg) L.push({id:"pet", e:pet, me:false, pet:true});   // hunter pet
   if(coopMob(m)) for(const r of Object.values(COOP.remotes)) if(!r.dead && !r.ghost && (r.dg||null) === dg) L.push({id:r.id, e:r, me:false});
   return L; }
 function mobTarget(m){ const L = mobCands(m); if(L.length <= 1) return L[0] || null;
+  { const pc = L.find(c=>c.pet), mc = L.find(c=>c.me);   // you + your pet: highest threat wins (a Growl forces the pet for a few seconds)
+    if(pc && mc && !m.threat){ if(m.tauntT > 0) return pc; const tm = m.thMe||0, tp = m.thPet||0;
+      if(tm || tp){ if(m.tgtId === "pet") return tm > tp*1.1 ? mc : pc; return tp > tm*1.1 ? pc : mc; } } }
   if(m.threat){ let best = null, bv = 0; for(const c of L){ const v = m.threat[c.id]||0; if(v > bv && dist(m, c.e) < 700){ bv = v; best = c; } } if(best) return best; }
   let best = null, bd = 1e9; for(const c of L){ const d = dist(m, c.e); if(d < bd){ bd = d; best = c; } } return best; }
-function mobAttack(m, c, dmg, kind){ if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
+function mobAttack(m, c, dmg, kind){ if(c.pet) petDamage(dmg, m); else if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
 function coopOp(op, m, a){ coopBroadcast({t:"op", op, nid:m.nid, a, from:coopMyId()}); }
 function coopHostOp(d){ const m = coopMobByNid(d.nid); if(!m || m.dead) return; const a = d.a || []; COOP_ATK = d.from;
   try{ if(d.op==="dmg") damageMob(m, a[0], a[1], a[2]); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
@@ -4205,6 +4281,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   const SCEN = {n1:["1 normal monster", "wolf", 1], n3:["3 normal monsters", "wolf", 3], e1:["1 elite monster", "oldgray", 1]};
   const scen = sel(Object.entries(SCEN).map(([k,v])=>[k, v[0]]));
   const formSel = sel([["caster","Druid: caster"],["bear","Druid: bear"],["cat","Druid: wolf"]]);
+  const petSel = sel([["none","Hunter pet: none"],["bear","Hunter pet: bear"],["wolf","Hunter pet: wolf"]]);
   const resBox = document.createElement("pre"); resBox.style.cssText = "white-space:pre-wrap;margin:4px 0;color:#cfe0e6;font:11px monospace;max-height:160px;overflow:auto";
   let results = []; try{ results = JSON.parse(localStorage.getItem("rimfrost_dev_results")||"[]"); }catch(e){}
   const showRes = ()=>{ resBox.textContent = results.length ? results.map(r=>r.txt).join("\n") : "No tests yet."; };
@@ -4214,11 +4291,13 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     const T0 = testing; if(!T0) return; testing = null; clearInterval(T0.iv); err = T0.err;
     const secs = Math.max(0.1, time - T0.t0), total = T0.mobs.reduce((a,m)=>a+m.maxHp, 0), left = T0.mobs.reduce((a,m)=>a+(m.dead?0:m.hp), 0);
     const kill = outcome==="win", dps = (total-left)/secs, c = CLASSES[S.cls].name;
-    const txt = `${c}${T0.form ? " ("+T0.form+")" : ""} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%${T0.mana ? " | mana left "+Math.round(P.mana/P.maxMana*100)+"%"+(T0.oom!=null ? " (empty at "+T0.oom.toFixed(0)+"s)" : "") : ""}`;
+    const petTxt = T0.pet ? ` | pet ${pet && !pet.dead ? Math.round(pet.hp/pet.maxHp*100)+"% hp" : "DIED"}` : "";
+    const txt = `${c}${T0.form ? " ("+T0.form+")" : ""}${T0.pet ? " +"+T0.pet : ""} L${S.level} | ${SCEN[T0.sc][0]} | ${kill ? "won in "+secs.toFixed(1)+"s" : outcome==="dead" ? "DIED after "+secs.toFixed(1)+"s ("+Math.round(left/total*100)+"% monster hp left)" : "TIMEOUT ("+Math.round(left/total*100)+"% left)"} | dps ${dps.toFixed(0)} | hp lost ${Math.round(T0.lost/P.maxHp*100)}% | lowest hp ${Math.round(T0.minHp*100)}% | healed ${Math.round(T0.healed/P.maxHp*100)}%${petTxt}${T0.mana ? " | mana left "+Math.round(P.mana/P.maxMana*100)+"%"+(T0.oom!=null ? " (empty at "+T0.oom.toFixed(0)+"s)" : "") : ""}`;
     results.push({txt}); if(results.length > 40) results.shift(); saveRes(); console.log("[dev test]", txt);
     mobs = mobs.filter(m=>!m._dev); P.target = null; P.autoTarget = null; projs = []; zones = [];
     if(P.dead){ P.dead = false; P.ghost = false; S.death = null; showSpiritHealers(false); const d = document.getElementById("dead"); if(d) d.hidden = true; }
     if(S.cls==="druid" && P.form) setForm(null);
+    if(pet){ pet.dead = false; pet.hp = pet.maxHp; }
     P.hp = P.maxHp; P.mana = P.maxMana; P.cds = {}; P.gcd = 0; P.shield = 0; P.casting = null; log("[dev] "+txt, "#ffd36b");
   }
   function botTick(){
@@ -4245,6 +4324,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
       const type = resType(); if(P[type] < costOf(id)) return false;
       tryUse(id);
       if(P.gcd > 0 || P.casting || (P.cds[id]||0) > 0){ last[id] = time; return true; } return false; };
+    if(pet && !pet.dead && pet.hp/pet.maxHp < 0.5 && tryOne("mendpet")) return;
     for(const [id, at] of cfg.heal) if(hpf < at && tryOne(id)) return;
     for(const [id, at, gap] of cfg.def) if(hpf < at && tryOne(id, gap)) return;
     for(const [id, key] of cfg.buff) if(!P.buffs[key] && tryOne(id)) return;
@@ -4256,11 +4336,12 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(P.dead) return log("[dev] Revive first.", "#ff8a7a");
     if(nearHub(P.x/TILE, P.y/TILE, 2)) return log("[dev] Walk out of town / camp first - monsters give up at the gates.", "#ff8a7a");
     const [nm, type, n] = SCEN[scen.value], L = Math.max(1, Math.min(MAX_LVL, lv.value|0));
-    setLevel(L); if(S.cls==="druid"){ const f = formSel.value==="caster" ? null : formSel.value; if(P.form !== f) setForm(f); } P.cds = {}; P.gcd = 0; P.shield = 0; P.buffs = {}; P.hp = P.maxHp; P.mana = P.maxMana; if(resType()==="rage") P.rage = 0; if(resType()==="focus") P.focus = 100;
+    setLevel(L); if(S.cls==="hunter"){ if(petSel.value==="none"){ S.petType = null; pet = null; } else { S.petType = petSel.value; pet = petMake(petSel.value); } }
+    if(S.cls==="druid"){ const f = formSel.value==="caster" ? null : formSel.value; if(P.form !== f) setForm(f); } P.cds = {}; P.gcd = 0; P.shield = 0; P.buffs = {}; P.hp = P.maxHp; P.mana = P.maxMana; if(resType()==="rage") P.rage = 0; if(resType()==="focus") P.focus = 100;
     const spots = [[200,0],[-200,0],[0,200],[0,-200],[130,0],[-130,0],[0,130],[0,-130]];
     const sp = spots.find(([dx,dy])=>!collides(P.x+dx, P.y+dy, 12)) || [130,0];
     const ms = []; for(let i=0;i<n;i++){ const m = makeMob(type, 0, 0, L); m.x = m.hx = P.x+sp[0]+(i-(n-1)/2)*26*(sp[0]===0?1:0); m.y = m.hy = P.y+sp[1]+(i-(n-1)/2)*26*(sp[0]===0?0:1); m._dev = true; mobs.push(m); ms.push(m); aggro(m); }
-    testing = {form:P.form, mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err, mana:resType()==="mana", oom:null, lastProg:time, mobHp:ms.reduce((a,m)=>a+m.hp,0), sp:sp};
+    testing = {pet:(pet && !pet.dead) ? pet.kind : null, form:P.form, mobs:ms, sc:scen.value, t0:time, last:P.hp, lost:0, healed:0, minHp:1, used:{}, err:err, mana:resType()==="mana", oom:null, lastProg:time, mobHp:ms.reduce((a,m)=>a+m.hp,0), sp:sp};
     err = ()=>{};   // keep the bot from spamming "not ready" text
     testing.iv = setInterval(botTick, 50);
     log(`[dev] Test started: ${S.cls} L${L} vs ${nm}.`, "#ffd36b");
@@ -4268,6 +4349,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   const sh = document.createElement("div"); sh.textContent = "Balance test (current character)"; sh.style.cssText = "margin-top:8px;font-weight:700;color:#ffd36b"; box.appendChild(sh);
   row(scen, btn("Run", startTest));
   row(formSel);
+  row(petSel);
   row(btn("Copy results", ()=>{ const t = results.map(r=>r.txt).join("\n"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>log("[dev] Results copied.", "#ffd36b")).catch(()=>prompt("Copy:", t)); }), btn("Clear", ()=>{ results = []; saveRes(); }));
   box.appendChild(resBox); showRes();
   const note = document.createElement("div"); note.textContent = "Changes are saved with your character like normal play. Use a test character."; note.style.cssText = "color:#93a4ad;margin-top:6px"; box.appendChild(note);
