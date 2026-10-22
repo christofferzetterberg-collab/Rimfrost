@@ -1,52 +1,67 @@
 # Rimfrost – Roadmap
 
-Bocka av med `[x]` när något är klart. Lägg till nya punkter längst ner i rätt sektion.
+Tick items off with `[x]` when they are done. Add new items at the bottom of the right section.
 
-## Klart
+## Done
 
 ### Co-op
-- [x] Co-op i övervärlden (PeerJS, host + gäst)
-- [x] Co-op i dungeons: gemensam instans, samma seed och nivåer för alla
-- [x] Monster i dungeons delas mellan spelarna (hosten kör dem)
-- [x] Spakar, runor och grindar synkas mellan spelarna
-- [x] Delad kill, XP och loot inne i dungeons
-- [x] Ny spelare går med i pågående dungeon i stället för att nollställa den
-- [x] Co-op i dungeons testat med kompis och fungerar
+- [x] Co-op in the overworld (PeerJS, host + guest)
+- [x] Co-op in dungeons: shared instance, same seed and levels for everyone
+- [x] Monsters in dungeons are shared between players (the host runs them)
+- [x] Levers, runes and gates are synced between players
+- [x] Shared kills, XP and loot inside dungeons
+- [x] A new player joins an ongoing dungeon instead of resetting it
+- [x] Co-op in dungeons tested with a friend and working
 
-### Utvecklingsverktyg
-- [x] Dev-panel (`?dev` i adressen, knappen DEV eller tangenten under Esc)
-- [x] Sätt level, guld, heal, god mode, teleport, gå in i dungeon, ge föremål
-- [x] Balanstest med bot (1 monster, 3 monster, elit) och sparade resultat
-- [x] Balanstest stöder Druid-former (caster, bear, wolf)
+### Developer tools
+- [x] Dev panel (`?dev` in the address, the DEV button or the key below Esc)
+- [x] Set level, gold, heal, god mode, teleport, enter dungeon, give items
+- [x] Balance test with a bot (1 monster, 3 monsters, elite) and saved results
+- [x] Balance test supports Druid forms (caster, bear, wolf)
 
-### Klassbalans
-- [x] Mana: alla kostnader ×0,5
-- [x] All spelarskada ×0,8
-- [x] Skadejusterare per klass (Mage 1,15, Warrior 1,15, Druid 1,10, Paladin 0,70)
-- [x] Warrior rustning 0,85 → 0,80
-- [x] Druid björnform rustning 0,6 → 0,7
-- [x] Klassroller bestämda (se nedan)
+### Class balance
+- [x] Mana: all costs ×0.5
+- [x] All player damage ×0.8
+- [x] Damage modifier per class (Mage 1.15, Warrior 1.15, Druid 1.10, Paladin 0.70)
+- [x] Warrior armor 0.85 → 0.80
+- [x] Druid bear form armor 0.6 → 0.7
+- [x] Class roles decided (see below)
 
-**Roller:** Paladin mycket bra solo · Warrior bra solo (tank) · Druid medel–bra · Hunter medel · Mage svår solo men mycket bra i grupp · Priest medel–svår solo men oumbärlig i grupp
+### Hunter pets
+- [x] Hunter pets (Bear level 5 tank, Wolf level 10 DPS): tested and balanced with the dev test
 
-## Pågår
+### World
+- [x] Line of sight based on terrain: mountains, cliffs, walls, houses, gates, ice walls and big rocks block attacks, spells, heals and monster aggro (trees, water and lava do not)
 
-- [ ] Hunter pets (Bear lvl 5 tank, Wolf lvl 10 dps): testa och balansera med dev-testet
-- [ ] Pets i co-op (just nu avstängt)
+**Roles:** Paladin very good solo · Warrior good solo (tank) · Druid medium–good · Hunter medium · Mage hard solo but very good in a group · Priest medium–hard solo but essential in a group
 
-## Planerat
+## In progress
 
-- [ ] Ny utrustning och nya sprites (pausat tills vidare)
-- [ ] Balansera om efter större ändringar (kör dev-testet igen)
-- [ ] Testa klasserna i grupp (roller i co-op, inte bara solo)
+- [ ] Pets in co-op: built, needs testing with a friend
 
-## Idéer att utreda
+## Planned
 
-- [ ] Fler dungeons eller svårighetsgrader
-- [ ] Bättre krit-balans (stora attacker kan döda ett monster på en träff)
-- [ ] Mage-specifik manahantering (egen identitet)
+- [ ] New equipment and new sprites (paused for now)
+- [ ] Rebalance after bigger changes (run the dev test again)
+- [ ] Test the classes in a group (roles in co-op, not only solo)
 
-## Kända problem
+### Changes
+- [ ] Bigger starting areas, with level 1–2, 3–4 and 4–5 enemies kept in their own parts of the zone instead of mixed together (hard for new characters)
+- [ ] Rewrite the Wing Clip description, and review the descriptions of all skills
+- [ ] Better UI on mobile
 
-- [ ] Gäst som ansluter medan hen är i en dungeon skickas ut ur den (avsiktligt, men kan göras smidigare)
-- [ ] Dungeon stannar om hosten stänger spelet
+### Additions
+- [ ] Bigger world map with more areas
+- [ ] Water only in specific water areas (lakes, rivers), no random water tiles
+- [ ] Trading between players in co-op (items, gear and gold)
+
+## Ideas to investigate
+
+- [ ] More dungeons or difficulty levels
+- [ ] Better crit balance (big attacks can kill a monster in one hit)
+- [ ] Mage-specific mana management (its own identity)
+
+## Known issues
+
+- [ ] A guest who connects while in a dungeon is sent out of it (on purpose, but could be smoother)
+- [ ] The dungeon stops if the host closes the game

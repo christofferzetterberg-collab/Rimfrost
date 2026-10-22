@@ -1333,6 +1333,13 @@ function noise(seed, scale){
 }
 const tileAt = (tx,ty) => (tx<0||ty<0||tx>=MW||ty>=MH) ? T_CLIFF : map[ty*MW+tx];
 const solidAt = (tx,ty) => SOLID.has(tileAt(tx,ty));
+// line of sight: mountains, cliffs, walls, houses, gates, ice walls and big rocks block it (trees, water and lava do not)
+const LOS_BLOCK = new Set([T_CLIFF,T_RCLIFF,T_ICE,T_HOUSE,T_CWALL,T_GATE,T_BOULDER,T_OBSID]);
+function los(a, b){ const ax = a.x, ay = a.y - 12, bx = b.x, by = b.y - 12, d = Math.hypot(bx-ax, by-ay); if(d < 20) return true;
+  const n = Math.ceil(d/8), sx = Math.floor(ax/TILE), sy = Math.floor(ay/TILE), ex = Math.floor(bx/TILE), ey = Math.floor(by/TILE);
+  for(let i=1;i<n;i++){ const t = i/n, tx = Math.floor((ax+(bx-ax)*t)/TILE), ty = Math.floor((ay+(by-ay)*t)/TILE);
+    if((tx===sx && ty===sy) || (tx===ex && ty===ey)) continue; if(LOS_BLOCK.has(tileAt(tx,ty))) return false; }
+  return true; }
 const zoneAtTile = (tx,ty) => zmap[clamp(ty,0,MH-1)*MW+clamp(tx,0,MW-1)];
 const zinfo = z => ZONES[z] || HUBS[z];
 const parentZone = z => ZONES[z] ? z : HUBS[z] ? HUBS[z].zone : z;
@@ -1590,7 +1597,7 @@ function hit(m, base, school, ab){
 function lvlPenalty(m){ const d = m.lvl - S.level; return d > 0 ? Math.max(0.5, 1 - 0.06*d) : 1; }
 function damageMob(m, amt, crit, school){
   if(m.dead) return;
-  if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school]); return; }
+  if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school, PET_ATK ? 1 : 0]); return; }
   m.hp -= amt; m.flash = 0.12; anchor(m); coopThreat(m, amt);
   if(!coopMob(m) && pet){ if(PET_ATK) m.thPet = (m.thPet||0) + amt*PETS[pet.kind].threat; else m.thMe = (m.thMe||0) + amt*(pet.dead ? 1 : PETS[pet.kind].ownerThreat); }
   floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit);
@@ -1608,7 +1615,7 @@ function dot(m, key, total, dur, school, raw, final){
 function slow(m, pct, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("slow", m, [pct, dur]); } engage(m); anchor(m); m.slowPct = Math.max(pct, m.slowT>0?m.slowPct:0); m.slowT = Math.max(m.slowT, dur); }
 function root(m, dur){ if(!m||m.dead||m.def.boss) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("root", m, [dur]); } engage(m); anchor(m); m.rootT = Math.max(m.rootT, dur); }
 function stun(m, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("stun", m, [dur]); } engage(m); anchor(m); m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
-function aoe(x, y, r, fn){ mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,m.y-y)<r+m.r).forEach(fn); }
+function aoe(x, y, r, fn){ const c = {x, y:y+12}; mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,m.y-y)<r+m.r&&los(c,m)).forEach(fn); }
 function zone(x, y, r, dur, dmg, school, ab, slows){ zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
 function proj(t, color, size, onHit, kind, sp){ projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
 function buff(name, dur){ P.buffs[name] = dur; }
@@ -1718,6 +1725,7 @@ function tryUse(id){
     if(!t || t.dead || t.evading){ t = nearestEnemy(a.range + 60); if(!t) return err("You have no target"); setTarget(t); }
     const d = dist(P,t) - t.r;
     if(d > a.range) return err("Too far away");
+    if(!los(P, t)) return err("Target not in line of sight");
     if(a.minRange && d < a.minRange) return err("Too close");
   }
   if(a.check){ const c = a.check(t); if(c !== true) return err(c); }
@@ -1747,7 +1755,7 @@ function completeCast(){
   P.castDone = {label:c.label, t:0.3};
   if(c.kind === "gather") return finishGather(c.node);
   const a = AB[c.id], t = c.t;
-  if(a.tgt==="enemy"){ if(!t || t.dead) return; if(dist(P,t)-t.r > a.range+40) return err("Too far away"); if(a.minRange && dist(P,t)-t.r < a.minRange) return err("Too close"); }
+  if(a.tgt==="enemy"){ if(!t || t.dead) return; if(dist(P,t)-t.r > a.range+40) return err("Too far away"); if(!los(P, t)) return err("Target not in line of sight"); if(a.minRange && dist(P,t)-t.r < a.minRange) return err("Too close"); }
   { const fr = coopFriendRange(c.id); if(fr) return err(fr); }
   const type = resType(), cost = costOf(c.id);
   if(P[type] < cost) return err(`Not enough ${RES_NAME[type].toLowerCase()}`);
@@ -1768,6 +1776,7 @@ function autoAttack(dt){
   if(P.form==="leopard") return;
   if(!ai || !t || t!==P.autoTarget || t.dead || t.evading || P.casting || P.dash || P.autoT>0) return;
   if(dist(P,t) - t.r > ai.range) return;
+  if(!los(P, t)){ err("Target not in line of sight"); return; }
   const mel = !!(ai.minRange && dist(P,t) - t.r < ai.minRange);   // too close to shoot: hunter strikes in melee instead
   P.autoT = mel ? HUNTER_MELEE_SPD : ai.spd; P.swing = 0.2; P.dir = dirOf(t.x-P.x, t.y-P.y);
   if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? (mel ? "slash" : "bow") : "thrust");
@@ -1996,7 +2005,7 @@ function updMob(m, dt){
   const spd = m.sp * (m.slowT>0 ? 1-m.slowPct : 1);
   if(m.state === "idle"){
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.1*dt);
-    if(!m.def.passive && dp < aggroRange(m)){ aggro(m); social(m); return; }
+    if(!m.def.passive && dp < aggroRange(m) && los(m, T)){ aggro(m); social(m); return; }
     m.wanderT -= dt;
     if(m.wanderT <= 0){ m.wanderT = rand(3,7); if(!m.def.boss && m.type!=="leader"){ m.wx = m.hx + rand(-60,60); m.wy = m.hy + rand(-60,60); } }
     if(m.wx !== null){ const dx = m.wx-m.x, dy = m.wy-m.y, d = Math.hypot(dx,dy); if(d < 4) m.wx = null; else { moveEnt(m, dx/d*spd*0.35*dt, dy/d*spd*0.35*dt); m.fx = dx<0?-1:1; m.walk = true; } } else m.walk = false;
@@ -2004,18 +2013,19 @@ function updMob(m, dt){
     if(!T){ evade(m); return; }
     if(m.lx === undefined) anchor(m);
     if(time - m.lastHit > 8 && (Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || dp > 380)){ evade(m); log(`${m.name} gives up and returns.`, "#93a4ad"); return; }
-    if(TG.me || TG.pet) P.combatT = Math.max(P.combatT, 2);
+    if(TG.me || (TG.pet && !TG.owner)) P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
-      if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; for(const c of mobCands(m)) if(Math.hypot(c.e.x-m.tele.x, c.e.y-m.tele.y) < m.tele.r + 11) mobAttack(m, c, m.dmg*sp.mult, null); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
+      if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; for(const c of mobCands(m)) if(Math.hypot(c.e.x-m.tele.x, c.e.y-m.tele.y) < m.tele.r + 11 && los({x:m.tele.x, y:m.tele.y+12}, c.e)) mobAttack(m, c, m.dmg*sp.mult, null); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
       return; }
     if(m.def.special){ m.specT -= dt; if(m.specT <= 0 && dp < 240){ const sp = m.def.special; m.specT = sp.every; m.tele = {x:m.x, y:m.y, r:sp.r, t:sp.windup, max:sp.windup}; floatText(m.x, m.y-m.r-30, sp.name+"!", "#ff8a5a", true); log(`${m.name} is preparing ${sp.name} – get out of the circle!`, "#ff8a5a"); return; } }
     const reach = m.def.ranged || (m.r + 11 + 8);
     m.walk = false;
-    if(dp > reach-4 && m.rootT <= 0) steer(m, T.x, T.y, dt, spd);
+    const seen = los(m, T);
+    if((dp > reach-4 || !seen) && m.rootT <= 0) steer(m, T.x, T.y, dt, spd);
     else m.fx = T.x<m.x?-1:1;
     m.atkT -= dt;
-    if(dp <= reach + 6 && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(T.x-m.x, T.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
+    if(dp <= reach + 6 && seen && m.atkT <= 0){ m.atkT = m.atkSpd; m.swing = 0.2; m.dir = dirOf(T.x-m.x, T.y-m.y); const L = MOB_LOOK[m.type]; if(L) setAct(m, L.cast||m.def.ranged ? "cast" : "slash");
       if(m.def.ranged && TG.me) projs.push({toPlayer:true, x:m.x, y:m.y-16, dmg:m.dmg, src:m, color:"#cfe9ff", size:5, sp:300, bullet:!!(BOSS_LOOK[m.type]&&BOSS_LOOK[m.type].bullet)});
       else if(m.def.ranged) mobAttack(m, TG, m.dmg, "ranged");
       else { mobSnd(m, "attack"); mobAttack(m, TG, m.dmg, "melee"); } }
@@ -2043,9 +2053,9 @@ function petFight(){ const dg = P.inDungeon||null; return P.combatT > 0 || mobs.
 function petMake(kind){ const d = PETS[kind], mh = Math.round(P.maxHp*d.hp);
   return {kind, name:d.name, type:d.type, def:{color:d.color, shape:d.shape}, r:d.r, x:P.x-26*(P.fx||1), y:P.y+10, fx:P.fx||1, ph:Math.random()*6.28, hp:mh, maxHp:mh, dead:false,
     walk:false, swing:0, flash:0, rootT:0, slowT:0, stunT:0, state:"follow", atkT:1, growl:3, res:kind==="wolf" ? 100 : 0, clawT:0, sweepT:0, dg:P.inDungeon||null, lvl:S.level, _S:S}; }
-function petCallCheck(kind){ if(coopOn()) return "Pets are not available in co-op yet"; if(petFight()) return "You cannot call a pet in combat";
+function petCallCheck(kind){ if(petFight()) return "You cannot call a pet in combat";
   if(pet && !pet.dead && pet.kind===kind) return `Your ${PETS[kind].name.toLowerCase()} is already with you`; return true; }
-function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a pet right now");
+function petCall(kind){ if(petFight()) return err("You cannot call a pet right now");
   S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
 function petDismiss(){ if(!pet) return; floatText(pet.x, pet.y-40, PETS[pet.kind].name+" dismissed", "#9fd6e8", true); burst(pet.x, pet.y-10, "#9fd6e8", 10); log(`You dismiss your ${PETS[pet.kind].name.toLowerCase()}.`, "#9fd6e8"); pet = null; S.petType = null; }
 function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
@@ -2056,7 +2066,7 @@ function petStrike(t, coef){ if(!t || t.dead) return; const amt = Math.max(1, Ma
   PET_ATK = true; try{ damageMob(t, amt, false, "phys"); } finally{ PET_ATK = false; } }
 function updPet(dt){
   if(!running || !P || !S) return;
-  if(S.cls !== "hunter" || coopOn()){ pet = null; return; }
+  if(S.cls !== "hunter"){ pet = null; return; }
   if(pet && pet._S !== S) pet = null;
   if(!pet){ if(S.petType && PETS[S.petType] && !P.dead) pet = petMake(S.petType); if(!pet) return; }
   const d = PETS[pet.kind], dg = P.inDungeon||null;
@@ -2071,7 +2081,7 @@ function updPet(dt){
   let t = (P.target && !P.target.dead && !P.target.evading && P.combatT > 0 && (P.target.def.dg||null)===dg && dist(P.target,P) < 600) ? P.target : null;
   if(!t){ let bd = 420; for(const m of mobs){ if(m.dead || m.evading || m.state!=="chase" || (m.def.dg||null)!==dg) continue; const dd = dist(m,P); if(dd < bd){ bd = dd; t = m; } } }
   if(pet.kind==="bear" && pet.growl <= 0 && t && dist(pet,t) < pet.r + t.r + 40){   // Growl: free, only works on what the bear is fighting
-    pet.growl = GROWL_CD; t.tauntT = GROWL_TAUNT; t.thPet = Math.max(t.thPet||0, (t.thMe||0)*1.3 + 40);
+    pet.growl = GROWL_CD; if(coopMob(t)) coopTaunt(t); else { t.tauntT = GROWL_TAUNT; t.thPet = Math.max(t.thPet||0, (t.thMe||0)*1.3 + 40); }
     floatText(pet.x, pet.y-pet.r-30, "Growl!", "#e6bd5c", true); ring(pet.x, pet.y, 40, "#e6bd5c"); pet.swing = 0.25; }
   // Sweep (bear, 40 rage): hits every fighting enemy around the bear and builds aggro on all of them
   if(pet.kind==="bear" && pet.res >= 40 && pet.sweepT <= 0){
@@ -2799,7 +2809,8 @@ function render(){
     if(P.form) drawBeast(ctx, P.x, P.y, P.form, P.fx); else if(!drawLPC(ctx, playerLook(), P.x, P.y, lpcState(P, P.moving), psx, psy)) drawHero(ctx, P.x, P.y, {race:S.race, cls:S.cls, skin:RACES[S.race].skin, hair:RACES[S.race].hair, body:CLASSES[S.cls].color, fx:P.fx, moving:P.moving, swing:P.swing});
     if(P.hurt>0){ ctx.fillStyle = `rgba(255,60,60,${P.hurt*2})`; ctx.beginPath(); ctx.arc(P.x, P.y-16, 18, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1; }});
-  for(const r of coopVisible()) if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
+  for(const r of coopVisible()){ if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
+    const po = r.petObj; if(po && !po.dead && (po.dg||null)===(P.inDungeon||null) && inView(po,90)) ents.push({y:po.y, f:()=>drawRemotePet(ctx, r, po)}); }
   if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)) ents.push({y:pet.y, f:()=>drawMob(ctx, pet)});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
@@ -4073,6 +4084,7 @@ function coopData(c, d){
   if(d.t==="dgreq"){ if(COOP.role==="host") coopHostDgReq(c, d); return; }
   if(d.t==="dgst"){ if(COOP.role==="guest") coopDgEnter(d); return; }
   if(d.t==="dgo"){ if(COOP.role==="host" || (P && P.inDungeon===d.dg)) coopDgRemote(d); return; }
+  if(d.t==="phit"){ if(d.to===coopMyId()) petDamage(d.dmg, coopMobByNid(d.nid)); else if(COOP.role==="host") coopSendTo(d.to, d); return; }
   if(d.t==="hit"){ if(d.to===coopMyId()){ const m = coopMobByNid(d.nid); playerDamage(d.dmg, m, d.kind); } else if(COOP.role==="host") coopSendTo(d.to, d); return; }
   if(d.t==="kill"){ if(d.to && d.to.includes(coopMyId())){ const m = coopMobByNid(d.nid); if(m) killRewards(m, d.n); } return; }
   if(d.t==="mobs"){ if(COOP.role==="guest") coopApplyMobs(d.m); return; }
@@ -4082,12 +4094,19 @@ function coopData(c, d){
   if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); snd("qaccept"); coopRefresh(); }
   Object.assign(r, d, {x:r.x, y:r.y, tx:d.x, ty:d.y, seen:performance.now(), via:c.peer});
   if(Math.hypot(r.tx-r.x, r.ty-r.y) > 400){ r.x = r.tx; r.y = r.ty; }   // teleports and dungeon entries snap
+  coopPetSync(r);
 }
+// a friend's pet: a light copy of their pet that can be drawn, targeted by monsters and hit
+function coopPetSync(r){ const p = r.pet, D = p && PETS[p.k]; if(!D){ r.petObj = null; return; }
+  let o = r.petObj; if(!o || o.kind !== p.k){ o = r.petObj = {kind:p.k, name:D.name, type:D.type, def:{color:D.color, shape:D.shape}, r:D.r, x:p.x, y:p.y, ph:Math.random()*6.28, flash:0, swing:0, rootT:0, slowT:0, stunT:0, state:"follow", owner:r.id}; }
+  if(p.hp < o.hp) o.flash = 0.12; Object.assign(o, {tx:p.x, ty:p.y, hp:p.hp, maxHp:p.mhp, dead:p.dead, fx:p.fx, walk:p.w, swing:p.sw, dg:p.dg});
+  if(Math.hypot(o.tx-o.x, o.ty-o.y) > 400){ o.x = o.tx; o.y = o.ty; } }
 function coopState(){
   const act = P.act && P.act.t < P.act.dur ? {anim:P.act.anim, t:P.act.t, dur:P.act.dur} : null;
   const cast = P.casting ? {kind:P.casting.kind, el:P.casting.el, total:P.casting.total} : null;
   return {t:"st", id:COOP.peer.id, name:S.name, race:S.race, cls:S.cls, lvl:S.level, x:Math.round(P.x), y:Math.round(P.y), dir:P.dir, fx:P.fx, mv:!!P.moving,
-    hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast};
+    hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast,
+    pet: pet ? {k:pet.kind, x:Math.round(pet.x), y:Math.round(pet.y), hp:Math.round(pet.hp), mhp:pet.maxHp, dead:!!pet.dead, fx:pet.fx, w:!!pet.walk, sw:+(pet.swing||0).toFixed(2), dg:pet.dg||null} : null};
 }
 function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; coopBroadcast(coopState()); }
 function coopUpdate(dt){
@@ -4098,6 +4117,7 @@ function coopUpdate(dt){
   for(const [id, r] of Object.entries(COOP.remotes)){
     if(now - r.seen > 8000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
     const k = Math.min(1, dt*12); r.x += (r.tx - r.x)*k; r.y += (r.ty - r.y)*k;
+    const po = r.petObj; if(po){ po.x += (po.tx - po.x)*k; po.y += (po.ty - po.y)*k; po.flash = Math.max(0, po.flash - dt); po.swing = Math.max(0, po.swing - dt); }
     if(r.act) r.act.t += dt;
   }
 }
@@ -4108,28 +4128,38 @@ const coopIsMe = () => !COOP_ATK || COOP_ATK === coopMyId();
 const coopAttacker = () => COOP_ATK || coopMyId();
 const coopMob = m => !!(m && coopOn() && m.nid != null);   // overworld and dungeon monsters are shared; the host runs them
 const coopGuestMob = m => COOP.role==="guest" && coopMob(m);
-function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId(); }
+function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId() || m.tgtId === coopMyId()+":pet"; }
 function coopMobByNid(nid){ if(!COOP.nidMap || COOP.nidMap.n !== mobs.length || COOP.nidMap.g !== MOB_GEN){ COOP.nidMap = {n:mobs.length, g:MOB_GEN}; for(const m of mobs) if(m.nid != null) COOP.nidMap[m.nid] = m; } return COOP.nidMap[nid]; }
 function coopSendTo(id, msg){ const r = COOP.remotes[id]; const c = r && COOP.conns.find(c=>c.peer===r.via); if(c && c.open){ try{ c.send(msg); }catch(e){} } }
-function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(); const r = COOP.remotes[id];
-  const tank = id===coopMyId() ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
-  m.threat = m.threat || {}; m.threat[id] = (m.threat[id]||0) + amt*(tank ? 2 : 1); }
+function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(), mine = id===coopMyId(), r = COOP.remotes[id];
+  const pk = mine ? (pet && !pet.dead ? pet.kind : null) : (r && r.pet && !r.pet.dead ? r.pet.k : null);   // the attacker's pet, if out
+  m.threat = m.threat || {};
+  if(PET_ATK){ const k = id+":pet"; m.threat[k] = (m.threat[k]||0) + amt*(pk ? PETS[pk].threat : 1); return; }
+  const tank = mine ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
+  m.threat[id] = (m.threat[id]||0) + amt*(tank ? 2 : 1)*(pk ? PETS[pk].ownerThreat : 1); }
+// a bear's Growl in co-op: the bear jumps to the top of the threat list for a few seconds
+function coopHostTaunt(m, id){ m.threat = m.threat || {}; const top = Math.max(0, ...Object.values(m.threat)); m.threat[id] = Math.max(m.threat[id]||0, top*1.3 + 40); m.tauntT = GROWL_TAUNT; m.tauntId = id;
+  if(m.state==="idle"){ aggro(m); social(m); } }
+function coopTaunt(m){ if(COOP.role==="guest") coopOp("taunt", m, []); else coopHostTaunt(m, coopMyId()+":pet"); }
 function mobCands(m){ const L = [], dg = m.def.dg || null;
   if(!P.dead && (!coopMob(m) || (P.inDungeon||null) === dg)) L.push({id:coopMyId(), e:P, me:true});
-  if(pet && !pet.dead && !coopMob(m) && pet.dg === dg) L.push({id:"pet", e:pet, me:false, pet:true});   // hunter pet
-  if(coopMob(m)) for(const r of Object.values(COOP.remotes)) if(!r.dead && !r.ghost && (r.dg||null) === dg) L.push({id:r.id, e:r, me:false});
+  if(pet && !pet.dead && pet.dg === dg) L.push(coopMob(m) ? {id:coopMyId()+":pet", e:pet, me:false, pet:true, mine:true} : {id:"pet", e:pet, me:false, pet:true});   // hunter pet
+  if(coopMob(m)) for(const r of Object.values(COOP.remotes)){
+    if(!r.dead && !r.ghost && (r.dg||null) === dg) L.push({id:r.id, e:r, me:false});
+    const po = r.petObj; if(po && !po.dead && (po.dg||null) === dg) L.push({id:r.id+":pet", e:po, me:false, pet:true, owner:r.id}); }   // a friend's pet
   return L; }
 function mobTarget(m){ const L = mobCands(m); if(L.length <= 1) return L[0] || null;
   { const pc = L.find(c=>c.pet), mc = L.find(c=>c.me);   // you + your pet: highest threat wins (a Growl forces the pet for a few seconds)
-    if(pc && mc && !m.threat){ if(m.tauntT > 0) return pc; const tm = m.thMe||0, tp = m.thPet||0;
+    if(pc && mc && !m.threat && !coopMob(m)){ if(m.tauntT > 0) return pc; const tm = m.thMe||0, tp = m.thPet||0;
       if(tm || tp){ if(m.tgtId === "pet") return tm > tp*1.1 ? mc : pc; return tp > tm*1.1 ? pc : mc; } } }
+  if(m.tauntT > 0 && m.tauntId){ const c = L.find(c=>c.id===m.tauntId); if(c) return c; }
   if(m.threat){ let best = null, bv = 0; for(const c of L){ const v = m.threat[c.id]||0; if(v > bv && dist(m, c.e) < 700){ bv = v; best = c; } } if(best) return best; }
   let best = null, bd = 1e9; for(const c of L){ const d = dist(m, c.e); if(d < bd){ bd = d; best = c; } } return best; }
-function mobAttack(m, c, dmg, kind){ if(c.pet) petDamage(dmg, m); else if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
+function mobAttack(m, c, dmg, kind){ if(c.pet && c.owner) coopSendTo(c.owner, {t:"phit", to:c.owner, nid:m.nid, dmg}); else if(c.pet) petDamage(dmg, m); else if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
 function coopOp(op, m, a){ coopBroadcast({t:"op", op, nid:m.nid, a, from:coopMyId()}); }
 function coopHostOp(d){ const m = coopMobByNid(d.nid); if(!m || m.dead) return; const a = d.a || []; COOP_ATK = d.from;
-  try{ if(d.op==="dmg") damageMob(m, a[0], a[1], a[2]); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
-  finally{ COOP_ATK = null; } }
+  try{ if(d.op==="dmg"){ PET_ATK = !!a[3]; damageMob(m, a[0], a[1], a[2]); PET_ATK = false; } else if(d.op==="taunt") coopHostTaunt(m, d.from+":pet"); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
+  finally{ COOP_ATK = null; PET_ATK = false; } }
 // who shares a kill: everyone alive within reach in the open world. Returns the host's own share count (0 = the host gets nothing).
 function coopKillShare(m){ if(!coopMob(m) || COOP.role!=="host") return 1;
   const dg = m.def.dg || null;   // in a dungeon everybody inside shares the kill; in the open world everybody within reach
@@ -4166,7 +4196,7 @@ let COOP_CAP = null;   // while set, heals/HoTs/shields are collected to be sent
 const FRIENDLY = new Set(["heal","renew","pws","palheal","touch","rejuv","bloom"]);
 function coopFriendSel(){ const r = coopOn() && P.ftarget && COOP.remotes[P.ftarget]; return r && !r.dead && (r.dg||null) === (P.inDungeon||null) ? r : null; }
 function coopFriendTarget(id){ return FRIENDLY.has(id) ? coopFriendSel() : null; }
-function coopFriendRange(id){ const r = coopFriendTarget(id); return r && Math.hypot(r.x-P.x, r.y-P.y) > 330 ? `${r.name} is too far away` : null; }
+function coopFriendRange(id){ const r = coopFriendTarget(id); return !r ? null : Math.hypot(r.x-P.x, r.y-P.y) > 330 ? `${r.name} is too far away` : !los(P, r) ? `${r.name} is not in line of sight` : null; }
 function coopCastOn(r, a, t){ COOP_CAP = {scale:(r.mhp||P.maxHp)/P.maxHp, fx:[]}; try{ a.run(t); } finally{ const cap = COOP_CAP; COOP_CAP = null; coopSendFx(r, cap.fx, a.name); }
   burst(r.x, r.y-10, SCHOOL_COLOR[a.school]||"#fff", 12); }
 function coopSendFx(r, fx, label){ if(!fx.length) return; const msg = {t:"fx", to:r.id, from:S.name, label, fx};
@@ -4196,6 +4226,10 @@ function coopPartyHUD(){
   el.innerHTML = rs.map(r=>{ const pct = Math.max(0, Math.min(1, r.hp/(r.mhp||1))); return `<div class="pmem ${P.ftarget===r.id?"sel":""}" data-pid="${r.id}" title="Click to select – your heals then go to ${esc(r.name)}"><div class="pn"><b style="color:${CLASSES[r.cls]?.color||"#fff"}">${esc(r.name)}</b><span>${r.dead?"Dead":r.dg?"In a dungeon":"Level "+r.lvl}</span></div><div class="bar"><i style="width:${pct*100}%;background:${r.dead?"#555":"#4fd06a"}"></i><b>${Math.round(r.hp)} / ${r.mhp}</b></div></div>`; }).join("");
 }
 function coopVisible(){ return Object.values(COOP.remotes).filter(r=>(r.dg||null) === (P.inDungeon||null)); }
+function drawRemotePet(c, r, po){ drawMob(c, po);
+  const top = po.y - 34; c.textAlign = "center"; c.font = "700 11px 'Alegreya Sans', sans-serif"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,.8)";
+  const label = `${r.name}'s ${po.name}`; c.strokeText(label, po.x, top-6); c.fillStyle = "#7fc4ff"; c.fillText(label, po.x, top-6);
+  c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(po.x-20, top-2, 40, 5); c.fillStyle = "#62d36b"; c.fillRect(po.x-20, top-2, 40*Math.max(0, Math.min(1, po.hp/(po.maxHp||1))), 5); c.lineWidth = 1; }
 function drawRemote(c, r){
   if(P.ftarget === r.id){ c.strokeStyle = "rgba(127,196,255,.9)"; c.lineWidth = 2; c.beginPath(); c.ellipse(r.x, r.y+2, 18, 8, 0, 0, 7); c.stroke(); c.lineWidth = 1; }
   c.globalAlpha = r.ghost ? 0.5 : r.dead ? 0.35 : 1;
