@@ -1480,9 +1480,14 @@ function spawnAll(){
   spawnDungeons();
 }
 
+// running speed when a monster chases you (you run at 150): light and four-legged monsters are fast, heavy and armored ones slower,
+// but never so slow that they are trivial to kite
+const CHASE_BASE = {wolf:138, critter:140, spider:134, humanoid:126, ghoul:128, wisp:122, boar:122, troll:117, draug:114, golem:110};
+function chaseSpeed(d){ let v = (CHASE_BASE[d.shape] || 124) + ((d.sp||90) - 90)*0.6; if(d.boss) v *= 0.93; else if(d.elite) v *= 0.97; return Math.round(clamp(v, 105, 145)); }
+function playerSpeed(){ return 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1); }
 function makeMob(type, tx, ty, lvl){
   const d = MOBS[type], el = d.elite||1;
-  const m = {type, def:d, name:d.name, lvl, elite:!!d.elite, x:tx*TILE+16, y:ty*TILE+16, hx:tx*TILE+16, hy:ty*TILE+16, r:d.r, sp:d.sp,
+  const m = {type, def:d, name:d.name, lvl, elite:!!d.elite, x:tx*TILE+16, y:ty*TILE+16, hx:tx*TILE+16, hy:ty*TILE+16, r:d.r, sp:d.sp, csp:chaseSpeed(d),
     maxHp:Math.round((30+lvl*18)*el*(d.hpm||1)), dmg:(3+lvl*2.4)*(d.elite?1.25:1)*(d.passive?0.6:1)*(d.dmm||1), atkSpd:d.boss?2.2:2.0, state:"idle", dots:[], slowT:0, slowPct:0, rootT:0, stunT:0,
     atkT:0, wanderT:rand(1,4), wx:null, wy:null, specT:d.special?d.special.every:0, tele:null, dead:false, respawn:0, fx:1, flash:0, swing:0, evading:false, ph:Math.random()*6};
   m.hp = m.maxHp; return m;
@@ -1973,7 +1978,7 @@ function updPlayer(dt){
   } else if(P.leap){ moveEnt(P, P.leap.vx*dt, P.leap.vy*dt); P.leap.t -= dt; P.moving = true; if(P.leap.t <= 0) P.leap = null; }
   else if(il > 0.05){
     if(P.casting) cancelCast(P.casting.kind==="spell" ? "Interrupted – you moved" : null);
-    const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
+    const sp = playerSpeed();
     moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true; P.lastMv = {x:ix/il, y:iy/il};
   }
   if(P.casting && P.casting.kind==="spell"){ const _a = AB[P.casting.id], _t = P.casting.t; if(_a && _a.minRange && _t && !_t.dead && dist(P,_t)-_t.r < _a.minRange) cancelCast("Too close"); }
@@ -2002,7 +2007,7 @@ function updMob(m, dt){
   m.slowT = Math.max(0, m.slowT-dt); m.rootT = Math.max(0, m.rootT-dt); m.stunT = Math.max(0, m.stunT-dt); m.tauntT = Math.max(0, (m.tauntT||0)-dt);
   const TG = mobTarget(m), T = TG ? TG.e : null; m.tgtId = TG ? TG.id : null;
   const dp = T ? dist(m, T) : 1e9;
-  const spd = m.sp * (m.slowT>0 ? 1-m.slowPct : 1);
+  const spd = (m.state==="chase" ? (m.csp || m.sp) : m.sp) * (m.slowT>0 ? 1-m.slowPct : 1);
   if(m.state === "idle"){
     m.hp = Math.min(m.maxHp, m.hp + m.maxHp*0.1*dt);
     if(!m.def.passive && dp < aggroRange(m) && los(m, T)){ aggro(m); social(m); return; }
@@ -2045,7 +2050,7 @@ const GROWL_CD = 12, GROWL_TAUNT = 3;       // bear taunt: cooldown / how long e
 // hp = pet health as a share of your max health, taken = share of incoming damage the pet takes, coef = attack power per hit,
 // atk = seconds between hits, threat = aggro generated per damage the pet deals, ownerThreat = how much of YOUR damage counts as aggro while this pet is out
 const PETS = {
-  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:105, hp:1.2, taken:0.85, coef:0.18, atk:2.0, threat:4,   ownerThreat:0.8},
+  bear:{name:"Bear", type:"petbear", color:"#7a5230", shape:"boar", r:14, sp:125, hp:1.2, taken:0.85, coef:0.18, atk:2.0, threat:4,   ownerThreat:0.8},
   wolf:{name:"Wolf", type:"petwolf", color:"#8b9196", shape:"wolf", r:12, sp:135, hp:0.8, taken:1.0, coef:0.20, atk:1.1, threat:0.5, ownerThreat:1}
 };
 let pet = null, PET_ATK = false;
@@ -2096,7 +2101,7 @@ function updPet(dt){
         petStrike(t, d.coef); if(pet.kind==="bear") pet.res = Math.min(100, pet.res + 8); }
       // Claw (wolf, 40 energy): an extra hit on top of the normal attacks
       if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); petStrike(t, 0.55); } }
-  } else if(dist(pet,P) > 70){ steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, dist(pet,P) > 200 ? d.sp*1.3 : d.sp); pet.walk = true; }
+  } else if(dist(pet,P) > 70){ steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, playerSpeed() * (dist(pet,P) > 200 ? 1.3 : 1)); pet.walk = true; }
 }
 // ---- effects
 function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, big}); }

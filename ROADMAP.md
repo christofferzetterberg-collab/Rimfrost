@@ -29,9 +29,11 @@ Tick items off with `[x]` when they are done. Add new items at the bottom of the
 
 ### Hunter pets
 - [x] Hunter pets (Bear level 5 tank, Wolf level 10 DPS): tested and balanced with the dev test
+- [x] Pets follow at your running speed (and catch up when far behind); in combat Bear 125, Wolf 135
 
 ### World
 - [x] Line of sight based on terrain: mountains, cliffs, walls, houses, gates, ice walls and big rocks block attacks, spells, heals and monster aggro (trees, water and lava do not)
+- [x] Monster chase speed by type: light/four-legged monsters fast (up to 145), heavy/armored slower (down to 105); you run at 150
 
 **Roles:** Paladin very good solo · Warrior good solo (tank) · Druid medium–good · Hunter medium · Mage hard solo but very good in a group · Priest medium–hard solo but essential in a group
 
