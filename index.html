@@ -56,7 +56,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 
 /* minimap + tracker */
 #side{top:calc(10px + env(safe-area-inset-top,0px));right:max(10px,env(safe-area-inset-right,0px));width:172px;display:flex;flex-direction:column;gap:8px}
-#mmwrap{background:rgba(21,28,34,.92);border:1px solid var(--line);border-radius:6px;padding:6px}
+#mmwrap{pointer-events:auto;cursor:pointer;background:rgba(21,28,34,.92);border:1px solid var(--line);border-radius:6px;padding:6px}
 #mm{display:block;width:160px;height:107px;border-radius:3px;image-rendering:pixelated}
 #zone{font-family:var(--display);font-size:13px;text-align:center;margin-top:4px;color:var(--frost)}
 #gold{font-size:13px;text-align:center;color:var(--coin);font-weight:700}
@@ -2054,15 +2054,16 @@ function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a
   S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
 function petDismiss(){ if(!pet) return; floatText(pet.x, pet.y-40, PETS[pet.kind].name+" dismissed", "#9fd6e8", true); burst(pet.x, pet.y-10, "#9fd6e8", 10); log(`You dismiss your ${PETS[pet.kind].name.toLowerCase()}.`, "#9fd6e8"); pet = null; S.petType = null; }
 // pet commands: attack your target, or press again to recall it (it then holds until the fight is over or you send it in again)
+function petSpd(){ return 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs && P.buffs.dash?1.7:1); }   // same as the player's run speed
 function petToggleAttack(){
   if(!pet) return err("You have no pet"); if(pet.dead) return err("Your pet is dead");
-  if(pet.cmd && !pet.cmd.dead){ pet.cmd = null; pet.hold = true; floatText(pet.x, pet.y-pet.r-30, "Recalled", "#9fd6e8"); return; }
+  if(pet.cur && !pet.cur.dead){ pet.cmd = null; pet.cur = null; pet.hold = true; floatText(pet.x, pet.y-pet.r-30, "Recalled", "#9fd6e8"); return; }
   const t = P.target; if(!t || t.dead || t.evading) return err("No target");
   if((t.def.dg||null) !== (P.inDungeon||null)) return err("No target");
   pet.cmd = t; pet.hold = false; floatText(pet.x, pet.y-pet.r-30, "Attack!", "#e6bd5c", true);
 }
 function petBarUpd(){ const el = $("petbar"); if(!el) return; const show = !!(pet && !pet.dead && S && S.cls==="hunter" && !coopOn()); if(el.hidden === show) el.hidden = !show; if(!show) return;
-  const b = $("petatk"), on = !!(pet.cmd && !pet.cmd.dead), txt = (on ? "Pet: Recall" : "Pet: Attack") + " [" + keyName(KB.petAtk) + "]"; if(b.textContent !== txt) b.textContent = txt; b.classList.toggle("on", on); }
+  const b = $("petatk"), on = !!(pet.cur && !pet.cur.dead), txt = (on ? "Pet: Recall" : "Pet: Attack") + " [" + keyName(KB.petAtk) + "]"; if(b.textContent !== txt) b.textContent = txt; b.classList.toggle("on", on); }
 function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
 function petDamage(raw, src){ if(!pet || pet.dead) return; const amt = Math.max(1, Math.round(raw*PETS[pet.kind].taken));
   pet.hp -= amt; pet.flash = 0.12; if(pet.kind==="bear") pet.res = Math.min(100, pet.res+5); floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
@@ -2078,7 +2079,7 @@ function updPet(dt){
   { const mh = Math.round(P.maxHp*d.hp); if(mh !== pet.maxHp){ pet.hp = Math.min(mh, pet.hp*mh/pet.maxHp); pet.maxHp = mh; } }
   pet.lvl = S.level; pet.flash = Math.max(0, pet.flash-dt); pet.swing = Math.max(0, pet.swing-dt); pet.atkT -= dt; pet.growl = Math.max(0, pet.growl-dt); pet.clawT = Math.max(0, pet.clawT-dt); pet.sweepT = Math.max(0, pet.sweepT-dt);
   if(pet.dg !== dg || dist(pet,P) > 900){ pet.dg = dg; pet.x = P.x - 26*(P.fx||1); pet.y = P.y + 10; pet.path = null; }
-  if(pet.dead) return;
+  if(pet.dead){ pet.cur = null; return; }
   petBarUpd();
   const fight = petFight();
   if(pet.hold && !fight) pet.hold = false;
@@ -2098,16 +2099,17 @@ function updPet(dt){
   if(pet.kind==="bear" && pet.res >= 40 && pet.sweepT <= 0){
     const near = mobs.filter(m=>!m.dead && !m.evading && m.state==="chase" && (m.def.dg||null)===dg && dist(m,pet) < 90);
     if(near.length >= 2){ pet.res -= 40; pet.sweepT = 1.5; pet.swing = 0.25; ring(pet.x, pet.y, 50, "#d84a42"); floatText(pet.x, pet.y-pet.r-30, "Sweep", "#ff8a7a"); for(const m of near) petStrike(m, 0.5); } }
+  pet.cur = t || null;   // what the pet is fighting right now (also drives the Recall button)
   pet.walk = false; pet.state = t ? "chase" : "follow";
   if(t){
     const reach = pet.r + t.r + 12;
-    if(dist(pet,t) > reach){ steer(pet, t.x, t.y, dt, d.sp); pet.walk = true; }
+    if(dist(pet,t) > reach){ steer(pet, t.x, t.y, dt, petSpd()*(pet.kind==="bear" ? 0.85 : 0.95)); pet.walk = true; }   // a little slower than you while fighting
     else { pet.fx = t.x < pet.x ? -1 : 1;
       if(pet.atkT <= 0){ pet.atkT = d.atk; pet.swing = 0.2;
         petStrike(t, d.coef); if(pet.kind==="bear") pet.res = Math.min(100, pet.res + 8); }
       // Claw (wolf, 40 energy): an extra hit on top of the normal attacks
       if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); petStrike(t, 0.55); } }
-  } else if(dist(pet,P) > 70){ steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, dist(pet,P) > 200 ? d.sp*1.3 : d.sp); pet.walk = true; }
+  } else if(dist(pet,P) > 70){ const dd = dist(pet,P); steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, petSpd()*(dd > 200 ? 1.4 : dd > 110 ? 1.15 : 1)); pet.walk = true; }   // out of combat: your speed, catching up when far behind
 }
 // ---- effects
 function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, big}); }
@@ -3252,13 +3254,13 @@ function setBarSlot(key, id, slot){ ensureBars(); const b = S.bars[key]; for(let
 // ---- keybindings (saved in this browser)
 const KB_KEY = "rimfrost-keys-v1";
 const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", petAtk:"f", interact:"e", potHp:"q", potMana:"r", rest:"x",
-  char:"c", bag:"b", spells:"p", talents:"n", quests:"l", map:"m", craft:"k", info:"h",
+  char:"c", bag:"b", spells:"p", talents:"n", quests:"l", craft:"k", info:"h",
   bar1:"1", bar2:"2", bar3:"3", bar4:"4", bar5:"5", bar6:"6", bar7:"7", bar8:"8", bar9:"9", bar10:"0"};
 const KB_LABEL = {up:"Move forward", left:"Move left", down:"Move back", right:"Move right", target:"Target nearest enemy", attack:"Start attacking", petAtk:"Pet: attack / recall", interact:"Talk / gather",
   potHp:"Healing Potion", potMana:"Mana Potion", rest:"Sit down and rest", char:"Character", bag:"Bag", spells:"Spellbook", talents:"Talents", quests:"Quest Log",
-  map:"Map", craft:"Crafting", info:"Information"};
+  craft:"Crafting", info:"Information"};
 const KB_GROUPS = [["Movement",["up","left","down","right"]], ["Combat",["target","attack","petAtk","potHp","potMana","rest"]],
-  ["Windows",["char","bag","spells","talents","quests","map","craft","info","interact"]], ["Action Bar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
+  ["Windows",["char","bag","spells","talents","quests","craft","info","interact"]], ["Action Bar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
 let KB = Object.assign({}, KB_DEFAULT);
 try{ const s = JSON.parse(localStorage.getItem(KB_KEY)||"null"); if(s) for(const k of Object.keys(KB_DEFAULT)) if(typeof s[k]==="string") KB[k] = s[k]; }catch(_){}
 function saveKB(){ try{ localStorage.setItem(KB_KEY, JSON.stringify(KB)); }catch(_){} }
@@ -3289,7 +3291,6 @@ function menuHTML(){
     <button class="btn" data-act="open" data-k="bag">Bag <span class="muted">${keyName(KB.bag)}</span></button>
     <button class="btn ${left>0&&S.level>=10?"glowb":""}" data-act="open" data-k="talents">Talents <span class="muted">${keyName(KB.talents)}</span>${left>0&&S.level>=10?` · ${left} point${left===1?"":"s"}`:""}</button>
     <button class="btn" data-act="open" data-k="quests">Quest Log <span class="muted">${keyName(KB.quests)}</span></button>
-    <button class="btn" data-act="open" data-k="map">Map <span class="muted">${keyName(KB.map)}</span></button>
     <button class="btn" data-act="open" data-k="craft">Crafting <span class="muted">${keyName(KB.craft)}</span></button>
     <button class="btn" data-act="rest">${P.sitting?"Stand up":"Sit down and rest"} <span class="muted">${keyName(KB.rest)}</span></button>
     <button class="btn" data-act="open" data-k="help">Information <span class="muted">${keyName(KB.info)}</span></button>
@@ -3985,6 +3986,7 @@ $("interact").addEventListener("click", interact);
 $("tabbtn").addEventListener("click", cycleTarget);
 $("atkbtn").addEventListener("click", ()=>startAttack());
 $("petatk").addEventListener("click", ()=>petToggleAttack());
+$("mmwrap").addEventListener("click", e=>{ e.stopPropagation(); if(!running) return; if(panelKind==="map") closePanel(); else openPanel("map"); });
 
 // ======================= SAVE =======================
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
