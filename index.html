@@ -87,7 +87,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #abtip .tip-red{color:#ff6b5e;margin-top:4px}
 #cast .bar{height:16px;border:1px solid var(--line)}
 #cast i{background:linear-gradient(90deg,#c9a640,#f2d77a);transition:none}
-#hotbar{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+#petbar{display:flex;gap:5px}
+#petbar button{height:26px;padding:0 12px;border-radius:6px;border:1px solid #3b4955;background:#10161a;color:#e6d9a8;font:600 12px system-ui,sans-serif;cursor:pointer}
+#petbar button.on{border-color:var(--bad);color:var(--bad)}
+#hotbar,#hotbar2{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .slot{position:relative;width:48px;height:48px;border-radius:6px;border:1px solid #3b4955;background:#10161a;padding:0;overflow:hidden;color:#fff}
 .slot canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 .ico{display:inline-block;width:32px;height:32px;vertical-align:middle;margin-right:6px;image-rendering:pixelated;background-repeat:no-repeat;flex:none}
@@ -221,7 +224,7 @@ body.touch #menu button{width:100%;font-size:14px;padding:7px 8px;font-weight:70
 body.touch #log{display:block;bottom:auto;top:calc(196px + env(safe-area-inset-top,0px));width:min(56vw,260px);max-width:none;font-size:10.5px;line-height:1.25}
 body.touch #log div:nth-last-child(n+4){display:none}
 body.touch #bottom{left:auto;transform:none;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));width:auto;align-items:flex-end}
-body.touch #hotbar{display:grid;grid-template-columns:repeat(4,46px);gap:5px;direction:rtl}
+body.touch #hotbar,body.touch #hotbar2{display:grid;grid-template-columns:repeat(4,46px);gap:5px;direction:rtl}
 body.touch .slot{width:46px;height:46px;direction:ltr}
 body.touch .slot .k{display:none}
 body.touch .slot.empty{display:none}
@@ -237,7 +240,7 @@ body.touch #interact{right:max(152px,calc(env(safe-area-inset-right,0px) + 152px
   body.touch{--hb:104px}
   body.touch #frames{flex-direction:row}
   body.touch .frame{width:200px}
-  body.touch #hotbar{grid-template-columns:repeat(6,44px)}
+  body.touch #hotbar,body.touch #hotbar2{grid-template-columns:repeat(6,44px)}
   body.touch .slot{width:44px;height:44px}
   body.touch #log{top:calc(104px + env(safe-area-inset-top,0px));width:min(28vw,220px)}
   body.touch #cast{top:auto;bottom:calc(var(--hb) + 100px)}
@@ -278,6 +281,8 @@ body.touch .panel{padding:12px 13px}
 
 <div class="hud" id="bottom">
   <div id="cast" hidden><div class="bar"><i id="casti"></i><b id="castt"></b></div></div>
+  <div id="petbar" hidden><button id="petatk" type="button"></button></div>
+  <div id="hotbar2" hidden></div>
   <div id="hotbar"></div>
   <div id="xpbar"><i id="xpi"></i><b class="num" id="xpt"></b></div>
   <div id="menu" hidden>
@@ -2048,6 +2053,16 @@ function petCallCheck(kind){ if(coopOn()) return "Pets are not available in co-o
 function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a pet right now");
   S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
 function petDismiss(){ if(!pet) return; floatText(pet.x, pet.y-40, PETS[pet.kind].name+" dismissed", "#9fd6e8", true); burst(pet.x, pet.y-10, "#9fd6e8", 10); log(`You dismiss your ${PETS[pet.kind].name.toLowerCase()}.`, "#9fd6e8"); pet = null; S.petType = null; }
+// pet commands: attack your target, or press again to recall it (it then holds until the fight is over or you send it in again)
+function petToggleAttack(){
+  if(!pet) return err("You have no pet"); if(pet.dead) return err("Your pet is dead");
+  if(pet.cmd && !pet.cmd.dead){ pet.cmd = null; pet.hold = true; floatText(pet.x, pet.y-pet.r-30, "Recalled", "#9fd6e8"); return; }
+  const t = P.target; if(!t || t.dead || t.evading) return err("No target");
+  if((t.def.dg||null) !== (P.inDungeon||null)) return err("No target");
+  pet.cmd = t; pet.hold = false; floatText(pet.x, pet.y-pet.r-30, "Attack!", "#e6bd5c", true);
+}
+function petBarUpd(){ const el = $("petbar"); if(!el) return; const show = !!(pet && !pet.dead && S && S.cls==="hunter" && !coopOn()); if(el.hidden === show) el.hidden = !show; if(!show) return;
+  const b = $("petatk"), on = !!(pet.cmd && !pet.cmd.dead), txt = (on ? "Pet: Recall" : "Pet: Attack") + " [" + keyName(KB.petAtk) + "]"; if(b.textContent !== txt) b.textContent = txt; b.classList.toggle("on", on); }
 function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
 function petDamage(raw, src){ if(!pet || pet.dead) return; const amt = Math.max(1, Math.round(raw*PETS[pet.kind].taken));
   pet.hp -= amt; pet.flash = 0.12; if(pet.kind==="bear") pet.res = Math.min(100, pet.res+5); floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
@@ -2056,20 +2071,26 @@ function petStrike(t, coef){ if(!t || t.dead) return; const amt = Math.max(1, Ma
   PET_ATK = true; try{ damageMob(t, amt, false, "phys"); } finally{ PET_ATK = false; } }
 function updPet(dt){
   if(!running || !P || !S) return;
-  if(S.cls !== "hunter" || coopOn()){ pet = null; return; }
+  if(S.cls !== "hunter" || coopOn()){ pet = null; petBarUpd(); return; }
   if(pet && pet._S !== S) pet = null;
-  if(!pet){ if(S.petType && PETS[S.petType] && !P.dead) pet = petMake(S.petType); if(!pet) return; }
+  if(!pet){ if(S.petType && PETS[S.petType] && !P.dead) pet = petMake(S.petType); if(!pet){ petBarUpd(); return; } }
   const d = PETS[pet.kind], dg = P.inDungeon||null;
   { const mh = Math.round(P.maxHp*d.hp); if(mh !== pet.maxHp){ pet.hp = Math.min(mh, pet.hp*mh/pet.maxHp); pet.maxHp = mh; } }
   pet.lvl = S.level; pet.flash = Math.max(0, pet.flash-dt); pet.swing = Math.max(0, pet.swing-dt); pet.atkT -= dt; pet.growl = Math.max(0, pet.growl-dt); pet.clawT = Math.max(0, pet.clawT-dt); pet.sweepT = Math.max(0, pet.sweepT-dt);
   if(pet.dg !== dg || dist(pet,P) > 900){ pet.dg = dg; pet.x = P.x - 26*(P.fx||1); pet.y = P.y + 10; pet.path = null; }
   if(pet.dead) return;
+  petBarUpd();
   const fight = petFight();
+  if(pet.hold && !fight) pet.hold = false;
   if(!fight) pet.hp = Math.min(pet.maxHp, pet.hp + pet.maxHp*0.08*dt);
   if(pet.kind==="wolf") pet.res = Math.min(100, pet.res + 12*dt); else if(!fight) pet.res = Math.max(0, pet.res - 5*dt);   // wolf: energy, bear: rage
-  // who to fight: what you are attacking, otherwise the nearest enemy that is after you
-  let t = (P.target && !P.target.dead && !P.target.evading && P.target.state==="chase" && P.combatT > 0 && (P.target.def.dg||null)===dg && dist(P.target,P) < 600) ? P.target : null;
-  if(!t){ let bd = 420; for(const m of mobs){ if(m.dead || m.evading || m.state!=="chase" || (m.def.dg||null)!==dg) continue; const dd = dist(m,P); if(dd < bd){ bd = dd; t = m; } } }
+  // who to fight: the target you sent it at; otherwise (only while you are in combat) what is attacking you
+  if(pet.cmd && (pet.cmd.dead || pet.cmd.evading || (pet.cmd.def.dg||null)!==dg || dist(pet.cmd,P) > 900)) pet.cmd = null;
+  let t = pet.cmd || null;
+  if(!t && !pet.hold && P.combatT > 0){
+    t = (P.target && !P.target.dead && !P.target.evading && P.target.state==="chase" && (P.target.def.dg||null)===dg && dist(P.target,P) < 600) ? P.target : null;
+    if(!t){ let bd = 420; for(const m of mobs){ if(m.dead || m.evading || m.state!=="chase" || (m.def.dg||null)!==dg) continue; const dd = dist(m,P); if(dd < bd){ bd = dd; t = m; } } }
+  }
   if(pet.kind==="bear" && pet.growl <= 0 && t && dist(pet,t) < pet.r + t.r + 40){   // Growl: free, only works on what the bear is fighting
     pet.growl = GROWL_CD; t.tauntT = GROWL_TAUNT; t.thPet = Math.max(t.thPet||0, (t.thMe||0)*1.3 + 40);
     floatText(pet.x, pet.y-pet.r-30, "Growl!", "#e6bd5c", true); ring(pet.x, pet.y, 40, "#e6bd5c"); pet.swing = 0.25; }
@@ -3211,7 +3232,8 @@ const FORM_LOOK = {bear:{c:"Bear", s:1.2}, cat:{c:"Wolf", s:1.05}, leopard:{c:"F
 // ---- action bars: 10 slots per bar, saved per character (druids have one bar per form)
 const BAR_SIZE = 10;
 function barKeyNow(){ return S.cls==="druid" && P && P.form ? P.form : "main"; }
-function barSource(key){ return S.cls==="druid" ? (key==="main" ? BARS.druid : BARS["druid_"+key]) : BARS[S.cls]; }
+function barKey2(){ return barKeyNow()+"_s"; }   // second bar (Shift+1..0), e.g. for buffs
+function barSource(key){ key = key.replace(/_s$/,""); return S.cls==="druid" ? (key==="main" ? BARS.druid : BARS["druid_"+key]) : BARS[S.cls]; }
 function barKeys(){ return S.cls==="druid" ? ["main","bear","cat","leopard"] : ["main"]; }
 function ensureBars(){
   if(!S.bars || typeof S.bars !== "object") S.bars = {};
@@ -3219,6 +3241,8 @@ function ensureBars(){
     let b = S.bars[key];
     if(!Array.isArray(b) || b.length !== BAR_SIZE){ b = Array(BAR_SIZE).fill(null); barSource(key).filter(id=>S.learned.includes(id)).slice(0, BAR_SIZE).forEach((id,i)=>b[i]=id); }
     S.bars[key] = b.map(id=>id && AB[id] && S.learned.includes(id) ? id : null);
+    let b2 = S.bars[key+"_s"]; if(!Array.isArray(b2) || b2.length !== BAR_SIZE) b2 = Array(BAR_SIZE).fill(null);
+    S.bars[key+"_s"] = b2.map(id=>id && AB[id] && S.learned.includes(id) ? id : null);
   }
 }
 // put a newly learned ability on the first free slot of the bars it belongs to
@@ -3227,13 +3251,13 @@ function setBarSlot(key, id, slot){ ensureBars(); const b = S.bars[key]; for(let
 
 // ---- keybindings (saved in this browser)
 const KB_KEY = "rimfrost-keys-v1";
-const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", interact:"e", potHp:"q", potMana:"r", rest:"x",
+const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", petAtk:"f", interact:"e", potHp:"q", potMana:"r", rest:"x",
   char:"c", bag:"b", spells:"p", talents:"n", quests:"l", map:"m", craft:"k", info:"h",
   bar1:"1", bar2:"2", bar3:"3", bar4:"4", bar5:"5", bar6:"6", bar7:"7", bar8:"8", bar9:"9", bar10:"0"};
-const KB_LABEL = {up:"Move forward", left:"Move left", down:"Move back", right:"Move right", target:"Target nearest enemy", attack:"Start attacking", interact:"Talk / gather",
+const KB_LABEL = {up:"Move forward", left:"Move left", down:"Move back", right:"Move right", target:"Target nearest enemy", attack:"Start attacking", petAtk:"Pet: attack / recall", interact:"Talk / gather",
   potHp:"Healing Potion", potMana:"Mana Potion", rest:"Sit down and rest", char:"Character", bag:"Bag", spells:"Spellbook", talents:"Talents", quests:"Quest Log",
   map:"Map", craft:"Crafting", info:"Information"};
-const KB_GROUPS = [["Movement",["up","left","down","right"]], ["Combat",["target","attack","potHp","potMana","rest"]],
+const KB_GROUPS = [["Movement",["up","left","down","right"]], ["Combat",["target","attack","petAtk","potHp","potMana","rest"]],
   ["Windows",["char","bag","spells","talents","quests","map","craft","info","interact"]], ["Action Bar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
 let KB = Object.assign({}, KB_DEFAULT);
 try{ const s = JSON.parse(localStorage.getItem(KB_KEY)||"null"); if(s) for(const k of Object.keys(KB_DEFAULT)) if(typeof s[k]==="string") KB[k] = s[k]; }catch(_){}
@@ -3284,6 +3308,7 @@ function keysHTML(){
     }
     h += `</div>`;
   }
+  h += `<div class="muted" style="margin-top:8px">Second action bar: Shift + 1–0 (fixed). Fill it in the Spellbook.</div>`;
   h += `<div class="row" style="margin-top:10px"><button class="btn" data-act="kbreset">Restore Defaults</button><button class="btn" data-act="open" data-k="spells">Change spells on the bar in the Spellbook</button></div>`;
   return h;
 }
@@ -3294,10 +3319,12 @@ function spellsHTML(){
   let h = `<h2>Spellbook</h2><div class="muted">Drag a spell's icon to a slot on the bar below. You can also drag between slots to move them, or drag a slot off the bar to empty it. You learn new spells from your class trainer.</div>`;
   if(tabs.length > 1) h += `<div class="row" style="margin-top:8px">${tabs.map(t=>`<button class="btn ${t===key?"pri":""}" data-act="spelltab" data-k="${t}">${TAB_NAME[t]}</button>`).join("")}</div>`;
   h += `<div class="barprev" data-bar="${key}">${bar.map((id,i)=>`<div class="bp ${id?"has":""}" data-slot="${i}" ${id?`data-sid="${id}"`:""} title="${id?esc(AB[id].name):"Empty slot"}">${id?`<img src="${abIconURL(id)}" alt="" draggable="false">`:""}<span>${keyName(KB["bar"+(i+1)])}</span></div>`).join("")}</div>`;
+  const bar2 = S.bars[key+"_s"];
+  h += `<div class="muted" style="margin-top:6px">Second bar (Shift + 1–0), good for buffs. It shows on screen once it has a spell.</div><div class="barprev" data-bar="${key}_s">${bar2.map((id,i)=>`<div class="bp ${id?"has":""}" data-slot="${i}" ${id?`data-sid="${id}"`:""} title="${id?esc(AB[id].name):"Empty slot"}">${id?`<img src="${abIconURL(id)}" alt="" draggable="false">`:""}<span>⇧${(i+1)%10}</span></div>`).join("")}</div>`;
   const list = barSource(key).slice().sort((x,y)=>AB[x].lvl-AB[y].lvl);
-  h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id);
+  h += `<div class="list">${list.map(id=>{ const a = AB[id], learned = S.learned.includes(id), slot = bar.indexOf(id), slot2 = bar2.indexOf(id);
     const meta = [ `level ${a.lvl}`, a.cost ? `${costOf(id)} ${RES_NAME[a.res||CLASSES[S.cls].res].toLowerCase()}` : "", a.cast ? `${a.cast} sec cast` : "instant", a.cd ? `${a.cd} sec cooldown` : "", a.range ? `range ${a.range}` : "" ].filter(Boolean).join(" · ");
-    const side = learned ? `<span class="muted" style="font-size:12px;flex:none">${slot>=0 ? `On slot ${keyName(KB["bar"+(slot+1)])}` : "Not on the bar"}</span>` : `<span class="muted" style="font-size:12px;flex:none">${S.level >= a.lvl ? "Learn from your trainer" : `Unlocks at level ${a.lvl}`}</span>`;
+    const side = learned ? `<span class="muted" style="font-size:12px;flex:none">${slot>=0 || slot2>=0 ? "On slot " + [slot>=0 ? keyName(KB["bar"+(slot+1)]) : "", slot2>=0 ? "⇧"+((slot2+1)%10) : ""].filter(Boolean).join(", ") : "Not on the bar"}</span>` : `<span class="muted" style="font-size:12px;flex:none">${S.level >= a.lvl ? "Learn from your trainer" : `Unlocks at level ${a.lvl}`}</span>`;
     return `<div class="item ${learned?"":"dim"}"><div style="display:flex;align-items:center;min-width:0"><img class="abico ${learned?"drag":""}" src="${abIconURL(id)}" alt="" draggable="false" data-tipab="${id}" ${learned?`data-drag="${id}"`:""}><div style="min-width:0"><b>${a.name}</b> <span class="muted">· ${meta}</span><div class="d">${esc(a.desc())}</div></div></div>${side}</div>`; }).join("")}</div>`;
   return h;
 }
@@ -3315,7 +3342,7 @@ document.addEventListener("pointerdown", e=>{
   const src = e.target.closest("[data-drag], .bp[data-sid]"); if(!src || !$("panel").contains(src)) return;
   e.preventDefault();
   const id = src.dataset.drag || src.dataset.sid, from = src.dataset.slot != null ? +src.dataset.slot : -1;
-  const key = $("panel").querySelector(".barprev").dataset.bar;
+  const key = (src.closest(".barprev") || $("panel").querySelector(".barprev")).dataset.bar;
   const ghost = document.createElement("img"); ghost.src = abIconURL(id); ghost.className = "dragghost"; document.body.appendChild(ghost);
   dragAb = {id, from, key, ghost, moved:false, x0:e.clientX, y0:e.clientY};
   ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
@@ -3329,7 +3356,9 @@ document.addEventListener("pointermove", e=>{
 document.addEventListener("pointerup", e=>{
   if(!dragAb) return; const d = dragAb; dragAb = null; d.ghost.remove();
   const el = document.elementFromPoint(e.clientX, e.clientY), slot = el && el.closest(".bp[data-slot]");
-  if(slot) moveOnBar(d.key, d.id, d.from, +slot.dataset.slot);
+  const tk = slot ? slot.closest(".barprev").dataset.bar : null;
+  if(slot && tk === d.key) moveOnBar(d.key, d.id, d.from, +slot.dataset.slot);
+  else if(slot){ if(d.from >= 0) moveOnBar(d.key, d.id, d.from, -1); moveOnBar(tk, d.id, -1, +slot.dataset.slot); }   // dropped on the other bar
   else if(d.from >= 0 && d.moved) moveOnBar(d.key, d.id, d.from, -1);
   if(panelKind === "spells") renderPanel();
 });
@@ -3557,20 +3586,26 @@ function drawIcon(cv, icon, color){
 // ---- hotbar
 let slotEls = [];
 function currentBar(){ ensureBars(); return S.bars[barKeyNow()].map(id=>id && S.learned.includes(id) ? id : null); }
-function buildHotbar(){
-  const hb = $("hotbar"); hb.innerHTML = ""; slotEls = [];
-  currentBar().forEach((id, i)=>{
+function currentBar2(){ ensureBars(); return S.bars[barKey2()].map(id=>id && S.learned.includes(id) ? id : null); }
+function fillBar(hb, ids, label){
+  ids.forEach((id, i)=>{
     const b = document.createElement("button"); b.className = "slot"; b.dataset.i = i;
-    if(!id){ b.classList.add("empty"); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span>`); b.title = "Empty slot – place a spell here from the Spellbook"; b.addEventListener("click", ()=>openPanel("spells")); hb.appendChild(b); slotEls.push(null); return; }
+    if(!id){ b.classList.add("empty"); b.insertAdjacentHTML("beforeend", `<span class="k">${label(i)}</span>`); b.title = "Empty slot – place a spell here from the Spellbook"; b.addEventListener("click", ()=>openPanel("spells")); hb.appendChild(b); slotEls.push(null); return; }
     const a = AB[id]; const c = document.createElement("canvas"); c.width = c.height = 96; { const ic = abIcon(id); drawIcon(c, ic[0], ic[1]); }
-    b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB["bar"+(i+1)])}</span><span class="cd"></span>`);
+    b.appendChild(c); b.insertAdjacentHTML("beforeend", `<span class="k">${label(i)}</span><span class="cd"></span>`);
     b.dataset.tipab = id; b.setAttribute("aria-label", a.name);
     b.addEventListener("click", ()=>tryUse(id)); hb.appendChild(b); slotEls.push({b, id, cd:b.querySelector(".cd")});
   });
+}
+function buildHotbar(){
+  const hb = $("hotbar"); hb.innerHTML = ""; slotEls = [];
+  fillBar(hb, currentBar(), i=>keyName(KB["bar"+(i+1)]));
   const pots = [["hp","Q","potHp","#c03a52"]]; if(CLASSES[S.cls].res==="mana") pots.push(["mana","R","potMana","#3f86e0"]);
   pots.forEach(([kind, key, item, col])=>{ const b = document.createElement("button"); b.className = "slot pot"; const c = document.createElement("canvas"); c.width = c.height = 96; drawItemSprite(c, item, col); b.appendChild(c);
     b.insertAdjacentHTML("beforeend", `<span class="k">${keyName(KB[kind==="hp"?"potHp":"potMana"])}</span><span class="cd"></span><span class="cnt"></span>`); b.title = kind==="hp" ? "Healing Potion" : "Mana Potion";
     b.addEventListener("click", ()=>usePotion(kind)); hb.appendChild(b); slotEls.push({b, pot:kind, cd:b.querySelector(".cd"), cnt:b.querySelector(".cnt")}); });
+  const hb2 = $("hotbar2"), bar2 = currentBar2(); hb2.innerHTML = ""; hb2.hidden = !bar2.some(Boolean);   // the second bar only shows once it has a spell on it
+  if(!hb2.hidden) fillBar(hb2, bar2, i=>"⇧"+((i+1)%10));
 }
 function updHotbar(){
   const type = resType();
@@ -3894,11 +3929,13 @@ addEventListener("keydown", e=>{
   if(rebinding){ e.preventDefault(); if(!["shift","control","alt","meta"].includes(k)) finishRebind(k); return; }
   const dir = moveDir(k); if(dir){ keys.add(dir); e.preventDefault(); return; }
   if(e.repeat) return;
+  if(e.shiftKey && /^Digit\d$/.test(e.code)){ e.preventDefault(); const id = currentBar2()[(+e.code.slice(5)+9)%10]; if(id) tryUse(id); return; }   // second bar: Shift+1..0
   if(k==="escape"){ if(panelKind) closePanel(); else if(P.casting) cancelCast(); else if(P.target) setTarget(null); else if(P.ftarget) P.ftarget = null; else openPanel("menu"); return; }
   const a = kbAction(k); if(!a) return;
   if(a.startsWith("bar")){ const id = currentBar()[+a.slice(3)-1]; if(id) tryUse(id); return; }
   if(a==="target"){ e.preventDefault(); cycleTarget(); return; }
   if(a==="attack") return startAttack();
+  if(a==="petAtk") return petToggleAttack();
   if(a==="interact") return interact();
   if(a==="potHp") return usePotion("hp");
   if(a==="potMana") return usePotion("mana");
@@ -3947,6 +3984,7 @@ if(isTouch){ document.body.classList.add("touch"); $("side").appendChild($("menu
 $("interact").addEventListener("click", interact);
 $("tabbtn").addEventListener("click", cycleTarget);
 $("atkbtn").addEventListener("click", ()=>startAttack());
+$("petatk").addEventListener("click", ()=>petToggleAttack());
 
 // ======================= SAVE =======================
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
