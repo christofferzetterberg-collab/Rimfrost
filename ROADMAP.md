@@ -6,58 +6,66 @@ Tick items off with `[x]` when they are done. Add new items at the bottom of the
 
 ### Co-op
 - [x] Co-op in the overworld (PeerJS, host + guest)
-- [x] Co-op in dungeons: shared instance, same seed and levels for everyone
-- [x] Monsters in dungeons are shared between players (the host runs them)
+- [x] Co-op in dungeons: shared instance, same seed and layout for everyone
+- [x] Dungeon monsters are shared between players (the host runs them)
 - [x] Levers, runes and gates are synced between players
 - [x] Shared kills, XP and loot inside dungeons
-- [x] A new player joins an ongoing dungeon instead of resetting it
-- [x] Co-op in dungeons tested with a friend and working
+- [x] A new player joins a running dungeon instead of resetting it
+- [x] Dungeon co-op tested with a friend and working
 
-### Developer tools
-- [x] Dev panel (`?dev` in the address, the DEV button or the key below Esc)
-- [x] Set level, gold, heal, god mode, teleport, enter dungeon, give items
+### Dev tools
+- [x] Dev panel (`?dev` in the URL, the DEV button or the key under Esc)
+- [x] Set level, gold, heal, god mode, teleport, enter dungeon, give item
 - [x] Balance test with a bot (1 monster, 3 monsters, elite) and saved results
 - [x] Balance test supports Druid forms (caster, bear, wolf)
 
 ### Class balance
 - [x] Mana: all costs ×0.5
 - [x] All player damage ×0.8
-- [x] Damage modifier per class (Mage 1.15, Warrior 1.15, Druid 1.10, Paladin 0.70)
+- [x] Per-class damage multipliers (Mage 1.15, Warrior 1.15, Druid 1.10, Paladin 0.70)
 - [x] Warrior armor 0.85 → 0.80
 - [x] Druid bear form armor 0.6 → 0.7
 - [x] Class roles decided (see below)
 
-### Hunter pets
-- [x] Hunter pets (Bear level 5 tank, Wolf level 10 DPS): tested and balanced with the dev test
-- [x] Pets follow at your running speed (and catch up when far behind); in combat Bear 125, Wolf 135
+**Roles:** Paladin very good solo · Warrior good solo (tank) · Druid medium–good · Hunter medium · Mage hard solo but very good in a group · Priest medium–hard solo but indispensable in a group
+
+### Hunter
+- [x] Hunter shots have a minimum range (70 px); casts are cancelled if the enemy gets too close
+- [x] Melee options for Hunter: Raptor Strike, Wing Clip (slow) and melee auto-attack when too close
+- [x] Pet bar button (attack / recall, key F) and Dismiss Pet
+- [x] Pets in co-op: pets, aggro, Growl/Sweep/Claw and damage numbers synced, tested with a friend
+- [x] Friends' spells and arrows are visible in co-op
+
+### Stats and items
+- [x] Primary stats Stamina, Intellect, Strength, Agility (Agility = Hunter attack power) with attack crit / spell crit split
+- [x] New item generator: stat budget from quality, item level and slot; stats chosen by class
+- [ ] Rebalance with the dev test (all classes + Hunter pets) now that gear gives primary stats
+- [x] Old items are retired when a character loads
 
 ### World
-- [x] Line of sight based on terrain: mountains, cliffs, walls, houses, gates, ice walls and big rocks block attacks, spells, heals and monster aggro (trees, water and lava do not)
-- [x] Monster chase speed by type: light/four-legged monsters fast (up to 145), heavy/armored slower (down to 105); you run at 150
+- [x] World is 2× bigger in each direction (same zones and layout, longer travel, same number of mobs spread out)
+- [x] Merchants in the 5 small camps (basic potions, buys junk)
+- [x] World map can be zoomed and dragged (buttons, scroll wheel, drag)
+- [x] Player and NPC models drawn smaller (80 %) to fit better next to the mobs
+- [ ] Check the bigger world: gathering nodes were doubled, quest item counts are unchanged
 
-**Roles:** Paladin very good solo · Warrior good solo (tank) · Druid medium–good · Hunter medium · Mage hard solo but very good in a group · Priest medium–hard solo but essential in a group
-
-## In progress
-
-- [ ] Pets in co-op: built, needs testing with a friend
+### Interface
+- [x] Second action bar (Shift+1–0)
+- [x] Map opens by clicking the minimap
+- [x] Spellbook lists abilities in the order they are learned
 
 ## Planned
 
+- [ ] Hunter pets (Bear lvl 5 tank, Wolf lvl 10 dps): playable, still to do: re-run the L30 balance test (bear/wolf)
+- [ ] Change how mobs spawn around the starting area (for example, the closest ones should be a bit lower level)
+- [ ] Add more quests per level
+- [ ] Rewrite spell descriptions and other in-game text to sound more professional
+- [ ] Fix the mobile UI so it matches all current settings (joystick, buttons, second action bar, pet button)
 - [ ] New equipment and new sprites (paused for now)
 - [ ] Rebalance after bigger changes (run the dev test again)
 - [ ] Test the classes in a group (roles in co-op, not only solo)
 
-### Changes
-- [ ] Bigger starting areas, with level 1–2, 3–4 and 4–5 enemies kept in their own parts of the zone instead of mixed together (hard for new characters)
-- [ ] Rewrite the Wing Clip description, and review the descriptions of all skills
-- [ ] Better UI on mobile
-
-### Additions
-- [ ] Bigger world map with more areas
-- [ ] Water only in specific water areas (lakes, rivers), no random water tiles
-- [ ] Trading between players in co-op (items, gear and gold)
-
-## Ideas to investigate
+## Ideas to look into
 
 - [ ] More dungeons or difficulty levels
 - [ ] Better crit balance (big attacks can kill a monster in one hit)
@@ -65,5 +73,5 @@ Tick items off with `[x]` when they are done. Add new items at the bottom of the
 
 ## Known issues
 
-- [ ] A guest who connects while in a dungeon is sent out of it (on purpose, but could be smoother)
+- [ ] A guest who connects while inside a dungeon is moved out of it (intended, but could be smoother)
 - [ ] The dungeon stops if the host closes the game

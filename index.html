@@ -814,41 +814,41 @@ addEventListener("pointerdown", audioInit, {capture:true}); addEventListener("ke
 </script>
 <script>
 // ======================= WORLD DATA =======================
-const OW = 220, MW = 328, MH = 178; // OW = overworld width; tiles x >= OW hold the dungeon instances
+const OW = 440, MW = 548, MH = 356; // OW = overworld width; tiles x >= OW hold the dungeon instances
 
 // Zones: Voronoi regions around c (tile coords). w = weight (bigger area). t = terrain.
 const ZONES = {
-  frostang:{name:"Frost Meadows", lv:[1,5], c:[24,74], w:0, t:"meadow", race:"human"},
-  skugg:{name:"Shadowwood", lv:[5,10], c:[52,84], w:0, t:"forest", race:"human"},
-  silver:{name:"Silver Grove", lv:[1,5], c:[30,24], w:0, t:"elfwood", race:"elf"},
-  manskog:{name:"Moonwood", lv:[5,10], c:[62,44], w:0, t:"moonwood", race:"elf"},
-  koppar:{name:"Copper Cliffs", lv:[1,5], c:[104,16], w:0, t:"highland", race:"dwarf"},
-  snodal:{name:"Snowvale", lv:[5,10], c:[98,46], w:0, t:"snowhigh", race:"dwarf"},
-  rod:{name:"Red Plains", lv:[1,5], c:[30,128], w:0, t:"steppe", race:"orc"},
-  damm:{name:"Dust Canyon", lv:[5,10], c:[64,114], w:0, t:"canyon", race:"orc"},
-  jarn:{name:"Iron Ridge", lv:[10,15], c:[102,84], w:8, t:"rock"},
-  dimma:{name:"Mistmarsh", lv:[15,20], c:[140,124], w:6, t:"swamp"},
-  aska:{name:"Ashfields", lv:[20,25], c:[152,40], w:8, t:"ash"},
-  frost:{name:"Frostcrown", lv:[25,30], c:[192,92], w:10, t:"snow"},
-  gravmark:{name:"Gravelands", lv:[1,5], c:[50,164], w:0, t:"blight", race:"undead"},
-  benfalt:{name:"Bonefields", lv:[5,10], c:[92,152], w:0, t:"gloom", race:"undead"}
+  frostang:{name:"Frost Meadows", lv:[1,5], c:[48,148], w:0, t:"meadow", race:"human"},
+  skugg:{name:"Shadowwood", lv:[5,10], c:[104,168], w:0, t:"forest", race:"human"},
+  silver:{name:"Silver Grove", lv:[1,5], c:[60,48], w:0, t:"elfwood", race:"elf"},
+  manskog:{name:"Moonwood", lv:[5,10], c:[124,88], w:0, t:"moonwood", race:"elf"},
+  koppar:{name:"Copper Cliffs", lv:[1,5], c:[208,32], w:0, t:"highland", race:"dwarf"},
+  snodal:{name:"Snowvale", lv:[5,10], c:[196,92], w:0, t:"snowhigh", race:"dwarf"},
+  rod:{name:"Red Plains", lv:[1,5], c:[60,256], w:0, t:"steppe", race:"orc"},
+  damm:{name:"Dust Canyon", lv:[5,10], c:[128,228], w:0, t:"canyon", race:"orc"},
+  jarn:{name:"Iron Ridge", lv:[10,15], c:[204,168], w:16, t:"rock"},
+  dimma:{name:"Mistmarsh", lv:[15,20], c:[280,248], w:12, t:"swamp"},
+  aska:{name:"Ashfields", lv:[20,25], c:[304,80], w:16, t:"ash"},
+  frost:{name:"Frostcrown", lv:[25,30], c:[384,184], w:20, t:"snow"},
+  gravmark:{name:"Gravelands", lv:[1,5], c:[100,328], w:0, t:"blight", race:"undead"},
+  benfalt:{name:"Bonefields", lv:[5,10], c:[184,304], w:0, t:"gloom", race:"undead"}
 };
 // Towns and camps. Safe areas. kind town = cobble village, camp = small camp.
 const HUBS = {
-  frostvik:{name:"Frostwick", x:24, y:74, r:7, kind:"town", race:"human"},
-  holgerstuga:{name:"Forester's Cabin", x:54, y:86, r:4, kind:"camp"},
-  lovhem:{name:"Leafhome", x:30, y:24, r:7, kind:"town", race:"elf"},
-  manglanta:{name:"Moonglade", x:62, y:46, r:4, kind:"camp"},
-  bergsdal:{name:"Mountdale", x:104, y:18, r:7, kind:"town", race:"dwarf"},
-  snostugan:{name:"Snow Cabin", x:98, y:48, r:4, kind:"camp"},
-  brannmark:{name:"Burnmark", x:30, y:126, r:7, kind:"town", race:"orc"},
-  kanjonlagret:{name:"Canyon Camp", x:64, y:112, r:4, kind:"camp"},
-  jarnfastet:{name:"Rimhaven", x:100, y:87, r:14, kind:"city"},
-  traskvakten:{name:"Marshwatch", x:138, y:118, r:5, kind:"camp"},
-  askvakten:{name:"Ashwatch", x:150, y:44, r:5, kind:"camp"},
-  isporten:{name:"Icegate", x:188, y:90, r:5, kind:"camp"},
-  bleksted:{name:"Palestead", x:50, y:164, r:7, kind:"town", race:"undead"},
-  benvakten:{name:"Bonewatch", x:92, y:152, r:4, kind:"camp"}
+  frostvik:{name:"Frostwick", x:48, y:148, r:7, kind:"town", race:"human"},
+  holgerstuga:{name:"Forester's Cabin", x:108, y:172, r:4, kind:"camp"},
+  lovhem:{name:"Leafhome", x:60, y:48, r:7, kind:"town", race:"elf"},
+  manglanta:{name:"Moonglade", x:124, y:92, r:4, kind:"camp"},
+  bergsdal:{name:"Mountdale", x:208, y:36, r:7, kind:"town", race:"dwarf"},
+  snostugan:{name:"Snow Cabin", x:196, y:96, r:4, kind:"camp"},
+  brannmark:{name:"Burnmark", x:60, y:252, r:7, kind:"town", race:"orc"},
+  kanjonlagret:{name:"Canyon Camp", x:128, y:224, r:4, kind:"camp"},
+  jarnfastet:{name:"Rimhaven", x:200, y:174, r:14, kind:"city"},
+  traskvakten:{name:"Marshwatch", x:276, y:236, r:5, kind:"camp"},
+  askvakten:{name:"Ashwatch", x:300, y:88, r:5, kind:"camp"},
+  isporten:{name:"Icegate", x:376, y:180, r:5, kind:"camp"},
+  bleksted:{name:"Palestead", x:100, y:328, r:7, kind:"town", race:"undead"},
+  benvakten:{name:"Bonewatch", x:184, y:304, r:4, kind:"camp"}
 };
 // Rimhaven, the great city: districts (tile offsets from the centre) with a sign each
 const CITY_SIGNS = [["Mage & Priest Quarter",0,-7.5],["The Barracks",7.5,0],["Hunters' Lodge & Grove",0,7.5],["The Market",-7.5,0]];
@@ -860,11 +860,11 @@ const ROADS = [["frostvik","holgerstuga"],["lovhem","manglanta"],["bergsdal","sn
   ["bleksted","benvakten"],["bleksted","brannmark"],["benvakten","kanjonlagret"],["benvakten","traskvakten"],["benvakten","jarnfastet"]];
 // Lairs: cleared spots for elites/bosses (tile coords) with a road from a hub.
 const LAIRS = {
-  banditcamp:{x:42, y:96, r:6, from:"holgerstuga"}, morvel:{x:68, y:32, r:4, from:"manglanta"}, snorre:{x:86, y:54, r:4, from:"snostugan"},
-  garuk:{x:74, y:124, r:4, from:"kanjonlagret"}, magma:{x:160, y:14, r:5, from:"askvakten"}, giant:{x:206, y:112, r:6, from:"isporten"},
-  vex:{x:112, y:166, r:4, from:"benvakten"}
+  banditcamp:{x:84, y:192, r:6, from:"holgerstuga"}, morvel:{x:136, y:64, r:4, from:"manglanta"}, snorre:{x:172, y:108, r:4, from:"snostugan"},
+  garuk:{x:148, y:248, r:4, from:"kanjonlagret"}, magma:{x:320, y:28, r:5, from:"askvakten"}, giant:{x:412, y:224, r:6, from:"isporten"},
+  vex:{x:224, y:332, r:4, from:"benvakten"}
 };
-const CRYPT = {x0:132, x1:148, y0:136, y1:148, boss:{x:140, y:143}};
+const CRYPT = {x0:272, x1:288, y0:278, y1:290, boss:{x:280, y:285}};
 
 const MOBS = {
   // human
@@ -964,15 +964,15 @@ const SPAWNS = [
   ["frostwolf",12,"frost"],["icegolem",12,"frost"],["rimtroll",12,"frost"],
   ["rat",12,"gravmark"],["plaguewolf",9,"gravmark"],["shambler",10,"gravmark"],["robber",10,"benfalt"],["boneguard",10,"benfalt"],["plaguebear",7,"benfalt"]
 ];
-const FIXED_MOBS = [["oldgray",{zone:"frostang",far:"frostvik",d:16}],["leader",{lair:"banditcamp"}],["morvel",{lair:"morvel"}],["snorre",{lair:"snorre"}],
+const FIXED_MOBS = [["oldgray",{zone:"frostang",far:"frostvik",d:32}],["leader",{lair:"banditcamp"}],["morvel",{lair:"morvel"}],["snorre",{lair:"snorre"}],
   ["garuk",{lair:"garuk"}],["boss",{crypt:true}],["magma",{lair:"magma"}],["giant",{lair:"giant"}],["vex",{lair:"vex"}]];
 // [node kind, count, zone]
 const NODE_SPAWNS = [
-  ["copper",6,"frostang"],["ang",8,"frostang"],["copper",6,"silver"],["ang",8,"silver"],["copper",8,"koppar"],["ang",6,"koppar"],["copper",6,"rod"],["ang",8,"rod"],
-  ["iron",4,"skugg"],["silver",7,"skugg"],["iron",4,"manskog"],["silver",8,"manskog"],["iron",7,"snodal"],["silver",5,"snodal"],["iron",5,"damm"],["silver",6,"damm"],
-  ["iron",8,"jarn"],["goldore",6,"jarn"],["drake",4,"jarn"],["goldore",5,"dimma"],["drake",8,"dimma"],
-  ["obsidian",10,"aska"],["fireflower",9,"aska"],["rimkr",9,"frost"],["iceflower",9,"frost"],
-  ["copper",6,"gravmark"],["ang",6,"gravmark"],["iron",5,"benfalt"],["silver",6,"benfalt"]
+  ["copper",12,"frostang"],["ang",16,"frostang"],["copper",12,"silver"],["ang",16,"silver"],["copper",16,"koppar"],["ang",12,"koppar"],["copper",12,"rod"],["ang",16,"rod"],
+  ["iron",8,"skugg"],["silver",14,"skugg"],["iron",8,"manskog"],["silver",16,"manskog"],["iron",14,"snodal"],["silver",10,"snodal"],["iron",10,"damm"],["silver",12,"damm"],
+  ["iron",16,"jarn"],["goldore",12,"jarn"],["drake",8,"jarn"],["goldore",10,"dimma"],["drake",16,"dimma"],
+  ["obsidian",20,"aska"],["fireflower",18,"aska"],["rimkr",18,"frost"],["iceflower",18,"frost"],
+  ["copper",12,"gravmark"],["ang",12,"gravmark"],["iron",10,"benfalt"],["silver",12,"benfalt"]
 ];
 
 // Quest items. Collect items are objects in the world (zone + count); loot items drop from monsters.
@@ -983,7 +983,7 @@ const QITEMS = {
   spidersilk:{name:"Fine Spider Silk"},
   dewdrop:{name:"Glittering Dew", look:"glow", zone:"silver", count:9},
   wispglow:{name:"Wisp Light"},
-  harp:{name:"The Lost Harp", look:"chest", zone:"silver", count:3, far:"lovhem", d:16},
+  harp:{name:"The Lost Harp", look:"chest", zone:"silver", count:3, far:"lovhem", d:32},
   moonstone:{name:"Moonstone", look:"crystal", zone:"manskog", count:9},
   mushroom:{name:"Cave Mushroom", look:"mushroom", zone:"koppar", count:10},
   tools:{name:"Dwarven Tools"},
@@ -1049,6 +1049,11 @@ const NPCS = [];
       {id:"oreman", name:"Hakon the Smith", role:"Blacksmith & Ore", color:"#7a5a40", smith:true, ores:true, race:"human", at:at(-11,-1)},
       {id:"apoth", name:"Yrsa the Apothecary", role:"Alchemy & Potions", color:"#6ab08a", alch:true, potions:true, race:"elf", at:at(-11,2)},
       {id:"arvid", name:"Quartermaster Arvid", role:"Merchant", color:"#c09a40", shop:true, race:"dwarf", at:at(-9,5)} ]); }
+  add("holgerstuga", [{id:"mattis", name:"Mattis the Peddler", role:"Merchant", color:"#a08a5a", shop:"basic", race:"human"}]);
+  add("manglanta", [{id:"sylis", name:"Sylis the Wanderer", role:"Merchant", color:"#6a9a7a", shop:"basic", race:"elf"}]);
+  add("snostugan", [{id:"gunnar", name:"Gunnar the Trapper", role:"Merchant", color:"#8a7a6a", shop:"basic", race:"dwarf"}]);
+  add("kanjonlagret", [{id:"drogg", name:"Drogg the Trader", role:"Merchant", color:"#7a6a3a", shop:"basic", race:"orc"}]);
+  add("benvakten", [{id:"vesper", name:"Vesper the Scavenger", role:"Merchant", color:"#6a6a7a", shop:"basic", race:"undead"}]);
   add("traskvakten", [{id:"sigvard", name:"Sigvard the Witch Hunter", role:"Quest Giver", color:"#4a5a4a", race:"human"},{id:"mora", name:"Old Mora", role:"Merchant", color:"#8a8a6a", shop:true, race:"orc"}]);
   add("askvakten", [{id:"runa", name:"Runa the Warden", role:"Quest Giver", color:"#8a6a9a", race:"elf"},{id:"siv", name:"Quartermaster Siv", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
   add("isporten", [{id:"hedda", name:"Hedda the Icewarden", role:"Quest Giver", color:"#8ab0c8", race:"dwarf"},{id:"frode", name:"Frode the Merchant", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
@@ -1228,19 +1233,19 @@ Object.assign(QITEMS, {
 });
 // layout: rooms in order (0 = entrance), puzzle = lever/rune room; gate closes the way out of that room until it is solved
 const DUNGEONS = {
-  d_mine:{hub:"jarnfastet", ent:{x:116, y:75}, oy:2, floor:"T_ROCK", wall:"T_CLIFF", obst:"T_BOULDER", lever:"Lever", gate:"Mine Gate",
+  d_mine:{hub:"jarnfastet", ent:{x:232, y:150}, oy:2, floor:"T_ROCK", wall:"T_CLIFF", obst:"T_BOULDER", lever:"Lever", gate:"Mine Gate",
     pack:["gruvkobold","gruvspindel","stenvakt"], mini:["krakk","grottbjorn"], boss:"djuptjur", puzzles:["lever","rune"],
     keeper:{id:"dk_mine", name:"Torgny the Mine Warden", role:"Entrance: The Iron Mine", race:"dwarf", color:"#a0683a"},
     intro:"The old iron mine is crawling with kobolds – and something far larger lurks in its depths."},
-  d_temple:{hub:"traskvakten", ent:{x:147, y:125}, oy:46, floor:"T_CRYPT", wall:"T_CWALL", obst:"T_WATER", lever:"Offering Bowl", gate:"Stone Gate",
+  d_temple:{hub:"traskvakten", ent:{x:294, y:250}, oy:46, floor:"T_CRYPT", wall:"T_CWALL", obst:"T_WATER", lever:"Offering Bowl", gate:"Stone Gate",
     pack:["kultist","drunknad","templebloss"], mini:["hagga","templevakt"], boss:"profeten", puzzles:["rune","lever"],
     keeper:{id:"dk_temple", name:"Ylva the Pilgrim", role:"Entrance: The Drowned Temple", race:"human", color:"#4a6a5a"},
     intro:"The temple sank into the marsh long ago. The prophet who rules there refuses to die."},
-  d_forge:{hub:"askvakten", ent:{x:157, y:38}, oy:90, floor:"T_ASH", wall:"T_CWALL", obst:"T_LAVA", lever:"Valve", gate:"Iron Gate",
+  d_forge:{hub:"askvakten", ent:{x:314, y:76}, oy:90, floor:"T_ASH", wall:"T_CWALL", obst:"T_LAVA", lever:"Valve", gate:"Iron Gate",
     pack:["smedjeorc","eldhund","levandeglod"], mini:["ignar","magmagargoyl"], boss:"eldtyrann", puzzles:["lever","rune"],
     keeper:{id:"dk_forge", name:"Brand the Ashwalker", role:"Entrance: The Ember Forge", race:"orc", color:"#aa4a2a"},
     intro:"In the Ember Forge, weapons are forged for the Fire Tyrant. Close the valves to get past the heat."},
-  d_vault:{hub:"isporten", ent:{x:197, y:84}, oy:134, floor:"T_SNOW", wall:"T_ICE", obst:"T_SPINE", lever:"Frost Crystal", gate:"Ice Gate",
+  d_vault:{hub:"isporten", ent:{x:394, y:168}, oy:134, floor:"T_SNOW", wall:"T_ICE", obst:"T_SPINE", lever:"Frost Crystal", gate:"Ice Gate",
     pack:["isvaktare","frostulv","isande"], mini:["valvbjorn","skrymer"], boss:"skadi", puzzles:["rune","lever"],
     keeper:{id:"dk_vault", name:"Solvi the Runecarver", role:"Entrance: The Frost Vault", race:"elf", color:"#8ab0c8"},
     intro:"Beneath the ice, Skadi the Ice Queen sleeps in her vault. No one who has entered has ever come out."}
@@ -1348,11 +1353,11 @@ const nearHub = (x,y,extra) => Object.keys(HUBS).some(h=>hubDist(x,y,h) < HUBS[h
 
 function genWorld(){
   map = new Array(MW*MH); zmap = new Array(MW*MH);
-  const n1 = noise(11,6), n2 = noise(23,2.5), wa = noise(37,9), wb = noise(41,9);
+  const n1 = noise(11,6), n2 = noise(23,2.5), wa = noise(37,18), wb = noise(41,18);
   const zl = Object.entries(ZONES).filter(([,z])=>!z.dungeon);
   for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
     if(x >= OW){ map[y*MW+x] = T_CLIFF; zmap[y*MW+x] = null; continue; }
-    const wx = x + (wa(x,y)-0.5)*18, wy = y + (wb(x,y)-0.5)*18;
+    const wx = x + (wa(x,y)-0.5)*36, wy = y + (wb(x,y)-0.5)*36;
     let best = null, bd = 1e9;
     for(const [id,z] of zl){ const d = Math.hypot(wx-z.c[0], wy-z.c[1]) - (z.w||0); if(d < bd){ bd = d; best = id; } }
     zmap[y*MW+x] = best;
@@ -1390,7 +1395,7 @@ function genWorld(){
   [[-4,-3],[3,-4],[-5,2],[4,3],[0,5]].forEach(([dx,dy])=>deco.push({k:"tent",x:(LAIRS.banditcamp.x+dx)*TILE+16,y:(LAIRS.banditcamp.y+dy)*TILE+16}));
   [CRYPT.x0+3, CRYPT.x1-3].forEach(x=>deco.push({k:"brazier",x:x*TILE+16,y:(CRYPT.y0+4)*TILE+16}));
   [[-4,-3],[4,-3],[-4,3],[4,3]].forEach(([dx,dy])=>deco.push({k:"brazier",x:(LAIRS.magma.x+dx)*TILE+16,y:(LAIRS.magma.y+dy)*TILE+16}));
-  const gr = rng(77); for(let i=0;i<12;i++){ const x=125+Math.floor(gr()*30), y=105+Math.floor(gr()*28); if(!solidAt(x,y)&&zmap[y*MW+x]==="dimma") deco.push({k:"grave",x:x*TILE+16,y:y*TILE+16}); }
+  const gr = rng(77); for(let i=0;i<24;i++){ const x=250+Math.floor(gr()*60), y=210+Math.floor(gr()*56); if(!solidAt(x,y)&&zmap[y*MW+x]==="dimma") deco.push({k:"grave",x:x*TILE+16,y:y*TILE+16}); }
   // reachability from the first town
   const h0 = HUBS.frostvik; reach = new Uint8Array(MW*MH); const q=[h0.y*MW+h0.x]; reach[q[0]]=1;
   while(q.length){ const i=q.pop(), x=i%MW, y=(i/MW)|0; for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+ox, ny=y+oy, j=ny*MW+nx; if(nx>=0&&ny>=0&&nx<MW&&ny<MH&&!reach[j]&&!SOLID.has(map[j])){ reach[j]=1; q.push(j);} } }
@@ -1492,8 +1497,10 @@ function resType(){ return P.form==="bear"?"rage" : P.form==="cat"?"energy" : CL
 function maxRes(type){ return type==="mana" ? P.maxMana : 100; }
 function addRes(type, n){ P[type] = clamp(P[type]+n, 0, maxRes(type)); }
 // attack power (weapons, arrows, physical abilities) and spell power (spells and healing)
-function pow(){ return 6 + S.level*2.6 + S.weapon*2.5 + gearStat("pow"); }
-function spow(){ return (6 + S.level*2.6 + S.weapon*2.5 + gearStat("sp")) * (P && P.buffs && P.buffs.sage ? 1.2 : 1); }
+// primary stats (from gear): how much each point is worth
+const STAT_RATE = {staHp:10, intMana:10, intSp:1, intCrit:0.0015, strAp:1, agiCrit:0.0015, agiDodge:0.0015, agiApHunter:1};
+function pow(){ return 6 + S.level*2.6 + S.weapon*2.5 + gearStat("pow") + gearStat("str")*STAT_RATE.strAp + (S.cls==="hunter" ? gearStat("agi")*STAT_RATE.agiApHunter : 0); }
+function spow(){ return (6 + S.level*2.6 + S.weapon*2.5 + gearStat("sp") + gearStat("int")*STAT_RATE.intSp) * (P && P.buffs && P.buffs.sage ? 1.2 : 1); }
 function teff(k){ if(!S) return 0; let v=0; for(const t of TALENTS[S.cls]) if(t.eff&&t.eff[k]) v += t.eff[k]*T(t.id); return v; }
 function genMult(){ let m=(1+teff("dmg")) * (CLASS_DMG[S.cls]||1) * PLAYER_DMG; if(S.race==="orc") m*=1.1; if(P.buffs.shout) m*=1.15; if(P.buffs.elixir) m*=1.2; if(P.buffs.avenging) m*=1.2; if(T("trueshot")) m*=1.1; if(T("heartWild")) m*=1.1; return m; }
 function tmul(ab, school){
@@ -1506,8 +1513,10 @@ function tmul(ab, school){
   if(S.cls==="druid"){ if(["wrath","moonfire","starfire"].includes(ab)) m*=1+0.08*T("moonfury"); if(P.form) m*=1+0.08*T("feral"); }
   return m;
 }
-function critChance(m, school){
-  let c = 0.05 + gearStat("crit")/100 + (P && P.buffs && P.buffs.keen ? 0.05 : 0); if(S.race==="elf") c+=0.05;
+// weapon attacks (melee, bow shots, forms) use attack crit; spells use spell crit
+function isSpellCrit(school, ab){ if(school==="phys" || (P && P.form)) return false; const a = ab && AB[ab]; if(a){ if(a.minRange) return false; if(a.tgt==="enemy" && a.range <= 70) return false; } return true; }
+function critChance(m, school, ab){
+  let c = 0.05 + gearStat("crit")/100 + (isSpellCrit(school, ab) ? gearStat("int")*STAT_RATE.intCrit : gearStat("agi")*STAT_RATE.agiCrit) + (P && P.buffs && P.buffs.keen ? 0.05 : 0); if(S.race==="elf") c+=0.05;
   c += 0.03*T("cruelty") + 0.03*T("lethal") + teff("crit");
   if(school==="holy") c += 0.03*T("holySpec");
   if(S.cls==="mage" && m && (m.slowT>0||m.rootT>0)) c += 0.12*T("shatter");
@@ -1529,13 +1538,13 @@ function talentPoints(){ return Math.max(0, S.level-9); }
 function talentsSpent(){ return Object.values(S.talents).reduce((a,b)=>a+b,0); }
 
 function recompute(full){
-  const c = CLASSES[S.cls]; let hp = (80+S.level*22)*c.hp + gearStat("hp");
+  const c = CLASSES[S.cls]; let hp = (80+S.level*22)*c.hp + gearStat("hp") + gearStat("sta")*STAT_RATE.staHp;
   if(S.race==="dwarf") hp*=1.15;
   hp *= 1 + 0.06*T("toughness") + 0.06*T("endurance") + 0.05*T("naturalist") + teff("hp");
   if(P.form==="bear") hp *= 1.6*(1+0.1*T("heartWild"));
   const pct = P.maxHp ? P.hp/P.maxHp : 1;
   P.maxHp = Math.round(hp); P.hp = full ? P.maxHp : Math.max(1, P.maxHp*pct);
-  let mana = 100 + S.level*22 + gearStat("mana"); if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
+  let mana = 100 + S.level*22 + gearStat("mana") + gearStat("int")*STAT_RATE.intMana; if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
   P.maxMana = Math.round(mana); P.mana = full ? P.maxMana : Math.min(P.mana, P.maxMana);
 }
 
@@ -1579,7 +1588,7 @@ function hit(m, base, school, ab){
   const ld = m.lvl - S.level;
   if(ld > 0 && Math.random() < Math.min(0.35, 0.06*ld)){ floatText(m.x, m.y-m.r-14, "Miss", "#cfd8dc"); engage(m); return null; }
   let amt = base * genMult() * tmul(ab, school) * rand(0.92, 1.08) * lvlPenalty(m);
-  const crit = Math.random() < critChance(m, school);
+  const crit = Math.random() < critChance(m, school, ab);
   if(crit) amt *= 2*(1+0.1*T("mortal"));
   amt = Math.max(1, Math.round(amt));
   damageMob(m, amt, crit, school);
@@ -1595,7 +1604,7 @@ function hit(m, base, school, ab){
 function lvlPenalty(m){ const d = m.lvl - S.level; return d > 0 ? Math.max(0.5, 1 - 0.06*d) : 1; }
 function damageMob(m, amt, crit, school){
   if(m.dead) return;
-  if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school]); return; }
+  if(coopGuestMob(m)){ floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit); m.flash = 0.12; P.combatT = 6; coopOp("dmg", m, [amt, crit, school, PET_ATK ? 1 : 0]); return; }
   m.hp -= amt; m.flash = 0.12; anchor(m); coopThreat(m, amt);
   if(!coopMob(m) && pet){ if(PET_ATK) m.thPet = (m.thPet||0) + amt*PETS[pet.kind].threat; else m.thMe = (m.thMe||0) + amt*(pet.dead ? 1 : PETS[pet.kind].ownerThreat); }
   floatText(m.x + rand(-8,8), m.y - m.r - 14, crit ? amt+"!" : ""+amt, SCHOOL_COLOR[school]||"#fff", crit);
@@ -1614,8 +1623,11 @@ function slow(m, pct, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combat
 function root(m, dur){ if(!m||m.dead||m.def.boss) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("root", m, [dur]); } engage(m); anchor(m); m.rootT = Math.max(m.rootT, dur); }
 function stun(m, dur){ if(!m||m.dead) return; if(coopGuestMob(m)){ P.combatT = 6; return coopOp("stun", m, [dur]); } engage(m); anchor(m); m.stunT = Math.max(m.stunT, m.def.boss?dur*0.4:dur); m.tele = null; }
 function aoe(x, y, r, fn){ mobs.filter(m=>!m.dead&&!m.evading&&Math.hypot(m.x-x,m.y-y)<r+m.r).forEach(fn); }
-function zone(x, y, r, dur, dmg, school, ab, slows){ zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
-function proj(t, color, size, onHit, kind, sp){ projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
+let VFX_REC = null;   // co-op: while you cast, the visuals are recorded so friends can see them too
+function coopVfxRun(fn){ if(!coopOn() || VFX_REC) return fn(); const rec = []; VFX_REC = rec; try{ return fn(); } finally{ VFX_REC = null; if(rec.length) coopBroadcast({t:"vfx", id:coopMyId(), v:rec.slice(0, 24)}); } }
+function zone(x, y, r, dur, dmg, school, ab, slows){ if(VFX_REC) VFX_REC.push(["z", Math.round(x), Math.round(y), r, dur, school]); zones.push({x, y, r, left:dur, tick:0.4, dmg, school, ab, slows}); }
+function proj(t, color, size, onHit, kind, sp){ if(VFX_REC){ if(t && t.nid != null) VFX_REC.push(["p", t.nid, color, size, kind||"orb", sp||0]); if(onHit){ const o = onHit; onHit = ()=>coopVfxRun(o); } }   // effects on impact are sent too
+  projs.push({x:P.x, y:P.y-14, t, color, size, onHit, kind:kind||"orb", sp:sp||(kind==="arrow"?680:540)}); }
 function buff(name, dur){ P.buffs[name] = dur; }
 function shieldP(amt, dur){ if(COOP_CAP){ COOP_CAP.fx.push(["shield", Math.round(amt*COOP_CAP.scale), dur]); return; } P.shield = Math.max(P.shield||0, amt); P.shieldT = dur; }
 // ---- resting: sit down out of combat (X) for faster health and mana regen
@@ -1638,7 +1650,8 @@ function setForm(f){
   buildHotbar();
 }
 
-function killMob(m){
+function killMob(m){ const _r = VFX_REC; VFX_REC = null; try{ return killMob0(m); } finally{ VFX_REC = _r; } }
+function killMob0(m){
   m.dead = true; m.hp = 0; m.dots = []; m.tele = null; m.state = "idle"; mobSnd(m, "death");
   m.respawn = m.def.dg ? 1e9 : m.def.boss ? 600 : m.elite ? 360 : 180;
   if(P.target === m) P.target = null;
@@ -1667,7 +1680,7 @@ function killRewards(m, share){
 
 function avoidChances(){
   const pb = (S.cls==="warrior"||S.cls==="paladin") ? 0.04 : S.cls==="hunter" ? 0.02 : (S.cls==="druid" && P.form==="bear") ? 0.02 : 0;
-  const dodge = 0.04 + teff("dodge") + (P.form==="cat" ? 0.03 : 0) + (S.race==="elf" ? 0.01 : 0);
+  const dodge = 0.04 + gearStat("agi")*STAT_RATE.agiDodge + teff("dodge") + (P.form==="cat" ? 0.03 : 0) + (S.race==="elf" ? 0.01 : 0);
   const parry = pb > 0 ? pb + teff("parry") : 0;
   return {dodge:Math.min(dodge, 0.1), parry:Math.min(parry, 0.09)};
 }
@@ -1738,7 +1751,7 @@ function finishAbility(id, t){
   const a = AB[id];
   if(a.cd) P.cds[id] = a.cd;
   if(id==="pyroblast" && P.buffs.hotstreak) delete P.buffs.hotstreak;
-  { const ft = coopFriendTarget(id); if(ft) coopCastOn(ft, a, t); else a.run(t); }
+  { const ft = coopFriendTarget(id); if(ft) coopCastOn(ft, a, t); else coopVfxRun(()=>a.run(t)); }
   { const as = AB_SND[id]; if(as) snd(as[0]); if(id==="whirlwind"){ setTimeout(()=>snd("swing"),150); setTimeout(()=>snd("swing"),300); } }
   if(!a.form && !P.form){ const cls = S.cls; setAct(P, cls==="paladin" ? ((a.tgt==="enemy" && a.range<=60) || id==="consecrate" ? "slash" : "cast") : cls==="warrior" ? (a.tgt==="enemy"||a.range===0 ? "slash" : null) : cls==="hunter" ? (a.tgt==="enemy" ? (a.range<=70 ? "slash" : "bow") : null) : "cast"); }
   if(t) P.dir = dirOf(t.x-P.x, t.y-P.y);
@@ -1778,9 +1791,9 @@ function autoAttack(dt){
   if(!P.form) setAct(P, (S.cls==="warrior"||S.cls==="paladin") ? "slash" : S.cls==="hunter" ? (mel ? "slash" : "bow") : "thrust");
   if(mel && P.act && P.act.anim==="slash") P.act.dur = HUNTER_MELEE_DUR;
   snd(ai.ranged && !mel ? "bow" : "swing", {vol:0.8});
-  if(mel) hit(t, pow()*0.6, "phys", "auto");
-  else if(ai.ranged) proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow");
-  else { hit(t, pow()*ai.mult, "phys", "auto"); if(ai.rage) addRes("rage", ai.rage); }
+  if(mel) coopVfxRun(()=>hit(t, pow()*0.6, "phys", "auto"));
+  else if(ai.ranged) coopVfxRun(()=>proj(t, "#e9e2c8", 3, ()=>hit(t, pow()*ai.mult, "phys", "auto"), "arrow"));
+  else { coopVfxRun(()=>hit(t, pow()*ai.mult, "phys", "auto")); if(ai.rage) addRes("rage", ai.rage); }
   P.combatT = 6;
 }
 function usePotion(kind){
@@ -1931,7 +1944,7 @@ function update(dt){
   projs = projs.filter(p=>!p.done);
   // ground effects
   for(const z of zones){ z.left -= dt; z.tick -= dt;
-    if(z.tick <= 0){ z.tick += 1; aoe(z.x, z.y, z.r, m=>{ hit(m, z.dmg, z.school, z.ab); if(z.slows) slow(m, 0.5, 2); }); }
+    if(z.tick <= 0){ z.tick += 1; if(!z.vis) aoe(z.x, z.y, z.r, m=>{ hit(m, z.dmg, z.school, z.ab); if(z.slows) slow(m, 0.5, 2); }); }
     for(let i=0;i<2;i++){ const a=Math.random()*Math.PI*2, r=Math.sqrt(Math.random())*z.r; parts.push({x:z.x+Math.cos(a)*r, y:z.y+Math.sin(a)*r-30, vx:-30, vy:120, life:0.3, max:0.3, color:SCHOOL_COLOR[z.school], size:2}); } }
   zones = zones.filter(z=>z.left>0);
   for(const p of parts){ p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; }
@@ -2009,7 +2022,7 @@ function updMob(m, dt){
     if(!T){ evade(m); return; }
     if(m.lx === undefined) anchor(m);
     if(time - m.lastHit > 8 && (Math.hypot(m.x-m.lx, m.y-m.ly) > 600 || dp > 380)){ evade(m); log(`${m.name} gives up and returns.`, "#93a4ad"); return; }
-    if(TG.me || TG.pet) P.combatT = Math.max(P.combatT, 2);
+    if(TG.me || (TG.pet && (!TG.owner || TG.owner===coopMyId()))) P.combatT = Math.max(P.combatT, 2);
     if(m.stunT > 0) return;
     if(m.tele){ m.tele.t -= dt;
       if(m.tele.t <= 0){ spawnBossFx(m); const sp = m.def.special; for(const c of mobCands(m)) if(Math.hypot(c.e.x-m.tele.x, c.e.y-m.tele.y) < m.tele.r + 11) mobAttack(m, c, m.dmg*sp.mult, null); ring(m.tele.x, m.tele.y, m.tele.r, "#ff5a40"); burst(m.tele.x, m.tele.y, "#ff8a5a", 24); m.tele = null; }
@@ -2048,9 +2061,9 @@ function petFight(){ const dg = P.inDungeon||null; return P.combatT > 0 || mobs.
 function petMake(kind){ const d = PETS[kind], mh = Math.round(P.maxHp*d.hp);
   return {kind, name:d.name, type:d.type, def:{color:d.color, shape:d.shape}, r:d.r, x:P.x-26*(P.fx||1), y:P.y+10, fx:P.fx||1, ph:Math.random()*6.28, hp:mh, maxHp:mh, dead:false,
     walk:false, swing:0, flash:0, rootT:0, slowT:0, stunT:0, state:"follow", atkT:1, growl:3, res:kind==="wolf" ? 100 : 0, clawT:0, sweepT:0, dg:P.inDungeon||null, lvl:S.level, _S:S}; }
-function petCallCheck(kind){ if(coopOn()) return "Pets are not available in co-op yet"; if(petFight()) return "You cannot call a pet in combat";
+function petCallCheck(kind){ if(petFight()) return "You cannot call a pet in combat";
   if(pet && !pet.dead && pet.kind===kind) return `Your ${PETS[kind].name.toLowerCase()} is already with you`; return true; }
-function petCall(kind){ if(coopOn() || petFight()) return err("You cannot call a pet right now");
+function petCall(kind){ if(petFight()) return err("You cannot call a pet right now");
   S.petType = kind; pet = petMake(kind); burst(pet.x, pet.y-10, "#e6bd5c", 14); floatText(pet.x, pet.y-40, PETS[kind].name+" called", "#8fe39a", true); log(`You call your ${PETS[kind].name.toLowerCase()}.`, "#8fe39a"); }
 function petDismiss(){ if(!pet) return; floatText(pet.x, pet.y-40, PETS[pet.kind].name+" dismissed", "#9fd6e8", true); burst(pet.x, pet.y-10, "#9fd6e8", 10); log(`You dismiss your ${PETS[pet.kind].name.toLowerCase()}.`, "#9fd6e8"); pet = null; S.petType = null; }
 // pet commands: attack your target, or press again to recall it (it then holds until the fight is over or you send it in again)
@@ -2062,17 +2075,17 @@ function petToggleAttack(){
   if((t.def.dg||null) !== (P.inDungeon||null)) return err("No target");
   pet.cmd = t; pet.hold = false; floatText(pet.x, pet.y-pet.r-30, "Attack!", "#e6bd5c", true);
 }
-function petBarUpd(){ const el = $("petbar"); if(!el) return; const show = !!(pet && !pet.dead && S && S.cls==="hunter" && !coopOn()); if(el.hidden === show) el.hidden = !show; if(!show) return;
+function petBarUpd(){ const el = $("petbar"); if(!el) return; const show = !!(pet && !pet.dead && S && S.cls==="hunter"); if(el.hidden === show) el.hidden = !show; if(!show) return;
   const b = $("petatk"), on = !!(pet.cur && !pet.cur.dead), txt = (on ? "Pet: Recall" : "Pet: Attack") + " [" + keyName(KB.petAtk) + "]"; if(b.textContent !== txt) b.textContent = txt; b.classList.toggle("on", on); }
 function petMend(){ if(!pet || pet.dead) return; const h = Math.round(pet.maxHp*0.4); pet.hp = Math.min(pet.maxHp, pet.hp + h); floatText(pet.x, pet.y-40, "+"+h, "#62d36b"); burst(pet.x, pet.y-10, "#62d36b", 8); }
 function petDamage(raw, src){ if(!pet || pet.dead) return; const amt = Math.max(1, Math.round(raw*PETS[pet.kind].taken));
-  pet.hp -= amt; pet.flash = 0.12; if(pet.kind==="bear") pet.res = Math.min(100, pet.res+5); floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
-  if(pet.hp <= 0){ pet.hp = 0; pet.dead = true; log(`Your ${pet.name.toLowerCase()} has fallen. Call it again when the fight is over.`, "#ff8a7a"); for(const m of mobs) if(m.tgtId === "pet") m.tgtId = null; } }
+  pet.hp -= amt; pet.flash = 0.12; P.combatT = Math.max(P.combatT, 4); if(pet.kind==="bear") pet.res = Math.min(100, pet.res+5); floatText(pet.x + rand(-8,8), pet.y - pet.r - 14, ""+amt, "#ff9a7a");
+  if(pet.hp <= 0){ pet.hp = 0; pet.dead = true; log(`Your ${pet.name.toLowerCase()} has fallen. Call it again when the fight is over.`, "#ff8a7a"); for(const m of mobs) if(m.tgtId === "pet" || m.tgtId === coopMyId()+":pet") m.tgtId = null; } }
 function petStrike(t, coef){ if(!t || t.dead) return; const amt = Math.max(1, Math.round(pow()*coef*genMult()*rand(0.92,1.08)*lvlPenalty(t)));
   PET_ATK = true; try{ damageMob(t, amt, false, "phys"); } finally{ PET_ATK = false; } }
 function updPet(dt){
   if(!running || !P || !S) return;
-  if(S.cls !== "hunter" || coopOn()){ pet = null; petBarUpd(); return; }
+  if(S.cls !== "hunter"){ pet = null; petBarUpd(); return; }
   if(pet && pet._S !== S) pet = null;
   if(!pet){ if(S.petType && PETS[S.petType] && !P.dead) pet = petMake(S.petType); if(!pet){ petBarUpd(); return; } }
   const d = PETS[pet.kind], dg = P.inDungeon||null;
@@ -2093,12 +2106,13 @@ function updPet(dt){
     if(!t){ let bd = 420; for(const m of mobs){ if(m.dead || m.evading || m.state!=="chase" || (m.def.dg||null)!==dg) continue; const dd = dist(m,P); if(dd < bd){ bd = dd; t = m; } } }
   }
   if(pet.kind==="bear" && pet.growl <= 0 && t && dist(pet,t) < pet.r + t.r + 40){   // Growl: free, only works on what the bear is fighting
-    pet.growl = GROWL_CD; t.tauntT = GROWL_TAUNT; t.thPet = Math.max(t.thPet||0, (t.thMe||0)*1.3 + 40);
-    floatText(pet.x, pet.y-pet.r-30, "Growl!", "#e6bd5c", true); ring(pet.x, pet.y, 40, "#e6bd5c"); pet.swing = 0.25; }
+    pet.growl = GROWL_CD;
+    if(coopMob(t)){ if(COOP.role==="guest") coopOp("growl", t, []); else coopGrowlApply(t, coopMyId()); } else { t.tauntT = GROWL_TAUNT; t.thPet = Math.max(t.thPet||0, (t.thMe||0)*1.3 + 40); }
+    floatText(pet.x, pet.y-pet.r-30, "Growl!", "#e6bd5c", true); ring(pet.x, pet.y, 40, "#e6bd5c"); pet.swing = 0.25; coopPetSend("growl"); }
   // Sweep (bear, 40 rage): hits every fighting enemy around the bear and builds aggro on all of them
   if(pet.kind==="bear" && pet.res >= 40 && pet.sweepT <= 0){
     const near = mobs.filter(m=>!m.dead && !m.evading && m.state==="chase" && (m.def.dg||null)===dg && dist(m,pet) < 90);
-    if(near.length >= 2){ pet.res -= 40; pet.sweepT = 1.5; pet.swing = 0.25; ring(pet.x, pet.y, 50, "#d84a42"); floatText(pet.x, pet.y-pet.r-30, "Sweep", "#ff8a7a"); for(const m of near) petStrike(m, 0.5); } }
+    if(near.length >= 2){ pet.res -= 40; pet.sweepT = 1.5; pet.swing = 0.25; ring(pet.x, pet.y, 50, "#d84a42"); floatText(pet.x, pet.y-pet.r-30, "Sweep", "#ff8a7a"); coopPetSend("sweep"); for(const m of near) petStrike(m, 0.5); } }
   pet.cur = t || null;   // what the pet is fighting right now (also drives the Recall button)
   pet.walk = false; pet.state = t ? "chase" : "follow";
   if(t){
@@ -2108,14 +2122,14 @@ function updPet(dt){
       if(pet.atkT <= 0){ pet.atkT = d.atk; pet.swing = 0.2;
         petStrike(t, d.coef); if(pet.kind==="bear") pet.res = Math.min(100, pet.res + 8); }
       // Claw (wolf, 40 energy): an extra hit on top of the normal attacks
-      if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); petStrike(t, 0.55); } }
+      if(pet.kind==="wolf" && pet.res >= 40 && pet.clawT <= 0 && !t.dead){ pet.res -= 40; pet.clawT = 1.2; pet.swing = 0.25; floatText(pet.x, pet.y-pet.r-30, "Claw", "#e8c84a"); coopPetSend("claw"); petStrike(t, 0.55); } }
   } else if(dist(pet,P) > 70){ const dd = dist(pet,P); steer(pet, P.x - 24*(P.fx||1), P.y + 8, dt, petSpd()*(dd > 200 ? 1.4 : dd > 110 ? 1.15 : 1)); pet.walk = true; }   // out of combat: your speed, catching up when far behind
 }
 // ---- effects
 function floatText(x, y, txt, color, big){ floats.push({x, y, txt, color, t:0, big}); }
-function burst(x, y, color, n){ const el = fxEl(color); if(el) sfx("explo", el, x, y, 30+n*2.2, 0.55); for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
-function ring(x, y, r, color){ const el = color!=="#ff5a40" && fxEl(color); if(el) sfx("ring", el, x, y, r*2.5, 0.75); for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; parts.push({x:x+Math.cos(a)*r*0.3, y:y+Math.sin(a)*r*0.3, vx:Math.cos(a)*r*1.6, vy:Math.sin(a)*r*1.6, life:0.42, max:0.42, color, size:3}); } }
-function slash(t){ if(!t) return; for(let i=0;i<8;i++){ const a = -0.8 + i*0.2; parts.push({x:t.x+Math.cos(a)*14, y:t.y-12+Math.sin(a)*14, vx:Math.cos(a+1.5)*60, vy:Math.sin(a+1.5)*60, life:0.22, max:0.22, color:"#ffffff", size:3}); } P.swing = 0.2; }
+function burst(x, y, color, n){ if(VFX_REC) VFX_REC.push(["b", Math.round(x), Math.round(y), color, n]); const el = fxEl(color); if(el) sfx("explo", el, x, y, 30+n*2.2, 0.55); for(let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, s = rand(30,140); parts.push({x, y:y-10, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rand(0.3,0.6), max:0.6, color, size:rand(2,4)}); } }
+function ring(x, y, r, color){ if(VFX_REC) VFX_REC.push(["r", Math.round(x), Math.round(y), r, color]); const el = color!=="#ff5a40" && fxEl(color); if(el) sfx("ring", el, x, y, r*2.5, 0.75); for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; parts.push({x:x+Math.cos(a)*r*0.3, y:y+Math.sin(a)*r*0.3, vx:Math.cos(a)*r*1.6, vy:Math.sin(a)*r*1.6, life:0.42, max:0.42, color, size:3}); } }
+function slash(t){ if(!t) return; if(VFX_REC && t.nid != null) VFX_REC.push(["s", t.nid]); for(let i=0;i<8;i++){ const a = -0.8 + i*0.2; parts.push({x:t.x+Math.cos(a)*14, y:t.y-12+Math.sin(a)*14, vx:Math.cos(a+1.5)*60, vy:Math.sin(a+1.5)*60, life:0.22, max:0.22, color:"#ffffff", size:3}); } P.swing = 0.2; }
 </script>
 <script>
 // ======================= GEAR / EQUIPMENT =======================
@@ -2161,8 +2175,8 @@ const ARMOR_BASE = {
 };
 const JEWEL_BASE = {neck:["Necklace","Amulet","Pendant"], ring:["Ring","Signet","Band"]};
 const SLOT_ICON = {head:"helmet", shoulder:"upg_helmet", chest:"armor", hands:"upg_armor", legs:"armor", feet:"upg_armor", neck:"gemBlue", ring:"gemRed"};
-const STAT_NAME = {pow:"Attack Power", sp:"Spell Power", hp:"Health", mana:"Mana", crit:"Critical Strike", def:"Armor"};
-const STAT_SUFFIX = {pow:"Power", sp:"Sorcery", hp:"Endurance", mana:"Wisdom", crit:"Precision", def:"Protection"};
+const STAT_NAME = {pow:"Attack Power", sp:"Spell Power", hp:"Health", mana:"Mana", crit:"Critical Strike", def:"Armor", str:"Strength", agi:"Agility", sta:"Stamina", int:"Intellect"};
+const STAT_SUFFIX = {pow:"Power", sp:"Sorcery", hp:"Endurance", mana:"Wisdom", crit:"Precision", def:"Protection", str:"Might", agi:"Swiftness", sta:"Fortitude", int:"Brilliance"};
 const PREFIX = [["Beggar's","Thrall's","Apprentice's"], [""], [""], ["Warden's","Master's","Knight's","Huntmaster's"], ["Stormcaller's","Nightfall","Runesmith's","Wolfking's"], ["Rimfrost","Ice Giant's","Draugr King's","Elder"]];
 const GEAR_MAX = 30;
 
@@ -2175,13 +2189,16 @@ function gearClasses(it){ if(it.arm) return ARMOR[it.arm].cls; if(it.wt) return 
 function canWear(it){ return gearClasses(it).includes(S.cls); }
 function gearTypeName(it){ return it.arm ? ARMOR[it.arm].name : it.wt ? WTYPES[it.wt].name : "Jewelry"; }
 
+// primary stat budget per quality (at item level 30 on a slot with weight 0.5; scales down with item level, up with slot weight) and the stats each class wants
+const ITEM_BUDGET = [1.2, 2.4, 4.8, 8.5, 14, 22];
+const PRIMARY_POOL = {warrior:["str","sta","agi"], paladin:["str","int","sta"], hunter:["agi","sta"], druid:["int","agi","sta","str"], mage:["int","sta"], priest:["int","sta"]};
 // make one item. opts: {slot, cls, q, il, r}
 function makeGear(opts){
   const r = opts.r || Math.random, q = opts.q, il = Math.max(1, Math.min(MAX_LVL, Math.round(opts.il)));
   const cls = opts.cls || pickR(Object.keys(CLASSES), r);
   let slot = opts.slot;
   if(!slot){ const pool = SLOT_ORDER.filter(s=>s!=="offhand" || CLASS_OFF[cls].length); slot = pickR(pool, r); }
-  const it = {id:Math.random().toString(36).slice(2,10), slot, q, il, st:{}};
+  const it = {id:Math.random().toString(36).slice(2,10), slot, q, il, st:{}, v:2};   // v:2 = items with primary stats
   if(slot==="weapon") it.wt = pickR(CLASS_WEAP[cls], r);
   else if(slot==="offhand") it.wt = pickR(CLASS_OFF[cls].length ? CLASS_OFF[cls] : ["shield"], r);
   else if(slot!=="neck" && slot!=="ring") it.arm = CLASS_ARMOR[cls];
@@ -2193,28 +2210,33 @@ function makeGear(opts){
   add("def", pts*defShare); pts *= 1-defShare;
   if(slot==="weapon"){ if(role==="phys") add("pow", pts*0.75); else if(role==="caster") add("sp", pts*0.75); else { add("pow", pts*0.4); add("sp", pts*0.35); } pts *= 0.25; }
   else if(it.wt==="tome"){ add("sp", pts*0.5); pts *= 0.5; }
-  // spread the rest over 1-3 random stats (better items get more stats)
-  const pool = role==="phys" ? ["pow","hp","crit"] : role==="caster" ? ["sp","hp","mana","crit"] : ["pow","sp","hp","mana","crit"];
-  const n = q <= 1 ? 1 : q === 2 ? 2 : 3;
-  const chosen = []; while(chosen.length < Math.min(n, pool.length)){ const k = pickR(pool, r); if(!chosen.includes(k)) chosen.push(k); }
-  const weights = chosen.map(()=>0.5 + r()); const tot = weights.reduce((a,b)=>a+b,0);
-  chosen.forEach((k,i)=>add(k, pts*weights[i]/tot));
   // points -> real numbers
   const conv = {pow:0.17, sp:0.17, hp:2.4, mana:3, crit:0.07, def:0.1};
   for(const k of Object.keys(it.st)){ let v = it.st[k]*conv[k]; v = (k==="crit"||k==="def") ? Math.round(v*10)/10 : Math.round(v); if(v <= 0) delete it.st[k]; else it.st[k] = v; }
-  it.n = gearName(it, r); it.en = 1;
+  // primary stats: a budget from quality, item level and slot, split over 1-3 stats that suit the class
+  { let T = ITEM_BUDGET[q] * (0.3 + 0.7*il/MAX_LVL) * (0.5 + SLOTS[slot].w) * (0.9 + 0.2*r());
+    T = Math.max(q <= 1 ? 1 : 2, Math.round(T));
+    const pool = PRIMARY_POOL[cls], n = Math.min(pool.length, q <= 1 ? 1 : q === 2 ? 2 : 3);
+    const main = r() < 0.6 ? pool[0] : pickR(pool, r), chosen = [main];
+    while(chosen.length < n){ const k = pickR(pool, r); if(!chosen.includes(k)) chosen.push(k); }
+    const wts = chosen.map((k,i)=> i===0 ? 2 : 1), tot = wts.reduce((a,b)=>a+b, 0);
+    chosen.forEach((k,i)=>{ const v = Math.round(T*wts[i]/tot); if(v >= 1) it.st[k] = v; }); }
+  it.n = gearName(it, r);
   return it;
 }
 // item name: [prefix] base [of Suffix], e.g. "Warden's Longsword of Power"
 function gearName(it, r){
   const base = it.wt ? pickR(WTYPES[it.wt].base, r) : (it.slot==="neck"||it.slot==="ring") ? pickR(JEWEL_BASE[it.slot], r) : ARMOR_BASE[it.arm][it.slot];
   const pre = pickR(PREFIX[it.q], r);
-  const w = k => k==="crit" ? 40 : (k==="pow"||k==="sp") ? 10 : 1;
+  const w = k => k==="crit" ? 40 : (k==="pow"||k==="sp") ? 10 : (k==="str"||k==="agi"||k==="int") ? 12 : k==="sta" ? 8 : 1;
   const top = Object.keys(it.st).filter(k=>k!=="def").sort((a,b)=>it.st[b]*w(b) - it.st[a]*w(a))[0];
   return (pre ? pre+" " : "") + base + (it.q >= 2 && top ? " of " + STAT_SUFFIX[top] : "");
 }
-// old saves have Swedish item names: give them English names once (stats unchanged)
-function renameOldGear(){ const all = [...(S.gear||[]), ...Object.values(S.eq||{})]; for(const it of all) if(it && !it.en){ it.n = gearName(it, mulberry(hashStr(it.id||"x"))); it.en = 1; } }
+// items from before the primary-stat update are retired when a character loads
+function retireOldGear(){ let n = 0;
+  if(S.gear){ const keep = S.gear.filter(it=>it && it.v===2); n += S.gear.length - keep.length; S.gear = keep; }
+  if(S.eq) for(const sl of Object.keys(S.eq)){ const it = S.eq[sl]; if(!it || it.v!==2){ delete S.eq[sl]; n++; } }
+  if(n) setTimeout(()=>{ try{ log(`${n} old item${n>1?"s were":" was"} retired in the stat update.`, "#e6bd5c"); }catch(_){} }, 1500); }
 function gearPrice(it){ return Math.max(2, Math.round(Math.pow(it.il, 1.5) * QUAL[it.q].mult * SLOTS[it.slot].w * 3 + 3)); }
 function gearSell(it){ return Math.max(1, Math.round(gearPrice(it) / 5)); }
 function gearIcon(it){ return it.wt ? WTYPES[it.wt].icon : SLOT_ICON[it.slot]; }
@@ -2824,6 +2846,7 @@ function render(){
     ctx.globalAlpha = 1; }});
   for(const r of coopVisible()) if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
   if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)) ents.push({y:pet.y, f:()=>drawMob(ctx, pet)});
+  if(coopOn()) for(const r of coopVisible()) if(r.pet && !r.dead && inView(r.pet)){ const rp = r.pet; ents.push({y:rp.y, f:()=>drawMob(ctx, rp)}); }
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
   for(const p of projs){
@@ -2846,7 +2869,11 @@ function render(){
     ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(pet.x-20, top-2, 40, 5); ctx.fillStyle = "#62d36b"; ctx.fillRect(pet.x-20, top-2, 40*Math.max(0,pet.hp/pet.maxHp), 5);
     ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(pet.x-20, top+4, 40, 3); ctx.fillStyle = pet.kind==="wolf" ? "#e8c84a" : "#d84a42"; ctx.fillRect(pet.x-20, top+4, 40*Math.min(1, pet.res/100), 3);
     ctx.fillStyle = "#8fe39a"; ctx.fillText(`${pet.name} (${S.level})`, pet.x, top-6); }
-  for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-62); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
+  if(coopOn()) for(const r of coopVisible()){ const p = r.pet; if(!p || r.dead || !inView(p)) continue; const CLp = CREATURE_LOOK[p.type]; const top = p.y - (CLp ? CREATURES[CLp.c].h*(CLp.s||1) : 30) - 4;
+    ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(p.x-20, top-2, 40, 5); ctx.fillStyle = "#62d36b"; ctx.fillRect(p.x-20, top-2, 40*Math.max(0,p.hp/p.maxHp), 5);
+    ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(p.x-20, top+4, 40, 3); ctx.fillStyle = p.kind==="wolf" ? "#e8c84a" : "#d84a42"; ctx.fillRect(p.x-20, top+4, 40*Math.min(1, p.res/100), 3);
+    ctx.fillStyle = "#8fe39a"; ctx.fillText(`${p.name} (${r.lvl||"?"})`, p.x, top-6); }
+  for(const n of npcs){ if(!inView(n)) continue; ctx.fillStyle = "#8fe39a"; ctx.fillText(n.name, n.x, n.y-52*CHAR_SCALE-14); ctx.fillStyle = "#93a4ad"; ctx.font = "500 10px 'Alegreya Sans', sans-serif"; ctx.fillText(`<${n.role}>`, n.x, n.y-52*CHAR_SCALE-2); ctx.font = "700 11px 'Alegreya Sans', sans-serif";
     const mark = npcMark(n); if(mark){ ctx.font = "800 22px 'Alegreya Sans', sans-serif"; ctx.fillStyle = mark.color; ctx.strokeStyle = "#000"; ctx.lineWidth = 3; const yy = n.y-76+Math.sin(time*3)*2; ctx.strokeText(mark.ch, n.x, yy); ctx.fillText(mark.ch, n.x, yy); ctx.lineWidth = 1; ctx.font = "700 11px 'Alegreya Sans', sans-serif"; } }
   // interaction hint
   const it = nearestInteract();
@@ -2919,8 +2946,28 @@ function drawQObj(c, n){
   c.restore();
 }
 // full world map (M)
+// world map view: zoom (1 = the whole map), centre in tiles; re-centres on you every time the map is opened
+const MAPV = {z:2.5, cx:0, cy:0, fresh:true};
+function mapRedraw(){ const cv = $("wmap"); if(cv && cv._base) drawWorldMap(cv); }
+function mapZoom(f, ax, ay){ const cv = $("wmap"); if(!cv || P.inDungeon || !cv._reg) return; const reg = cv._reg, k = cv._k;
+  if(ax == null){ ax = cv.width/2; ay = cv.height/2; }
+  const wx = reg.x + ax/k, wy = reg.y + ay/k, nz = clamp(MAPV.z*f, 1, 8); MAPV.z = nz;
+  const vw = OW/nz, vh = MH/nz; MAPV.cx = wx - (ax/cv.width - 0.5)*vw; MAPV.cy = wy - (ay/cv.height - 0.5)*vh; mapRedraw(); }
+let mapDrag = null;
+document.addEventListener("pointerdown", e=>{ const cv = e.target && e.target.id==="wmap" ? e.target : null; if(!cv || P.inDungeon) return; e.preventDefault(); mapDrag = {x:e.clientX, y:e.clientY}; cv.style.cursor = "grabbing"; });
+document.addEventListener("pointermove", e=>{ if(!mapDrag) return; const cv = $("wmap"); if(!cv || !cv._reg){ mapDrag = null; return; } const r = cv.getBoundingClientRect(), f = cv.width/r.width;
+  MAPV.cx -= (e.clientX - mapDrag.x)*f/cv._k; MAPV.cy -= (e.clientY - mapDrag.y)*f/cv._k; mapDrag = {x:e.clientX, y:e.clientY}; mapRedraw(); });
+document.addEventListener("pointerup", ()=>{ mapDrag = null; const cv = $("wmap"); if(cv) cv.style.cursor = "grab"; });
+document.addEventListener("pointercancel", ()=>{ mapDrag = null; });
+document.addEventListener("wheel", e=>{ const cv = e.target && e.target.id==="wmap" ? e.target : null; if(!cv || P.inDungeon) return; e.preventDefault(); const r = cv.getBoundingClientRect(), f = cv.width/r.width;
+  mapZoom(e.deltaY < 0 ? 1.25 : 0.8, (e.clientX - r.left)*f, (e.clientY - r.top)*f); }, {passive:false});
 function drawWorldMap(cv){
-  const reg = mapRegion(), W2 = cv.width, k = W2/reg.w, H2 = reg.h*k; cv.height = H2; const g = cv.getContext("2d"); cv._reg = reg;
+  let reg = mapRegion(); const W2 = cv.width;
+  if(!P.inDungeon){   // overworld: a zoomable window onto the whole map
+    if(MAPV.fresh){ MAPV.fresh = false; MAPV.z = 2.5; MAPV.cx = P.x/TILE; MAPV.cy = P.y/TILE; }
+    const vw = OW/MAPV.z, vh = MH/MAPV.z; MAPV.cx = clamp(MAPV.cx, vw/2, OW-vw/2); MAPV.cy = clamp(MAPV.cy, vh/2, MH-vh/2);
+    reg = {x:MAPV.cx-vw/2, y:MAPV.cy-vh/2, w:vw, h:vh}; }
+  const k = W2/reg.w, H2 = P.inDungeon ? reg.h*k : Math.round(W2*MH/OW); cv.height = H2; const g = cv.getContext("2d"); cv._reg = reg;
   g.imageSmoothingEnabled = false; g.drawImage(mmBase, reg.x, reg.y, reg.w, reg.h, 0, 0, W2, H2);
   if(P.inDungeon){ g.fillStyle = "rgba(10,14,17,.15)"; g.fillRect(0,0,W2,H2); g.textAlign = "center"; g.font = "700 26px 'Alegreya Sans', sans-serif"; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.85)";
     const nm = ZONES[P.inDungeon].name; g.strokeText(nm, W2/2, 34); g.fillStyle = "#fff"; g.fillText(nm, W2/2, 34);
@@ -2929,16 +2976,16 @@ function drawWorldMap(cv){
     const base = cv._base || (cv._base = document.createElement("canvas")); base.width = W2; base.height = H2; base.getContext("2d").drawImage(cv, 0, 0); cv._k = k; drawMapPlayer(cv); return; }
   g.fillStyle = "rgba(10,14,17,.25)"; g.fillRect(0,0,W2,H2);
   g.textAlign = "center"; g.textBaseline = "middle";
-  for(const D of Object.values(DUNGEONS)){ const x = D.ent.x*k, y = D.ent.y*k; g.fillStyle = "#a77bff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); g.stroke();
-    g.font = `700 ${Math.max(9, k*3.6)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t = `${ZONES[D.id].name} (${ZONES[D.id].lv[0]}–${ZONES[D.id].lv[1]})`; g.textAlign = "left"; g.strokeText(t, x+9, y+1); g.fillStyle = "#cdb8ff"; g.fillText(t, x+9, y+1); g.textAlign = "center"; }
+  for(const D of Object.values(DUNGEONS)){ const x = (D.ent.x-reg.x)*k, y = (D.ent.y-reg.y)*k; g.fillStyle = "#a77bff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); g.stroke();
+    g.font = `700 ${Math.min(16, Math.max(9, k*3.6))}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t = `${ZONES[D.id].name} (${ZONES[D.id].lv[0]}–${ZONES[D.id].lv[1]})`; g.textAlign = "left"; g.strokeText(t, x+9, y+1); g.fillStyle = "#cdb8ff"; g.fillText(t, x+9, y+1); g.textAlign = "center"; }
   for(const [id,z] of Object.entries(ZONES)){ if(z.dungeon) continue; const d = z.lv[0] - S.level; const col = S.level > z.lv[1]+2 ? "#b8c0c4" : d > 2 ? "#ff7a6a" : "#f3dc55";
-    g.font = `700 ${Math.max(11, k*5.5)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)";
-    const hb = Object.values(HUBS).find(h=>h.zone===id) || {x:z.c[0], y:z.c[1]}; const x = hb.x*k, y = hb.y*k - 40; g.strokeText(z.name, x, y); g.fillStyle = "#fff"; g.fillText(z.name, x, y);
-    g.font = `700 ${Math.max(10, k*4.4)}px 'Alegreya Sans', sans-serif`; g.strokeText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); g.fillStyle = col; g.fillText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); }
-  for(const h of Object.values(HUBS)){ const x = h.x*k, y = h.y*k; g.fillStyle = "#e8e0d0"; g.strokeStyle = "#000"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, h.kind==="city"?7:h.kind==="town"?4.5:3, 0, 7); g.fill(); g.stroke();
-    g.font = `600 ${Math.max(9, k*3.6)}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; g.strokeText(h.name, x, y+11); g.fillStyle = "#e8e0d0"; g.fillText(h.name, x, y+11); }
+    g.font = `700 ${Math.min(26, Math.max(11, k*5.5))}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)";
+    const hb = Object.values(HUBS).find(h=>h.zone===id) || {x:z.c[0], y:z.c[1]}; const x = (hb.x-reg.x)*k, y = (hb.y-reg.y)*k - 40; g.strokeText(z.name, x, y); g.fillStyle = "#fff"; g.fillText(z.name, x, y);
+    g.font = `700 ${Math.min(20, Math.max(10, k*4.4))}px 'Alegreya Sans', sans-serif`; g.strokeText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); g.fillStyle = col; g.fillText(`${z.lv[0]}–${z.lv[1]}`, x, y+18); }
+  for(const h of Object.values(HUBS)){ const x = (h.x-reg.x)*k, y = (h.y-reg.y)*k; g.fillStyle = "#e8e0d0"; g.strokeStyle = "#000"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, h.kind==="city"?7:h.kind==="town"?4.5:3, 0, 7); g.fill(); g.stroke();
+    g.font = `600 ${Math.min(16, Math.max(9, k*3.6))}px 'Alegreya Sans', sans-serif`; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; g.strokeText(h.name, x, y+11); g.fillStyle = "#e8e0d0"; g.fillText(h.name, x, y+11); }
   const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
-  act.forEach((q,i)=>{ const sp = questSpot(q); if(!sp) return; const x = sp.x*k, y = sp.y*k;
+  act.forEach((q,i)=>{ const sp = questSpot(q); if(!sp) return; const x = (sp.x-reg.x)*k, y = (sp.y-reg.y)*k;
     g.fillStyle = sp.turnin ? "#7be08a" : "#f3dc55"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fill(); g.stroke();
     g.fillStyle = "#111"; g.font = "800 10px 'Alegreya Sans', sans-serif"; g.fillText(sp.turnin ? "?" : String(i+1), x, y+0.5); });
   const cpm = corpsePos(); if(cpm){ const x = (cpm.x/TILE-reg.x)*k, y = (cpm.y/TILE-reg.y)*k; g.fillStyle = "#d8e8ff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); g.stroke(); g.font = "700 12px 'Alegreya Sans', sans-serif"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; g.strokeText("Your corpse", x, y+16); g.fillStyle = "#d8e8ff"; g.fillText("Your corpse", x, y+16); }
@@ -3060,7 +3107,9 @@ function lpcState(e, moving){
   if(moving) return {anim:"walk", frame:1 + Math.floor(time*11)%8, dir:e.dir==null?2:e.dir};
   return {anim:"walk", frame:0, dir:e.dir==null?2:e.dir};
 }
-function drawLPC(c, look, x, y, st, sx, sy){
+const CHAR_SCALE = 0.8;   // players and NPCs are drawn at this size compared to their sprite; monsters are unchanged
+function drawLPC(c, look, x, y, st, sx, sy, raw){
+  if(!raw && !(look.key||"").startsWith("m_")){ sx *= CHAR_SCALE; sy *= CHAR_SCALE; }
   let sh = lpcSheet(look, st.anim);
   if(!sh && st.anim!=="walk"){ st = {anim:"walk", frame:0, dir:st.dir}; sh = lpcSheet(look, "walk"); }
   if(!sh) return false;
@@ -3680,7 +3729,7 @@ function vendorGearHTML(n){
 }
 let panelKind = null, panelArg = null;
 function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } if(panelKind!==kind) snd("open"); panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; document.body.classList.add("pnl"); }
-function closePanel(){ if(panelKind) snd("close"); document.body.classList.remove("pnl"); panelKind = null; $("panel").hidden = true; }
+function closePanel(){ MAPV.fresh = true; if(panelKind) snd("close"); document.body.classList.remove("pnl"); panelKind = null; $("panel").hidden = true; }
 function renderPanel(){
   const el = $("panel"); let h = `<button class="x" data-act="close" aria-label="Close">✕</button>`;
   if(panelKind==="char"){
@@ -3688,7 +3737,7 @@ function renderPanel(){
     h += `<h2>${esc(S.name)}</h2><div class="muted">Level ${S.level} ${RACES[S.race].name} ${CLASSES[S.cls].name} · ${RACES[S.race].desc}</div>
     <div class="row" style="margin-top:8px"><button class="btn" data-act="newchar">Switch Character</button></div><h3>Attributes</h3><div class="stats">
       <div><span>Health</span><span>${P.maxHp}</span></div><div><span>${RES_NAME[type]}</span><span>${type==="mana"?P.maxMana:100}</span></div>
-      <div><span>Attack Power</span><span>${fmt(pow()*genMult())}</span></div><div><span>Spell Power</span><span>${fmt(spow()*genMult())}</span></div><div><span>Critical Strike</span><span>${(critChance(null,"phys")*100).toFixed(0)}%</span></div>
+      <div><span>Attack Power</span><span>${fmt(pow()*genMult())}</span></div><div><span>Spell Power</span><span>${fmt(spow()*genMult())}</span></div><div><span>Critical Strike</span><span>${(critChance(null,"phys","auto")*100).toFixed(0)}%</span></div><div><span>Spell Critical</span><span>${(critChance(null,"arcane","__spell")*100).toFixed(0)}%</span></div>
       <div><span>Damage Taken</span><span>${Math.round(takenMult()*100)}%</span></div><div><span>Weapon</span><span>${wIco(WICON[S.cls],20)}${WEAPON_NAMES[S.cls]} +${S.weapon}</span></div>
       <div><span>Dodge</span><span>${(avoidChances().dodge*100).toFixed(0)}%</span></div><div><span>Parry</span><span>${(avoidChances().parry*100).toFixed(0)}%</span></div>
       <div><span>Mining</span><span>${S.skills.mining} / ${SKILL_MAX}</span></div><div><span>Herbalism</span><span>${S.skills.herb} / ${SKILL_MAX}</span></div>
@@ -3763,10 +3812,10 @@ function renderPanel(){
           h += `<h3>Unlearn Talents</h3><div class="item"><div><b>Reset all talents</b> <span class="coin">${c} gold</span><div class="d">${sp ? `You get back all your spent talent points (${sp}) and can distribute them again.` : "You have not spent any talent points yet."} The price depends on your level.</div></div><button class="btn ${respecArm?"pri":""}" data-act="respec" ${!sp||S.gold<c?"disabled":""}>${respecArm?"Sure? Click again":"Reset"}</button></div>`; } }
     }
     if(n.shop){
-      h += `<h3>Buy</h3><div class="list">${SHOP.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Buy</button></div>`).join("")}</div>`;
+      h += `<h3>Buy</h3><div class="list">${(n.shop==="basic" ? SHOP.filter(([k])=>k==="potHp"||k==="potMana") : SHOP).map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Buy</button></div>`).join("")}</div>`;
       const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0) + S.gear.filter(g=>g.q===0).reduce((a,g)=>a+gearSell(g),0);
       h += `<h3>Sell</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sell all junk (${junk} gold)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sell 1 (${ITEMS[k].sell} gold)</button></div>`).join("") || `<div class="muted">Nothing to sell.</div>`}</div>`;
-      h += vendorGearHTML(n);
+      if(n.shop !== "basic") h += vendorGearHTML(n);
     }
     if(n.gear) h += vendorGearHTML(n);
     if(n.potions || n.ores){ const L = n.potions ? POTION_SHOP : ORE_SHOP;
@@ -3778,8 +3827,8 @@ function renderPanel(){
     if(!n.dungeon && !n.trains && !n.shop && !n.smith && !n.alch && !n.gear && !n.potions && !avail.length && !ready.length && !active.length && !soon.length) h += `<p class="muted">I have nothing more for you right now, ${esc(S.name)}.</p>`;
   } else if(panelKind==="map"){
     const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
-    h += `<h2>Map</h2><canvas id="wmap" width="1040" style="display:block;width:100%;border-radius:6px;border:1px solid var(--line)"></canvas>`;
-    h += `<div class="muted" style="margin-top:6px;font-size:12.5px">Red arrow with "You are here" = you (the arrow shows which way you are facing). Yellow = where the quest takes place. Green ? = turn in. Levels: yellow suits you, red is dangerous, gray is too easy.</div>`;
+    h += `<h2>Map</h2><div class="row" style="margin-bottom:6px;align-items:center"><button class="btn" data-act="mapzoom" data-k="in">Zoom in +</button><button class="btn" data-act="mapzoom" data-k="out">Zoom out −</button><button class="btn" data-act="mapzoom" data-k="me">Center on me</button><button class="btn" data-act="mapzoom" data-k="all">Whole map</button></div><canvas id="wmap" width="1040" style="display:block;width:100%;border-radius:6px;border:1px solid var(--line);touch-action:none;cursor:grab"></canvas>`;
+    h += `<div class="muted" style="margin-top:6px;font-size:12.5px">Scroll or use the buttons to zoom, drag to move around. Red arrow with "You are here" = you (the arrow shows which way you are facing). Yellow = where the quest takes place. Green ? = turn in. Levels: yellow suits you, red is dangerous, gray is too easy.</div>`;
     h += act.length ? `<h3>Your Quests</h3><div class="list">${act.map((q,i)=>{ const sp = questSpot(q); const z = sp ? zinfo(zoneAtTile(Math.floor(sp.x),Math.floor(sp.y))) : null; return `<div class="item"><div><b>${qReady(q)?"?":i+1}. ${esc(q.name)}</b> <span class="muted">· ${qReady(q)?`turn in to ${esc(npcName(qTurnInNpc(q)))}`:""}${z?(qReady(q)?" in ":"")+esc(z.name)+(z.lv?` (level ${z.lv[0]}–${z.lv[1]})`:""):""}</span></div></div>`; }).join("")}</div>` : `<p class="muted">You have no active quests.</p>`;
   } else if(panelKind==="confirmnew"){
     h += `<h2>New Character?</h2><p class="muted">${esc(S.name)} (level ${S.level}) will be replaced by a new hero. This cannot be undone.</p><div class="row"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="reallynew">Create New Character</button></div>`;
@@ -3796,6 +3845,7 @@ $("panel").addEventListener("change", e=>{ if(e.target.id==="volrange"){ snd("cl
 $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
+  if(a==="mapzoom"){ if(k==="in") mapZoom(1.4); else if(k==="out") mapZoom(1/1.4); else if(k==="me"){ MAPV.cx = P.x/TILE; MAPV.cy = P.y/TILE; mapRedraw(); } else if(k==="all"){ MAPV.z = 1; MAPV.cx = OW/2; MAPV.cy = MH/2; mapRedraw(); } return; }
   if(a==="bind") return;
   if(a==="coophost"){ coopHost(); return; }
   if(a==="coopjoin"){ const v = $("coopcode"); coopJoin(v ? v.value : ""); return; }
@@ -3858,7 +3908,7 @@ function renderCharList(){
 function drawCharPreviews(tries){
   let missing = false;
   document.querySelectorAll("[data-pv]").forEach(cv=>{ const c = chars.find(x=>x.id===cv.dataset.pv), g = cv.getContext("2d"); g.clearRect(0,0,64,64);
-    const [sx,sy] = raceScale(c.race); if(!drawLPC(g, raceLook(`p_${c.cls}_${c.race}`, c.cls, c.race), 32, 62, {anim:"walk", frame:0, dir:2}, sx, sy)) missing = true; });
+    const [sx,sy] = raceScale(c.race); if(!drawLPC(g, raceLook(`p_${c.cls}_${c.race}`, c.cls, c.race), 32, 62, {anim:"walk", frame:0, dir:2}, sx, sy, true)) missing = true; });
   clearTimeout(drawCharPreviews._t);
   if(missing && tries < 20) drawCharPreviews._t = setTimeout(()=>{ if(!running && !$("selbox").hidden) drawCharPreviews(tries+1); }, 300);
 }
@@ -3886,7 +3936,7 @@ function renderPicks(){
   const pv = $("preview").getContext("2d"); pv.setTransform(1,0,0,1,0,0); pv.clearRect(0,0,120,120); pv.setTransform(2.2,0,0,2.2,0,0);
   const look = raceLook(`p_${pick.cls}_${pick.race}`, pick.cls, pick.race); const [sx,sy] = raceScale(pick.race);
   pv.setTransform(1.7,0,0,1.7,0,0);
-  if(!drawLPC(pv, look, 35, 66, {anim:"walk", frame:0, dir:2}, sx, sy)){ pv.setTransform(2.2,0,0,2.2,0,0); drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1}); clearTimeout(renderPicks._t); renderPicks._t = setTimeout(()=>{ if(!running) renderPicks(); }, 250); }
+  if(!drawLPC(pv, look, 35, 66, {anim:"walk", frame:0, dir:2}, sx, sy, true)){ pv.setTransform(2.2,0,0,2.2,0,0); drawHero(pv, 27, 48, {race:pick.race, cls:pick.cls, skin:RACES[pick.race].skin, hair:RACES[pick.race].hair, body:CLASSES[pick.cls].color, fx:1}); clearTimeout(renderPicks._t); renderPicks._t = setTimeout(()=>{ if(!running) renderPicks(); }, 250); }
 }
 $("races").addEventListener("click", e=>{ const b = e.target.closest("[data-race]"); if(b){ pick.race = b.dataset.race; renderPicks(); } });
 $("classes").addEventListener("click", e=>{ const b = e.target.closest("[data-cls]"); if(b && !b.disabled && RACE_CLASSES[pick.race].includes(b.dataset.cls)){ pick.cls = b.dataset.cls; renderPicks(); } });
@@ -3908,7 +3958,8 @@ function startGame(sv, fresh){
   if(S.cls==="druid" && !S.learned.includes("touch")){ S.learned.push("touch"); autoPlace("touch"); }
   spawnAll();
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
-  S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; renameOldGear();
+  if(!sv.ws){ if(S.x) S.x *= 2; if(S.y) S.y *= 2; if(S.death){ S.death.x *= 2; S.death.y *= 2; } }   // the world became twice as big
+  S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; retireOldGear();
   const home = HUBS[RACE_HUB[S.race]];
   P = {x:home.x*TILE+16, y:(home.y+2)*TILE+16, r:11, hp:1, maxHp:0, mana:0, maxMana:0, rage:0, focus:100, energy:100, cp:0, form:null, target:null, casting:null,
     gcd:0, cds:{}, buffs:{}, hots:[], shield:0, shieldT:0, autoT:0, combatT:0, potCd:0, fx:1, moving:false, dash:null, leap:null, dead:false};
@@ -3992,7 +4043,7 @@ $("mmwrap").addEventListener("click", e=>{ e.stopPropagation(); if(!running) ret
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2}; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
@@ -4107,12 +4158,15 @@ function coopLeave(silent){
 function coopBroadcast(msg, except){ for(const c of COOP.conns) if(c !== except && c.open){ try{ c.send(msg); }catch(e){} } }
 function coopData(c, d){
   if(!d || typeof d !== "object") return;
-  if(COOP.role==="host" && (d.t==="st" || d.t==="bye" || d.t==="dgo")) coopBroadcast(d, c);   // relay to the other guests
+  if(COOP.role==="host" && (d.t==="st" || d.t==="bye" || d.t==="dgo" || d.t==="vfx" || d.t==="pfx")) coopBroadcast(d, c);   // relay to the other guests
   if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[d.id]; } return; }
   if(d.t==="op"){ if(COOP.role==="host") coopHostOp(d); return; }
   if(d.t==="dgreq"){ if(COOP.role==="host") coopHostDgReq(c, d); return; }
   if(d.t==="dgst"){ if(COOP.role==="guest") coopDgEnter(d); return; }
   if(d.t==="dgo"){ if(COOP.role==="host" || (P && P.inDungeon===d.dg)) coopDgRemote(d); return; }
+  if(d.t==="vfx"){ coopVfxPlay(d); return; }
+  if(d.t==="pfx"){ coopPetFx(d); return; }
+  if(d.t==="phit"){ if(d.to===coopMyId()) petDamage(d.dmg, coopMobByNid(d.nid)); return; }
   if(d.t==="hit"){ if(d.to===coopMyId()){ const m = coopMobByNid(d.nid); playerDamage(d.dmg, m, d.kind); } else if(COOP.role==="host") coopSendTo(d.to, d); return; }
   if(d.t==="kill"){ if(d.to && d.to.includes(coopMyId())){ const m = coopMobByNid(d.nid); if(m) killRewards(m, d.n); } return; }
   if(d.t==="mobs"){ if(COOP.role==="guest") coopApplyMobs(d.m); return; }
@@ -4120,14 +4174,36 @@ function coopData(c, d){
   if(d.t!=="st" || !d.id || (COOP.peer && d.id===COOP.peer.id)) return;
   let r = COOP.remotes[d.id];
   if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); snd("qaccept"); coopRefresh(); }
+  const oldPet = r.pet && r.pet.kind ? r.pet : null;
   Object.assign(r, d, {x:r.x, y:r.y, tx:d.x, ty:d.y, seen:performance.now(), via:c.peer});
+  { const q = d.pet, pd = q && PETS[q.k];   // a friend's pet
+    if(pd){ r.pet = {kind:q.k, name:pd.name, type:pd.type, def:{color:pd.color, shape:pd.shape}, r:pd.r, x:oldPet?oldPet.x:q.x, y:oldPet?oldPet.y:q.y, tx:q.x, ty:q.y, fx:q.fx||1, walk:!!q.w, swing:q.sw?0.2:0,
+        flash:oldPet ? (q.hp < oldPet.hp ? 0.12 : oldPet.flash) : 0, hp:q.hp, maxHp:q.mhp, res:q.res||0, ph:oldPet?oldPet.ph:Math.random()*6.28, rootT:0, slowT:0, stunT:0, state:"follow", owner:d.id};
+      if(oldPet){ const dh = oldPet.hp - q.hp; if(dh >= 1) floatText(r.pet.x + rand(-8,8), r.pet.y - r.pet.r - 14, ""+dh, "#ff9a7a"); else if(-dh > q.mhp*0.25) floatText(r.pet.x, r.pet.y - 40, "+"+(-dh), "#62d36b"); }
+      if(Math.hypot(q.x-r.pet.x, q.y-r.pet.y) > 400){ r.pet.x = q.x; r.pet.y = q.y; } }
+    else r.pet = null; }
   if(Math.hypot(r.tx-r.x, r.ty-r.y) > 400){ r.x = r.tx; r.y = r.ty; }   // teleports and dungeon entries snap
 }
+// a friend's spell and arrow visuals
+function coopVfxPlay(d){ const r = COOP.remotes[d.id]; if(!r || (r.dg||null) !== (P.inDungeon||null) || !Array.isArray(d.v)) return;
+  for(const v of d.v){ const k = v[0];
+    if(k==="p"){ const m = coopMobByNid(v[1]); if(m && !m.dead) projs.push({x:r.x, y:r.y-14, t:m, color:v[2], size:v[3], onHit:()=>{}, kind:v[4], sp:v[5] || (v[4]==="arrow" ? 680 : 540)}); }
+    else if(k==="z") zones.push({x:v[1], y:v[2], r:v[3], left:v[4], tick:99, dmg:0, school:v[5], vis:true});
+    else if(k==="b") burst(v[1], v[2], v[3], v[4]);
+    else if(k==="r") ring(v[1], v[2], v[3], v[4]);
+    else if(k==="s"){ const m = coopMobByNid(v[1]); if(m) for(let i=0;i<8;i++){ const a = -0.8 + i*0.2; parts.push({x:m.x+Math.cos(a)*14, y:m.y-12+Math.sin(a)*14, vx:Math.cos(a+1.5)*60, vy:Math.sin(a+1.5)*60, life:0.22, max:0.22, color:"#ffffff", size:3}); } } } }
+// a friend's pet abilities (Growl, Sweep, Claw)
+function coopPetSend(k){ if(coopOn()) coopBroadcast({t:"pfx", id:coopMyId(), k}); }
+function coopPetFx(d){ const r = COOP.remotes[d.id], p = r && r.pet; if(!p || (r.dg||null) !== (P.inDungeon||null)) return;
+  if(d.k==="growl"){ floatText(p.x, p.y-p.r-30, "Growl!", "#e6bd5c", true); ring(p.x, p.y, 40, "#e6bd5c"); }
+  else if(d.k==="sweep"){ ring(p.x, p.y, 50, "#d84a42"); floatText(p.x, p.y-p.r-30, "Sweep", "#ff8a7a"); }
+  else if(d.k==="claw") floatText(p.x, p.y-p.r-30, "Claw", "#e8c84a"); }
 function coopState(){
   const act = P.act && P.act.t < P.act.dur ? {anim:P.act.anim, t:P.act.t, dur:P.act.dur} : null;
   const cast = P.casting ? {kind:P.casting.kind, el:P.casting.el, total:P.casting.total} : null;
   return {t:"st", id:COOP.peer.id, name:S.name, race:S.race, cls:S.cls, lvl:S.level, x:Math.round(P.x), y:Math.round(P.y), dir:P.dir, fx:P.fx, mv:!!P.moving,
-    hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast};
+    hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast,
+    pet: pet && !pet.dead ? {k:pet.kind, x:Math.round(pet.x), y:Math.round(pet.y), fx:pet.fx, w:pet.walk?1:0, sw:pet.swing>0?1:0, hp:Math.round(pet.hp), mhp:pet.maxHp, res:Math.round(pet.res||0)} : null};
 }
 function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; coopBroadcast(coopState()); }
 function coopUpdate(dt){
@@ -4139,6 +4215,7 @@ function coopUpdate(dt){
     if(now - r.seen > 8000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
     const k = Math.min(1, dt*12); r.x += (r.tx - r.x)*k; r.y += (r.ty - r.y)*k;
     if(r.act) r.act.t += dt;
+    if(r.pet){ r.pet.x += (r.pet.tx - r.pet.x)*k; r.pet.y += (r.pet.ty - r.pet.y)*k; r.pet.flash = Math.max(0, r.pet.flash-dt); r.pet.swing = Math.max(0, r.pet.swing-dt); }
   }
 }
 // ---------- step 2: shared monsters. The host runs every overworld monster; guests send their attacks to the host.
@@ -4148,28 +4225,34 @@ const coopIsMe = () => !COOP_ATK || COOP_ATK === coopMyId();
 const coopAttacker = () => COOP_ATK || coopMyId();
 const coopMob = m => !!(m && coopOn() && m.nid != null);   // overworld and dungeon monsters are shared; the host runs them
 const coopGuestMob = m => COOP.role==="guest" && coopMob(m);
-function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId(); }
+function coopTargetsMe(m){ return !coopMob(m) || m.tgtId === coopMyId() || m.tgtId === coopMyId()+":pet"; }
 function coopMobByNid(nid){ if(!COOP.nidMap || COOP.nidMap.n !== mobs.length || COOP.nidMap.g !== MOB_GEN){ COOP.nidMap = {n:mobs.length, g:MOB_GEN}; for(const m of mobs) if(m.nid != null) COOP.nidMap[m.nid] = m; } return COOP.nidMap[nid]; }
 function coopSendTo(id, msg){ const r = COOP.remotes[id]; const c = r && COOP.conns.find(c=>c.peer===r.via); if(c && c.open){ try{ c.send(msg); }catch(e){} } }
-function coopThreat(m, amt){ if(!coopMob(m)) return; const id = coopAttacker(); const r = COOP.remotes[id];
-  const tank = id===coopMyId() ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
-  m.threat = m.threat || {}; m.threat[id] = (m.threat[id]||0) + amt*(tank ? 2 : 1); }
+function coopThreat(m, amt){ if(!coopMob(m)) return; const owner = coopAttacker(), r = COOP.remotes[owner];
+  const pk = owner===coopMyId() ? (pet && !pet.dead ? pet.kind : null) : (r && r.pet ? r.pet.kind : null);   // the attacker's pet, if any
+  m.threat = m.threat || {};
+  if(PET_ATK){ m.threat[owner+":pet"] = (m.threat[owner+":pet"]||0) + amt*(pk ? PETS[pk].threat : 1); return; }
+  const tank = owner===coopMyId() ? (S.cls==="warrior" || P.form==="bear") : r && (r.cls==="warrior" || r.form==="bear");
+  m.threat[owner] = (m.threat[owner]||0) + amt*(tank ? 2 : 1)*(pk ? PETS[pk].ownerThreat : 1); }
 function mobCands(m){ const L = [], dg = m.def.dg || null;
   if(!P.dead && (!coopMob(m) || (P.inDungeon||null) === dg)) L.push({id:coopMyId(), e:P, me:true});
   if(pet && !pet.dead && !coopMob(m) && pet.dg === dg) L.push({id:"pet", e:pet, me:false, pet:true});   // hunter pet
-  if(coopMob(m)) for(const r of Object.values(COOP.remotes)) if(!r.dead && !r.ghost && (r.dg||null) === dg) L.push({id:r.id, e:r, me:false});
+  if(pet && !pet.dead && coopMob(m) && pet.dg === dg) L.push({id:coopMyId()+":pet", e:pet, me:false, pet:true, owner:coopMyId()});
+  if(coopMob(m)) for(const r of Object.values(COOP.remotes)){ if(r.dead || r.ghost || (r.dg||null) !== dg) continue; L.push({id:r.id, e:r, me:false}); if(r.pet) L.push({id:r.id+":pet", e:r.pet, me:false, pet:true, owner:r.id}); }
   return L; }
 function mobTarget(m){ const L = mobCands(m); if(L.length <= 1) return L[0] || null;
+  if(coopMob(m) && m.tauntT > 0 && m.tauntId){ const tc = L.find(c=>c.id===m.tauntId); if(tc) return tc; }   // a pet's Growl in co-op
   { const pc = L.find(c=>c.pet), mc = L.find(c=>c.me);   // you + your pet: highest threat wins (a Growl forces the pet for a few seconds)
     if(pc && mc && !m.threat){ if(m.tauntT > 0) return pc; const tm = m.thMe||0, tp = m.thPet||0;
       if(tm || tp){ if(m.tgtId === "pet") return tm > tp*1.1 ? mc : pc; return tp > tm*1.1 ? pc : mc; } } }
   if(m.threat){ let best = null, bv = 0; for(const c of L){ const v = m.threat[c.id]||0; if(v > bv && dist(m, c.e) < 700){ bv = v; best = c; } } if(best) return best; }
   let best = null, bd = 1e9; for(const c of L){ const d = dist(m, c.e); if(d < bd){ bd = d; best = c; } } return best; }
-function mobAttack(m, c, dmg, kind){ if(c.pet) petDamage(dmg, m); else if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
+function mobAttack(m, c, dmg, kind){ if(c.pet){ if(!c.owner || c.owner===coopMyId()) petDamage(dmg, m); else coopSendTo(c.owner, {t:"phit", to:c.owner, nid:m.nid, dmg}); } else if(c.me) playerDamage(dmg, m, kind); else coopSendTo(c.id, {t:"hit", to:c.id, nid:m.nid, dmg, kind}); }
 function coopOp(op, m, a){ coopBroadcast({t:"op", op, nid:m.nid, a, from:coopMyId()}); }
 function coopHostOp(d){ const m = coopMobByNid(d.nid); if(!m || m.dead) return; const a = d.a || []; COOP_ATK = d.from;
-  try{ if(d.op==="dmg") damageMob(m, a[0], a[1], a[2]); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
-  finally{ COOP_ATK = null; } }
+  try{ if(d.op==="dmg"){ PET_ATK = !!a[3]; damageMob(m, a[0], a[1], a[2]); } else if(d.op==="growl") coopGrowlApply(m, d.from); else if(d.op==="dot") dot(m, a[0], a[1], a[2], a[3], true, true); else if(d.op==="slow") slow(m, a[0], a[1]); else if(d.op==="root") root(m, a[0]); else if(d.op==="stun") stun(m, a[0]); }
+  finally{ COOP_ATK = null; PET_ATK = false; } }
+function coopGrowlApply(m, owner){ m.tauntT = GROWL_TAUNT; m.tauntId = owner+":pet"; m.threat = m.threat || {}; m.threat[owner+":pet"] = Math.max(m.threat[owner+":pet"]||0, (m.threat[owner]||0)*1.3 + 40); }
 // who shares a kill: everyone alive within reach in the open world. Returns the host's own share count (0 = the host gets nothing).
 function coopKillShare(m){ if(!coopMob(m) || COOP.role!=="host") return 1;
   const dg = m.def.dg || null;   // in a dungeon everybody inside shares the kill; in the open world everybody within reach
@@ -4244,7 +4327,7 @@ function drawRemote(c, r){
   if(r.form) drawBeast(c, r.x, r.y, r.form, r.fx); else if(!drawLPC(c, lookFor(r.cls, r.race), r.x, r.y, st, sx, sy)) drawHero(c, r.x, r.y, {race:r.race, cls:r.cls, skin:RACES[r.race].skin, hair:RACES[r.race].hair, body:CLASSES[r.cls].color, fx:r.fx, moving:r.mv, swing:0});
   c.globalAlpha = 1;
   // name and health
-  const top = r.y - 62; c.textAlign = "center"; c.font = "700 12px 'Alegreya Sans', sans-serif"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,.8)";
+  const top = r.y - 62*CHAR_SCALE - 6; c.textAlign = "center"; c.font = "700 12px 'Alegreya Sans', sans-serif"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,.8)";
   const label = `${r.name} (${r.lvl})`; c.strokeText(label, r.x, top); c.fillStyle = "#7fc4ff"; c.fillText(label, r.x, top);
   c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(r.x-22, top+4, 44, 5); c.fillStyle = r.dead ? "#666" : "#4fd06a"; c.fillRect(r.x-22, top+4, 44*Math.max(0, Math.min(1, r.hp/(r.mhp||1))), 5); c.lineWidth = 1;
 }
@@ -4332,6 +4415,10 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   row(hubs, btn("Go", ()=>{ if(P.inDungeon) leaveDungeon(false); const h = HUBS[hubs.value]; P.x = h.x*TILE+16; P.y = (h.y+2)*TILE+16; }));
   const dgs = sel(Object.keys(DUNGEONS).map(id=>[id, ZONES[id] ? ZONES[id].name : id]));
   row(dgs, btn("Enter", ()=>{ if(P.inDungeon) leaveDungeon(false); enterDungeon(dgs.value); }));
+  const ts = {sta:num(0,44), int:num(0,44), str:num(0,44), agi:num(0,44)};
+  const tl = document.createElement("span"); tl.textContent = "Sta Int Str Agi"; tl.style.cssText = "font-size:11px;white-space:nowrap";
+  row(tl, ...Object.entries(ts).map(([k,e])=>{ e.title = STAT_NAME[k]; e.placeholder = k; return e; }), btn("Equip", ()=>{ const st = {}; for(const [k,e] of Object.entries(ts)) if(+e.value > 0) st[k] = +e.value;
+    if(Object.keys(st).length) S.eq.neck = {id:"devcharm", slot:"neck", q:5, il:S.level, st, n:"[dev] Test Charm", v:2}; else delete S.eq.neck; recompute(false); log("[dev] test charm: "+(Object.entries(st).map(([k,v])=>"+"+v+" "+STAT_NAME[k]).join(", ")||"removed"), "#ffd36b"); }));
   const items = sel(Object.keys(ITEMS).sort().map(id=>[id, ITEMS[id].name || id])), qty = num(1, 44);
   row(items, qty, btn("Give", ()=>{ addItem(items.value, Math.max(1, qty.value|0)); log(`[dev] +${qty.value} ${ITEMS[items.value].name||items.value}`, "#ffd36b"); }));
   // ---- BALANCE TEST: a bot fights a standard monster with your current character and reports the result.
