@@ -57,6 +57,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 /* minimap + tracker */
 #side{top:calc(10px + env(safe-area-inset-top,0px));right:max(10px,env(safe-area-inset-right,0px));width:172px;display:flex;flex-direction:column;gap:8px}
 #mmwrap{pointer-events:auto;cursor:pointer;background:rgba(21,28,34,.92);border:1px solid var(--line);border-radius:6px;padding:6px}
+#mmhint{font:600 10px/1 system-ui,sans-serif;letter-spacing:.4px;color:var(--mute);text-align:center;margin-top:4px;text-transform:uppercase}
 #mm{display:block;width:160px;height:107px;border-radius:3px;image-rendering:pixelated}
 #zone{font-family:var(--display);font-size:13px;text-align:center;margin-top:4px;color:var(--frost)}
 #gold{font-size:13px;text-align:center;color:var(--coin);font-weight:700}
@@ -95,7 +96,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 .slot canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 .ico{display:inline-block;width:32px;height:32px;vertical-align:middle;margin-right:6px;image-rendering:pixelated;background-repeat:no-repeat;flex:none}
 .slot .k{position:absolute;top:1px;left:3px;font-size:11px;font-weight:800;text-shadow:0 1px 2px #000}
-.slot .cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;text-shadow:0 1px 2px #000}
+.slot .cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;letter-spacing:-.5px;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;border-radius:inherit;pointer-events:none}
+.slot .cd.run{background:conic-gradient(rgba(6,10,14,.78) calc(var(--p,1)*360deg), rgba(6,10,14,.12) 0)}
+.slot .cd.soon{color:#ffe27a;font-size:19px}
+.slot.oncd canvas{filter:grayscale(.6) brightness(.7)}
+.slot.gcd canvas{filter:brightness(.75)}
+.slot.ready{animation:cdready .45s ease-out}
+@keyframes cdready{0%{box-shadow:0 0 0 0 rgba(255,235,150,.9)}100%{box-shadow:0 0 14px 6px rgba(255,235,150,0)}}
 .slot.oom canvas{filter:saturate(.25) brightness(.55)}
 .slot.oor{box-shadow:inset 0 0 0 2px rgba(226,83,77,.75)}
 .slot.locked{opacity:.35}
@@ -272,7 +279,7 @@ body.touch .panel{padding:12px 13px}
 </div>
 
 <div class="hud" id="side">
-  <div id="mmwrap"><canvas id="mm" width="110" height="90"></canvas><div id="zone">-</div><div id="gold" class="num">0 gold</div></div>
+  <div id="mmwrap"><canvas id="mm" width="110" height="90"></canvas><div id="mmhint">Click to open map</div><div id="zone">-</div><div id="gold" class="num">0 gold</div></div>
   <div id="tracker"></div>
 </div>
 
@@ -300,6 +307,9 @@ body.touch .panel{padding:12px 13px}
 <div id="create">
   <div class="wrap">
     <h1>Rimfrost</h1>
+    <div id="ver" style="text-align:center;margin-top:-6px;font-size:12px;letter-spacing:.12em;color:var(--mute)"></div>
+    <div style="text-align:center;margin:8px 0"><button class="btn" id="relbtn" type="button">Release notes</button></div>
+    <div id="relnotes" hidden style="max-height:50vh;overflow:auto;text-align:left;background:rgba(10,14,17,.7);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:12px"></div>
     <div id="selbox" class="list" style="gap:12px" hidden>
       <h3 class="muted" style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase">Choose Character</h3>
       <div id="charlist" class="chars"></div>
@@ -348,6 +358,10 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
+const GAME_VERSION = "0.7.0";   // keep in sync with RELEASE_NOTES.md
+// the latest releases shown on the character select screen (newest first, keep the three latest)
+const RELEASES = [{"v": "0.7.0", "d": "2026-10-23", "s": [["Added", ["Release notes tab on the character select screen (the three latest releases)."]]]}, {"v": "0.6.1", "d": "2026-10-23", "s": [["Added", ["The game version is shown on the character select screen and in the Esc menu."]]]}, {"v": "0.6.0", "d": "2026-10-23", "s": [["Fixed", ["Water is now large ponds and lakes instead of single tiles.", "Entangling Roots has a 20 second cooldown.", "Humanoid monsters are drawn at the same smaller size as characters.", "Dying in a dungeon can no longer get you stuck on the death screen.", "Dungeon progress survives a page refresh.", "The conversation window closes when you walk away.", "Dungeons need their minimum level to enter."]], ["Changed", ["Mana: full cost at level 1 dropping to half by level 20, slower regeneration, sitting regenerates 4x.", "Bear Form text shows the real health bonus and damage reduction.", "Merchants have Buy and Sell tabs, with equipment comparison when selling.", "New cooldown display on skills and spells.", "Bonefields dead trees are easier to see.", "Shorter co-op description.", "Minimap shows Click to open map."]]]}];
+const BEAR_HP = 1.6, BEAR_ARMOR = 0.7;   // Bear Form: health multiplier and damage taken multiplier
 // Balance: PLAYER_DMG scales ALL player damage (every class). MANA_COST_MULT scales every mana cost, so you can cast more before running dry.
 const PLAYER_DMG = 0.8, MANA_COST_MULT = 0.5;
 const CLASS_DMG = {mage:1.15, warrior:1.15, hunter:1, priest:1, druid:1.10, paladin:0.70};
@@ -493,7 +507,7 @@ const AB = {
   rejuv:{name:"Lifebud", lvl:4, cost:22, range:0, school:"nature", icon:"bloom", tgt:"self",
     desc:()=>`Heals you for ${fmt(P.maxHp*0.35*(1+0.1*T("impRejuv")))} over 12 sec.`,
     run:()=>{hot("rejuv",P.maxHp*0.35*(1+0.1*T("impRejuv")),12);burst(P.x,P.y,"#9cf07a",10);}},
-  roots:{name:"Entangling Roots", lvl:6, cost:20, cast:1.2, range:290, school:"nature", icon:"roots", tgt:"enemy",
+  roots:{name:"Entangling Roots", lvl:6, cost:20, cd:20, cast:1.2, range:290, school:"nature", icon:"roots", tgt:"enemy",
     desc:()=>`Roots hold the target in place for 8 sec and deal ${fmt(spow()*0.6)} damage.`,
     run:t=>{root(t,8);dot(t,"roots",spow()*0.6,8,"nature");burst(t.x,t.y,"#6a9a3a",10);}},
   starfire:{name:"Starfall", lvl:12, cost:40, cast:3.0, range:300, school:"arcane", icon:"star", tgt:"enemy",
@@ -537,7 +551,7 @@ const AB = {
     desc:()=>`The Light passes judgment on the target: ${fmt(spow()*4.5)} damage.`,
     run:t=>{burst(t.x,t.y,"#fff2b0",24);hit(t,spow()*4.5,"holy","judge");}},
   bear:{name:"Bear Form", lvl:10, cost:0, range:0, school:"nature", icon:"bear", tgt:"self", offGcd:true, form:true,
-    desc:()=>`Transform into a bear: +60% health, less damage taken, and uses rage. Press again to change back.`,
+    desc:()=>{ const hpP = Math.round((BEAR_HP*(1+0.1*T("heartWild"))-1)*100), red = Math.round((1 - BEAR_ARMOR*(1-0.05*T("thickHide"))/CLASSES[S.cls].armor)*100); return `Transform into a bear: +${hpP}% maximum health and ${red}% less damage taken. Uses rage instead of mana. Press again to change back.`; },
     run:()=>setForm(P.form==="bear"?null:"bear")},
   cat:{name:"Wolf Form", lvl:15, cost:0, range:0, school:"nature", icon:"cat", tgt:"self", offGcd:true, form:true,
     desc:()=>`Transform into a wolf: +30% speed, quick attacks, and uses energy. Press again to change back.`,
@@ -1312,18 +1326,18 @@ const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T
 const TERRAIN = {
   meadow:(n,m)=> n>0.74?T_TREE : m>0.88?T_BOULDER : T_GRASS,
   forest:(n,m)=> n>0.53?T_TREE : T_FOREST,
-  elfwood:(n,m)=> n>0.68?T_BIRCH : m>0.9?T_WATER : T_ELFGRASS,
+  elfwood:(n,m,l)=> l>0.7?T_WATER : n>0.68?T_BIRCH : T_ELFGRASS,
   moonwood:(n,m)=> n>0.56?T_VTREE : T_MOSS,
   highland:(n,m)=> n>0.66?T_CLIFF : m>0.8?T_PINE : T_ROCK,
   snowhigh:(n,m)=> n>0.64?T_CLIFF : m>0.8?T_SPINE : m<0.18?T_ROCK : T_SNOW,
   steppe:(n,m)=> n>0.76?T_RCLIFF : m>0.87?T_CACTUS : T_STEPPE,
   canyon:(n,m)=> n>0.58?T_RCLIFF : m>0.86?T_CACTUS : T_SAND,
   rock:(n,m)=> n>0.62?T_CLIFF : m>0.82?T_PINE : m<0.1?T_BOULDER : T_ROCK,
-  swamp:(n,m)=> n>0.6?T_WATER : m>0.83?T_DEAD : T_SWAMP,
+  swamp:(n,m,l)=> l>0.58?T_WATER : m>0.83?T_DEAD : T_SWAMP,
   ash:(n,m)=> n>0.62?T_LAVA : m>0.82?T_OBSID : T_ASH,
   snow:(n,m)=> n>0.6?T_ICE : m>0.8?T_SPINE : T_SNOW,
   blight:(n,m)=> n>0.68?T_DEAD : m>0.87?T_BOULDER : T_BLIGHT,
-  gloom:(n,m)=> n>0.6?T_DEAD : m>0.86?T_WATER : T_GLOOM
+  gloom:(n,m,l)=> l>0.7?T_WATER : n>0.6?T_DEAD : T_GLOOM
 };
 const BORDER = {blight:T_DEAD, gloom:T_DEAD, meadow:T_TREE, forest:T_TREE, elfwood:T_BIRCH, moonwood:T_VTREE, highland:T_CLIFF, snowhigh:T_CLIFF, steppe:T_RCLIFF, canyon:T_RCLIFF, rock:T_CLIFF, swamp:T_DEAD, ash:T_LAVA, snow:T_ICE};
 const FLOOR = {blight:T_BLIGHT, gloom:T_GLOOM, meadow:T_GRASS, forest:T_FOREST, elfwood:T_ELFGRASS, moonwood:T_MOSS, highland:T_ROCK, snowhigh:T_SNOW, steppe:T_STEPPE, canyon:T_SAND, rock:T_ROCK, swamp:T_SWAMP, ash:T_ASH, snow:T_SNOW};
@@ -1353,7 +1367,7 @@ const nearHub = (x,y,extra) => Object.keys(HUBS).some(h=>hubDist(x,y,h) < HUBS[h
 
 function genWorld(){
   map = new Array(MW*MH); zmap = new Array(MW*MH);
-  const n1 = noise(11,6), n2 = noise(23,2.5), wa = noise(37,18), wb = noise(41,18);
+  const n1 = noise(11,6), n2 = noise(23,2.5), lk = noise(913,24), wa = noise(37,18), wb = noise(41,18);
   const zl = Object.entries(ZONES).filter(([,z])=>!z.dungeon);
   for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
     if(x >= OW){ map[y*MW+x] = T_CLIFF; zmap[y*MW+x] = null; continue; }
@@ -1362,7 +1376,7 @@ function genWorld(){
     for(const [id,z] of zl){ const d = Math.hypot(wx-z.c[0], wy-z.c[1]) - (z.w||0); if(d < bd){ bd = d; best = id; } }
     zmap[y*MW+x] = best;
     const t = ZONES[best].t, n = n1(x,y)*0.65 + n2(x,y)*0.35, m2 = n2(x+50,y+50);
-    map[y*MW+x] = (x<2||y<2||x>=OW-2||y>=MH-2) ? BORDER[t] : TERRAIN[t](n, m2);
+    map[y*MW+x] = (x<2||y<2||x>=OW-2||y>=MH-2) ? BORDER[t] : TERRAIN[t](n, m2, lk(x,y));
   }
   for(const h of Object.values(HUBS)) h.zone = zmap[h.y*MW+h.x];
   const roadTiles = new Set();
@@ -1522,9 +1536,11 @@ function critChance(m, school, ab){
   if(S.cls==="mage" && m && (m.slowT>0||m.rootT>0)) c += 0.12*T("shatter");
   return c;
 }
-function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = 0.7*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
+function takenMult(){ let m = CLASSES[S.cls].armor; if(P.form==="bear") m = BEAR_ARMOR*(1-0.05*T("thickHide")); if(P.form==="cat") m = 0.9; if(T("shadowform")) m*=0.85; if(P.buffs.bark) m*=0.75; m *= 1-teff("def"); m *= 1 - Math.min(0.25, gearStat("def")/100); if(P.buffs.ironskin) m *= 0.85; return m; }
 // mana costs grow with level so a spell always costs the same share of your base mana as it did at level 1
-function manaScale(){ return (100 + S.level*22) / 122 * MANA_COST_MULT; }
+// spells cost full mana at level 1 and settle at MANA_COST_MULT (half) from level 20
+function manaCostMult(){ return MANA_COST_MULT + (1 - MANA_COST_MULT)*Math.max(0, 1 - (S.level-1)/19); }
+function manaScale(){ return (100 + S.level*22) / 122 * manaCostMult(); }
 function costOf(id){ const a = AB[id]; let c = a.cost||0; if(S.cls==="hunter") c *= 1-0.1*T("efficiency"); if((a.res||CLASSES[S.cls].res)==="mana") c *= manaScale(); return Math.round(c); }
 function castTime(id){ const a = AB[id]; let c = a.cast||0; if(!c) return 0;
   if(["fireball","frostbolt","pyroblast"].includes(id)) c -= 0.25*T("quickCast");
@@ -1541,7 +1557,7 @@ function recompute(full){
   const c = CLASSES[S.cls]; let hp = (80+S.level*22)*c.hp + gearStat("hp") + gearStat("sta")*STAT_RATE.staHp;
   if(S.race==="dwarf") hp*=1.15;
   hp *= 1 + 0.06*T("toughness") + 0.06*T("endurance") + 0.05*T("naturalist") + teff("hp");
-  if(P.form==="bear") hp *= 1.6*(1+0.1*T("heartWild"));
+  if(P.form==="bear") hp *= BEAR_HP*(1+0.1*T("heartWild"));
   const pct = P.maxHp ? P.hp/P.maxHp : 1;
   P.maxHp = Math.round(hp); P.hp = full ? P.maxHp : Math.max(1, P.maxHp*pct);
   let mana = 100 + S.level*22 + gearStat("mana") + gearStat("int")*STAT_RATE.intMana; if(S.race==="elf") mana*=1.1; mana *= 1 + 0.1*T("arcMind") + 0.1*T("spiritual") + 0.1*T("palWis");
@@ -1961,6 +1977,7 @@ function update(dt){
 
 function updPlayer(dt){
   P.hurt = Math.max(0, (P.hurt||0)-dt); P.swing = Math.max(0, (P.swing||0)-dt); if(P.act) P.act.t += dt;
+  if(panelKind==="npc" && panelArg){ const np = npcs.find(x=>x.id===panelArg) || (dobjs.find(o=>o.kind==="entrance" && DUNGEONS[o.dgEnt] && DUNGEONS[o.dgEnt].keeper.id===panelArg)); if(np && dist(P,np) > 170) closePanel(); }
   if(P.dead){ if(P.ghost) updGhost(dt); return; }
   P.gcd = Math.max(0, P.gcd-dt); P.potCd = Math.max(0, P.potCd-dt);
   for(const k in P.cds){ P.cds[k] -= dt; if(P.cds[k] <= 0) delete P.cds[k]; }
@@ -1992,8 +2009,8 @@ function updPlayer(dt){
   P.combatT -= dt; const inC = P.combatT > 0;
   if(P.sitting && (P.moving || P.casting || P.autoTarget || P.dash || P.leap || inC || P.dead)) standUp();
   if(P.sitting && P.hp >= P.maxHp && P.mana >= P.maxMana && !P.sitFull){ P.sitFull = true; log("You are fully rested.", "#7be08a"); }
-  const rg = S.race==='undead' ? 1.5 : 1, rest = P.sitting ? 2.5 : 1;
-  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.012:0.05*rg*rest)*dt);
+  const rg = S.race==='undead' ? 1.5 : 1, rest = P.sitting ? 4 : 1;
+  P.mana = Math.min(P.maxMana, P.mana + P.maxMana*(inC?0.004:0.016*rg*rest)*(1 + gearStat("int")*0.01)*dt);
   P.focus = Math.min(100, P.focus + (inC?4:9)*dt);
   P.energy = Math.min(100, P.energy + 12*dt);
   if(!inC) P.rage = Math.max(0, P.rage - 3*dt);
@@ -2435,6 +2452,7 @@ function enterDungeon(id){
   const D = DUNGEONS[id]; if(!D) return;
   if(P.ghost){ if(!S.death || S.death.dg !== id) return err("You are a spirit – find your corpse first"); }
   else if(P.dead) return;
+  if(!P.ghost && S.level < ZONES[id].lv[0]) return err(`You need to be level ${ZONES[id].lv[0]} to enter ${ZONES[id].name}`);
   if(COOP.role === "guest" && coopOn()){
     if(COOP.dgWait) return;
     COOP.dgWait = id; closePanel(); log(`Entering ${ZONES[id].name}…`, "#9fd6e8");
@@ -2481,7 +2499,7 @@ function dungeonInfoHTML(id){
     <div class="d">Harder than regular areas – packs of enemies, two puzzles, two minibosses (always drop green gear) and a final boss that always drops blue or better. If you die you wake up out here, and whatever you have already cleared stays cleared.</div>
     ${st.keep && !st.done ? `<div class="d" style="color:var(--coin)">You have started this dungeon – entering again continues where you left off.</div>` : ""}
     ${quests.length ? `<div class="d">Quests here: ${quests.map(q=>`${esc(q.name)} (${esc(npcName(q.npc))})`).join(", ")}</div>` : ""}</div>
-    <button class="btn pri" data-act="enterdg" data-id="${id}">Enter</button></div>
+    <button class="btn pri" data-act="enterdg" data-id="${id}" ${S.level < z.lv[0] && !P.ghost ? "disabled" : ""}>${S.level < z.lv[0] && !P.ghost ? `Requires level ${z.lv[0]}` : "Enter"}</button></div>
     ${st.keep && !st.done ? `<div class="row" style="margin-top:6px"><button class="btn" data-act="resetdg" data-id="${id}">Start over</button></div>` : ""}`;
 }
 // drawing of puzzle objects and portals
@@ -2534,14 +2552,22 @@ function ghostSpawnPoint(){
   if(S.death.dg){ const D = DUNGEONS[S.death.dg]; return {x:D.ent.x*TILE+16, y:(D.ent.y+1)*TILE+16, name:ZONES[D.id].name}; }
   const h = nearestHub(S.death.x, S.death.y); return {x:h.x*TILE+16, y:(h.y+2)*TILE+16, name:h.name};
 }
+function freeNear(x, y){ if(!collides(x, y, 10)) return {x, y};
+  for(let r=1;r<=12;r++) for(let a=0;a<16;a++){ const nx = x + Math.cos(a/16*Math.PI*2)*r*TILE, ny = y + Math.sin(a/16*Math.PI*2)*r*TILE; if(!collides(nx, ny, 10)) return {x:nx, y:ny}; }
+  return {x, y}; }
 function releaseSpirit(){
   if(!P.dead || P.ghost || !S.death) return;
+  try{ releaseSpirit0(); }catch(err){ console.error(err);   // never leave the player stuck on the death screen
+    P.inDungeon = null; const sp = ghostSpawnPoint(), f = freeNear(sp.x, sp.y); P.x = f.x; P.y = f.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0; S.death.ghost = true; showSpiritHealers(true);
+    document.getElementById("dead").hidden = true; save(true); }
+}
+function releaseSpirit0(){
   const dg = S.death.dg;
   if(dg && P.inDungeon){ const D = DUNGEONS[dg];
     for(const m of mobs) if(m.def.dg===dg && !m.dead && !coopRemoteIn(dg)){ m.state = "idle"; m.hp = m.maxHp; m.x = m.hx; m.y = m.hy; m.dots = []; m.tele = null; m.evading = false; }
     DSTATE[dg].keep = true; P.inDungeon = null; }
   if(P.form){ P.form = null; recompute(false); } snd("spirit");
-  const sp = ghostSpawnPoint(); P.x = sp.x; P.y = sp.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0;
+  const sp = ghostSpawnPoint(), f = freeNear(sp.x, sp.y); P.x = f.x; P.y = f.y; P.ghost = true; P.target = null; P.autoTarget = null; P.hp = 0;
   S.death.ghost = true; showSpiritHealers(true);
   document.getElementById("dead").hidden = true;
   showBanner("You are a spirit", "", 3);
@@ -2632,7 +2658,10 @@ function makeTilesInner(){
   tileSprites[T_PATH] = mk((g, r) => { g.fillStyle = "#86704d"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#957e58","#6f5c3e","#a08a63"], 2); });
   tileSprites[T_COBBLE] = mk((g, r) => { g.fillStyle = "#57534d"; g.fillRect(0,0,TILE,TILE); for(let y=0;y<4;y++) for(let x=0;x<4;x++){ const o = y%2?4:0; g.fillStyle = ["#6f6b64","#77736b","#68645d"][Math.floor(r()*3)]; g.fillRect(x*8+o-3, y*8+1, 6, 6); } });
   tileSprites[T_HOUSE] = mk((g, r, v) => { g.fillStyle = "#6b4a2e"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#8f3c2b"; g.fillRect(0,0,TILE,19); g.fillStyle = "#a54a35"; for(let i=0;i<4;i++) g.fillRect(0,i*5,TILE,2); g.fillStyle = "#3a2717"; g.fillRect(0,19,TILE,2); if(v===1){ g.fillStyle = "#f2c66d"; g.fillRect(12,23,8,6); } });
-  tileSprites[T_DEAD] = mk((g, r) => { swamp(g, r); g.strokeStyle = "#4b4036"; g.lineWidth = 3; g.beginPath(); g.moveTo(16,30); g.lineTo(16,10); g.lineTo(8,3); g.moveTo(16,14); g.lineTo(25,6); g.moveTo(16,20); g.lineTo(7,15); g.stroke(); g.lineWidth = 1; });
+  tileSprites[T_DEAD] = mk((g, r) => { swamp(g, r);
+    g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(16,29,11,4,0,0,7); g.fill();
+    const tr = () => { g.beginPath(); g.moveTo(16,30); g.lineTo(16,10); g.lineTo(8,3); g.moveTo(16,14); g.lineTo(25,6); g.moveTo(16,20); g.lineTo(7,15); g.stroke(); };
+    g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#14121a"; g.lineWidth = 7; tr(); g.strokeStyle = "#cbbfa6"; g.lineWidth = 3.6; tr(); g.lineWidth = 1; g.lineCap = "butt"; });
   tileSprites[T_BOULDER] = mk((g, r) => { grass(g, r); g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(17,25,12,5,0,0,7); g.fill(); g.fillStyle = "#7b7f84"; g.beginPath(); g.ellipse(16,17,12,10,0,0,7); g.fill(); g.fillStyle = "#9a9ea3"; g.beginPath(); g.ellipse(12,13,5,4,0,0,7); g.fill(); });
   tileSprites.rboulder = mk((g, r) => { rock(g, r); g.fillStyle = "#4f5357"; g.beginPath(); g.ellipse(16,17,12,10,0,0,7); g.fill(); g.fillStyle = "#6c7074"; g.beginPath(); g.ellipse(12,13,5,4,0,0,7); g.fill(); });
   tileSprites[T_CRYPT] = mk((g, r) => { g.fillStyle = "#33363d"; g.fillRect(0,0,TILE,TILE); g.strokeStyle = "#272a30"; g.strokeRect(0.5,0.5,15,15); g.strokeRect(16.5,0.5,15,15); g.strokeRect(0.5,16.5,31,15); speck(g, r, 6, ["#3d4048"], 3); });
@@ -2861,7 +2890,7 @@ function render(){
   // name plates
   ctx.textAlign = "center"; ctx.font = "700 11px 'Alegreya Sans', sans-serif";
   for(const m of mobs){ if(m.dead || !inView(m)) continue; const near = dist(m,P) < 230 || m===P.target; if(!near) continue;
-    const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : ORC_LOOK[m.type] ? sideTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale||1) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
+    const CLk = CREATURE_LOOK[m.type]; const top = BOSS_LOOK[m.type] ? bossTop(m) : ORC_LOOK[m.type] ? sideTop(m) : CLk ? m.y - CREATURES[CLk.c].h*(CLk.s||1) - 4 : MOB_LOOK[m.type] ? m.y - 52*(MOB_LOOK[m.type].scale ?? CHAR_SCALE) - 4 : m.y - (m.def.shape==="wisp" ? m.r*4.2 : m.def.shape==="golem" ? m.r*3.1 : (m.def.shape==="troll"||m.def.shape==="draug") ? 52 : m.r*2.2+18);
     if(m.hp < m.maxHp || m===P.target){ ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(m.x-20, top-2, 40, 5); ctx.fillStyle = "#d84a42"; ctx.fillRect(m.x-20, top-2, 40*Math.max(0,m.hp/m.maxHp), 5); }
     ctx.fillStyle = LVL_COL[lvlClass(m.lvl)]; ctx.fillText(`${m.name} (${m.lvl}${m.def.boss?" Boss":m.elite?" Elite":""})`, m.x, top-6);
     if(m===P.autoTarget){ const sy = top-26 + Math.sin(time*6)*2; ctx.strokeStyle = "#ff5a4f"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(m.x-7, sy-7); ctx.lineTo(m.x+7, sy+7); ctx.moveTo(m.x+7, sy-7); ctx.lineTo(m.x-7, sy+7); ctx.stroke(); ctx.lineWidth = 1; ctx.lineCap = "butt"; } }
@@ -3138,7 +3167,7 @@ const MOB_LOOK = {
   boneguard:{outfit:"draug", body:"skeleton", tint:"undead", scale:1.05, weapons:{slash:["WEAPON_dagger"]}}, vex:{outfit:"necro", body:"skeleton", tint:"wraith", scale:1.15, cast:true},
   boss:{outfit:"draug", body:"skeleton", tint:"frost", scale:1.45, big:BIG_SWORD}
 };
-function mobLook(m){ const L = MOB_LOOK[m.type]; if(!L) return null; return {key:"m_"+m.type, ...L}; }
+function mobLook(m){ const L = MOB_LOOK[m.type]; if(!L) return null; return {key:"m_"+m.type, scale:CHAR_SCALE, ...L}; }
 // ---- side-view animal sprites (frames face left, one row)
 const CREATURES = {
   Bear:{w:64,h:33, idle:["Bear_Idle",12], walk:["Bear_Walk",8], run:["Bear_Run",5]},
@@ -3345,6 +3374,7 @@ function menuHTML(){
     <button class="btn" data-act="open" data-k="help">Information <span class="muted">${keyName(KB.info)}</span></button>
     <label class="btn" style="display:flex;align-items:center;gap:10px;cursor:default">Sound <input type="range" id="volrange" min="0" max="100" step="5" value="${Math.round(sndVol*100)}" style="flex:1;accent-color:var(--frost)"><span class="muted" id="volval">${Math.round(sndVol*100)}%</span></label>
     <button class="btn" data-act="newchar">Switch Character</button>
+    <div class="muted" style="text-align:center;font-size:12px;margin-top:4px">Rimfrost v${GAME_VERSION}</div>
   </div>`;
 }
 function keysHTML(){
@@ -3667,7 +3697,10 @@ function updHotbar(){
     let oor = false; if(a.tgt==="enemy" && P.target && !P.target.dead){ const d = dist(P,P.target)-P.target.r; oor = d > a.range || (a.minRange && d < a.minRange); }
     s.b.classList.toggle("oor", !!oor);
     s.b.classList.toggle("active", (s.id==="bear"&&P.form==="bear")||(s.id==="cat"&&P.form==="cat")||(s.id==="leopard"&&P.form==="leopard"));
-    setT(s.cd, cd>0 ? (cd>=10?Math.ceil(cd):cd.toFixed(1)) : (!a.offGcd && P.gcd>0 ? "·" : ""));
+    setT(s.cd, cd>0 ? (cd>=10?Math.ceil(cd):cd.toFixed(1)) : "");
+    s.cd.classList.toggle("run", cd>0); s.cd.classList.toggle("soon", cd>0 && cd<3); if(cd>0) s.cd.style.setProperty("--p", clamp(cd/(a.cd||cd||1), 0, 1).toFixed(3));
+    s.b.classList.toggle("oncd", cd>0); s.b.classList.toggle("gcd", cd<=0 && !a.offGcd && P.gcd>0);
+    if(s.prev>0 && cd<=0){ s.b.classList.remove("ready"); void s.b.offsetWidth; s.b.classList.add("ready"); } s.prev = cd;
   }
 }
 
@@ -3701,7 +3734,6 @@ function refreshTracker(){
   let h = `<h4>Quests</h4>`;
   if(!act.length) h += `<div class="o">No active quests. Look for a yellow ! above someone nearby.</div>`;
   for(const q of act){ const rd = qReady(q); h += `<div class="q ${rd?"done":""}"><b>${esc(q.name)}</b>${q.obj.map((o,i)=>`<div class="o">${esc(objName(o))}: ${qProg(q,i)}/${o[2]}</div>`).join("")}${rd?`<div class="o" style="color:var(--hp)">Turn in to ${esc(npcName(qTurnInNpc(q)))}</div>`:""}</div>`; }
-  h += `<div class="o" style="margin-top:4px">Press M for the map.</div>`;
   $("tracker").innerHTML = h;
 }
 
@@ -3720,15 +3752,15 @@ function bagGearHTML(){
   if(!list.length) return h + `<div class="muted">No equipment in your bag. Enemies can drop equipment, and vendors sell it.</div>`;
   return h + `<div class="list">${list.map(it=>{ const ok = canWear(it) && S.level >= it.il; return `<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)}</div></div><button class="btn ${ok?"pri":""}" data-act="equip" data-id="${it.id}" ${ok?"":"disabled"}>Equip</button></div>`; }).join("")}</div>`;
 }
-function vendorGearHTML(n){
+function vendorGearHTML(n, part){ part = part || "both";
   const stock = vendorStock(n);
-  let h = `<h3>${CLASSES[S.cls].name} Equipment <span class="muted" style="font-weight:400">· level ${vendorLevel(n)}</span></h3><div class="list">${stock.map(it=>{ const p = gearPrice(it); return `<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)} <span class="coin">${p} gold</span></div></div><button class="btn" data-act="buygear" data-id="${it.id}" ${S.gold<p?"disabled":""}>Buy</button></div>`; }).join("")}</div>`;
+  let h = part==="sell" ? "" : `<h3>${CLASSES[S.cls].name} Equipment <span class="muted" style="font-weight:400">· level ${vendorLevel(n)}</span></h3><div class="list">${stock.map(it=>{ const p = gearPrice(it); return `<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)} <span class="coin">${p} gold</span></div></div><button class="btn" data-act="buygear" data-id="${it.id}" ${S.gold<p?"disabled":""}>Buy</button></div>`; }).join("")}</div>`;
   const mine = (S.gear||[]).slice().sort((a,b)=>a.q-b.q);
-  if(mine.length) h += `<h3>Sell Equipment</h3><div class="list">${mine.map(it=>`<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0"><b style="color:${QUAL[it.q].color}">${esc(it.n)}</b> <span class="muted">· level ${it.il}</span><div class="d">${statLines(it)}</div></div></div><button class="btn" data-act="sellgear" data-id="${it.id}">Sell for ${gearSell(it)} gold</button></div>`).join("")}</div>`;
+  if(part!=="buy" && mine.length) h += `<h3>Sell Equipment</h3><div class="list">${mine.map(it=>`<div class="item"><div style="display:flex;align-items:center;min-width:0">${gearIco(it)}<div style="min-width:0">${gearDesc(it, true)}</div></div><button class="btn" data-act="sellgear" data-id="${it.id}">Sell for ${gearSell(it)} gold</button></div>`).join("")}</div>`;
   return h;
 }
-let panelKind = null, panelArg = null;
-function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } if(panelKind!==kind) snd("open"); panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; document.body.classList.add("pnl"); }
+let panelKind = null, panelArg = null, merchTab = "buy";
+function openPanel(kind, arg){ if(panelKind===kind && arg===panelArg && kind!=="npc"){ closePanel(); return; } if(kind==="npc" && (panelKind!=="npc" || arg!==panelArg)) merchTab = "buy"; if(panelKind!==kind) snd("open"); panelKind = kind; panelArg = arg; respecArm = false; renderPanel(); $("panel").hidden = false; document.body.classList.add("pnl"); }
 function closePanel(){ MAPV.fresh = true; if(panelKind) snd("close"); document.body.classList.remove("pnl"); panelKind = null; $("panel").hidden = true; }
 function renderPanel(){
   const el = $("panel"); let h = `<button class="x" data-act="close" aria-label="Close">✕</button>`;
@@ -3811,13 +3843,14 @@ function renderPanel(){
         if(S.level >= 10){ const c = respecCost(), sp = talentsSpent();
           h += `<h3>Unlearn Talents</h3><div class="item"><div><b>Reset all talents</b> <span class="coin">${c} gold</span><div class="d">${sp ? `You get back all your spent talent points (${sp}) and can distribute them again.` : "You have not spent any talent points yet."} The price depends on your level.</div></div><button class="btn ${respecArm?"pri":""}" data-act="respec" ${!sp||S.gold<c?"disabled":""}>${respecArm?"Sure? Click again":"Reset"}</button></div>`; } }
     }
+    if(n.shop || n.gear) h += `<div class="row" style="margin:8px 0"><button class="btn ${merchTab==="buy"?"pri":""}" data-act="mtab" data-k="buy">Buy</button><button class="btn ${merchTab==="sell"?"pri":""}" data-act="mtab" data-k="sell">Sell</button></div>`;
     if(n.shop){
-      h += `<h3>Buy</h3><div class="list">${(n.shop==="basic" ? SHOP.filter(([k])=>k==="potHp"||k==="potMana") : SHOP).map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Buy</button></div>`).join("")}</div>`;
-      const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0) + S.gear.filter(g=>g.q===0).reduce((a,g)=>a+gearSell(g),0);
-      h += `<h3>Sell</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sell all junk (${junk} gold)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sell 1 (${ITEMS[k].sell} gold)</button></div>`).join("") || `<div class="muted">Nothing to sell.</div>`}</div>`;
-      if(n.shop !== "basic") h += vendorGearHTML(n);
+      if(merchTab==="buy") h += `<h3>Buy</h3><div class="list">${(n.shop==="basic" ? SHOP.filter(([k])=>k==="potHp"||k==="potMana") : SHOP).map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span><div class="d">${ITEMS[k].desc}</div></div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold<p?"disabled":""}>Buy</button></div>`).join("")}</div>`;
+      if(merchTab==="sell"){ const sell = Object.keys(S.bag).filter(k=>S.bag[k]>0); const junk = sell.filter(k=>ITEMS[k].kind==="junk").reduce((a,k)=>a+ITEMS[k].sell*S.bag[k],0) + S.gear.filter(g=>g.q===0).reduce((a,g)=>a+gearSell(g),0);
+      h += `<h3>Sell</h3><div class="row" style="margin-bottom:8px"><button class="btn" data-act="selljunk" ${junk?"":"disabled"}>Sell all junk (${junk} gold)</button></div><div class="list">${sell.map(k=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="muted">× ${S.bag[k]}</span></div></div><button class="btn" data-act="sell" data-k="${k}">Sell 1 (${ITEMS[k].sell} gold)</button></div>`).join("") || `<div class="muted">Nothing to sell.</div>`}</div>`;}
+      if(n.shop !== "basic") h += vendorGearHTML(n, merchTab);
     }
-    if(n.gear) h += vendorGearHTML(n);
+    if(n.gear) h += vendorGearHTML(n, merchTab);
     if(n.potions || n.ores){ const L = n.potions ? POTION_SHOP : ORE_SHOP;
       h += `<h3>${n.potions?"Potions & Elixirs":"Ore"}</h3><div class="list">${L.map(([k,p])=>`<div class="item"><div style="display:flex;align-items:center">${icoHTML(k)}<div><b>${ITEMS[k].name}</b> <span class="coin">${p} gold</span>${ITEMS[k].desc?`<div class="d">${ITEMS[k].desc}</div>`:""}</div></div><button class="btn" data-act="buy" data-k="${k}" data-p="${p}" ${S.gold>=p?"":"disabled"}>Buy</button></div>`).join("")}</div>`; }
     if(n.smith){ const c = smithCost(S.weapon);
@@ -3845,6 +3878,7 @@ $("panel").addEventListener("change", e=>{ if(e.target.id==="volrange"){ snd("cl
 $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
+  if(a==="mtab"){ merchTab = k; renderPanel(); return; }
   if(a==="mapzoom"){ if(k==="in") mapZoom(1.4); else if(k==="out") mapZoom(1/1.4); else if(k==="me"){ MAPV.cx = P.x/TILE; MAPV.cy = P.y/TILE; mapRedraw(); } else if(k==="all"){ MAPV.z = 1; MAPV.cx = OW/2; MAPV.cy = MH/2; mapRedraw(); } return; }
   if(a==="bind") return;
   if(a==="coophost"){ coopHost(); return; }
@@ -3957,6 +3991,7 @@ function startGame(sv, fresh){
   S.learned = S.learned.filter(id=>AB[id]); ensureBars();
   if(S.cls==="druid" && !S.learned.includes("touch")){ S.learned.push("touch"); autoPlace("touch"); }
   spawnAll();
+  if(sv.dgs && DUNGEONS[sv.dgs.id] && sv.dgs.snap){ const D = DUNGEONS[sv.dgs.id]; resetDungeon(D, sv.dgs.seed); dgApply(D, sv.dgs.snap); DSTATE[D.id].keep = true; }   // dungeon progress survives a refresh
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
   if(!sv.ws){ if(S.x) S.x *= 2; if(S.y) S.y *= 2; if(S.death){ S.death.x *= 2; S.death.y *= 2; } }   // the world became twice as big
   S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; retireOldGear();
@@ -4043,7 +4078,8 @@ $("mmwrap").addEventListener("click", e=>{ e.stopPropagation(); if(!running) ret
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2, dgs:dgSaveNow()}; }
+function dgSaveNow(){ try{ for(const D of Object.values(DUNGEONS)){ const st = DSTATE[D.id]; if(st && !st.done && ((P && P.inDungeon===D.id) || st.keep)) return {id:D.id, seed:D.seed, snap:dgSnap(D)}; } }catch(_){ } return null; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
@@ -4094,6 +4130,10 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 function boot(data){
+  { const v = document.getElementById("ver"); if(v) v.textContent = "v" + GAME_VERSION;
+    const rb = document.getElementById("relbtn"), rn = document.getElementById("relnotes");
+    if(rb && rn){ rn.innerHTML = RELEASES.slice(0,3).map(r=>`<h3 style="margin:10px 0 4px">v${r.v} <span class="muted" style="font-weight:400;font-size:12px">${r.d}</span></h3>` + r.s.map(([h,items])=>`<div class="muted" style="margin-top:4px;text-transform:uppercase;font-size:11px;letter-spacing:.08em">${h}</div><ul style="margin:2px 0 4px 18px;padding:0">${items.map(i=>`<li style="margin:2px 0">${i}</li>`).join("")}</ul>`).join("")).join("");
+      rb.addEventListener("click", ()=>{ rn.hidden = !rn.hidden; rb.textContent = rn.hidden ? "Release notes" : "Hide release notes"; }); } }
   resize(); genWorld(); makeTiles(); makeMinimap();
   loadLocalChars();
   const hs = data && data.save;
@@ -4332,7 +4372,7 @@ function drawRemote(c, r){
   c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(r.x-22, top+4, 44, 5); c.fillStyle = r.dead ? "#666" : "#4fd06a"; c.fillRect(r.x-22, top+4, 44*Math.max(0, Math.min(1, r.hp/(r.mhp||1))), 5); c.lineWidth = 1;
 }
 function coopHTML(){
-  let h = `<h2>Co-op</h2><div class="muted">Play together with friends on PC. One of you hosts and gets a code, the others join with that code. You fight the same monsters and share the XP. Click a friend (or their frame under yours) to select them: your heals and shields then go to them. Click again to go back to healing yourself.</div>`;
+  let h = `<h2>Co-op</h2><div class="muted">Play together with friends on PC. One of you hosts a game and gets a code, and the others join with that code.</div>`;
   if(coopOn() || COOP.role==="host"){
     if(COOP.role==="host") h += `<h3>Your code</h3><div class="item"><div><b style="font-size:28px;letter-spacing:6px;color:var(--frost)">${COOP.code||"…"}</b><div class="d">Give this code to your friends.</div></div></div>`;
     else h += `<h3>Joined game</h3><div class="item"><div><b>${COOP.code}</b></div></div>`;
