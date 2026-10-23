@@ -3,6 +3,16 @@
 
 Newest version first.
 
+## v0.9.1 – 2026-10-23
+### Fixed
+- **Co-op:** players no longer drop out and rejoin over and over when their game window is in the background or minimized. A player is now only counted as disconnected after 20 seconds of silence.
+- **Chat:** "joined" is only shown the first time a player joins, not every time the connection recovers.
+
+## v0.9.0 – 2026-10-23
+### Added
+- **Co-op chat:** a small chat window on the left side while you play co-op. Press Enter to write, Enter again to send, Esc to cancel. The history lasts for the session, and the window fades when nobody is talking. Click it to write. The key can be changed under Keybindings.
+- Chat also shows when someone joins or leaves the game.
+
 ## v0.8.0 – 2026-10-23
 ### Changed
 - **Zoom:** the game is drawn 50 % closer than before.

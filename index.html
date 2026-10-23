@@ -117,6 +117,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #menu button.glow{border-color:var(--coin);color:var(--coin)}
 
 /* log */
+#chat{left:max(10px,env(safe-area-inset-left,0px));top:calc(50% - 70px);width:300px;max-width:42vw;opacity:0;transition:opacity .35s}
+#chat.show{opacity:1;pointer-events:auto}
+#chatlog{max-height:180px;overflow-y:auto;font-size:13px;line-height:1.35;background:rgba(10,14,17,.62);border:1px solid var(--line);border-radius:6px;padding:6px 8px;scrollbar-width:thin;cursor:text}
+#chatlog div{margin:1px 0;word-wrap:break-word}
+#chatlog .sys{color:var(--mute);font-style:italic}
+#chatlog b{color:#9fd6e8}
+#chatin{width:100%;box-sizing:border-box;margin-top:4px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:rgba(10,14,17,.92);color:#fff;font:13px system-ui,sans-serif}
 #log{left:max(10px,env(safe-area-inset-left,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));width:280px;max-width:40vw;font-size:12.5px;line-height:1.35;pointer-events:none}
 #log div{background:rgba(10,14,17,.55);padding:1px 6px;border-radius:3px;margin-top:2px;animation:fade 9s forwards}
 @keyframes fade{0%,75%{opacity:1}100%{opacity:0}}
@@ -283,6 +290,7 @@ body.touch .panel{padding:12px 13px}
   <div id="tracker"></div>
 </div>
 
+<div class="hud" id="chat" hidden><div id="chatlog"></div><input id="chatin" type="text" maxlength="200" placeholder="Message" autocomplete="off" hidden></div>
 <div class="hud" id="log"></div>
 <div class="hud" id="banner"></div>
 
@@ -358,7 +366,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.8.0";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.9.1";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -3340,14 +3348,14 @@ function setBarSlot(key, id, slot){ ensureBars(); const b = S.bars[key]; for(let
 
 // ---- keybindings (saved in this browser)
 const KB_KEY = "rimfrost-keys-v1";
-const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", petAtk:"f", interact:"e", potHp:"q", potMana:"r", rest:"x",
+const KB_DEFAULT = {up:"w", left:"a", down:"s", right:"d", target:"tab", attack:"t", petAtk:"f", chat:"enter", interact:"e", potHp:"q", potMana:"r", rest:"x",
   char:"c", bag:"b", spells:"p", talents:"n", quests:"l", craft:"k", info:"h",
   bar1:"1", bar2:"2", bar3:"3", bar4:"4", bar5:"5", bar6:"6", bar7:"7", bar8:"8", bar9:"9", bar10:"0"};
-const KB_LABEL = {up:"Move forward", left:"Move left", down:"Move back", right:"Move right", target:"Target nearest enemy", attack:"Start attacking", petAtk:"Pet: attack / recall", interact:"Talk / gather",
+const KB_LABEL = {up:"Move forward", left:"Move left", down:"Move back", right:"Move right", target:"Target nearest enemy", attack:"Start attacking", petAtk:"Pet: attack / recall", chat:"Chat (co-op)", interact:"Talk / gather",
   potHp:"Healing Potion", potMana:"Mana Potion", rest:"Sit down and rest", char:"Character", bag:"Bag", spells:"Spellbook", talents:"Talents", quests:"Quest Log",
   craft:"Crafting", info:"Information"};
 const KB_GROUPS = [["Movement",["up","left","down","right"]], ["Combat",["target","attack","petAtk","potHp","potMana","rest"]],
-  ["Windows",["char","bag","spells","talents","quests","craft","info","interact"]], ["Action Bar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
+  ["Windows",["char","bag","spells","talents","quests","craft","info","interact","chat"]], ["Action Bar",["bar1","bar2","bar3","bar4","bar5","bar6","bar7","bar8","bar9","bar10"]]];
 let KB = Object.assign({}, KB_DEFAULT);
 try{ const s = JSON.parse(localStorage.getItem(KB_KEY)||"null"); if(s) for(const k of Object.keys(KB_DEFAULT)) if(typeof s[k]==="string") KB[k] = s[k]; }catch(_){}
 function saveKB(){ try{ localStorage.setItem(KB_KEY, JSON.stringify(KB)); }catch(_){} }
@@ -3736,7 +3744,7 @@ function updHUD(dt){
   else cast.hidden = true;
   const tb = $("talbtn"); if(tb) tb.classList.toggle("glow", talentPoints() - talentsSpent() > 0);
   if(bannerT > 0){ bannerT -= dt; if(bannerT < 0.6) $("banner").style.opacity = Math.max(0, bannerT/0.6); }
-  updHotbar();
+  updHotbar(); chatUpd(dt);
 }
 function refreshTracker(){
   const act = QUESTS.filter(q=>S.quests[q.id] && S.quests[q.id].state==="active");
@@ -4039,6 +4047,7 @@ addEventListener("keydown", e=>{
   if(a==="target"){ e.preventDefault(); cycleTarget(); return; }
   if(a==="attack") return startAttack();
   if(a==="petAtk") return petToggleAttack();
+  if(a==="chat") return chatOpen();
   if(a==="interact") return interact();
   if(a==="potHp") return usePotion("hp");
   if(a==="potMana") return usePotion("mana");
@@ -4170,6 +4179,20 @@ function coopLoad(){ return new Promise((ok, no)=>{ if(window.Peer) return ok();
 function coopNewCode(){ const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c = ""; for(let i=0;i<5;i++) c += A[Math.floor(Math.random()*A.length)]; return c; }
 function coopRefresh(){ if(panelKind==="coop") renderPanel(); }
 function coopOn(){ return COOP.conns.length > 0; }
+// ---- co-op chat: the history lasts for the session, text is never run as code
+let chatShowT = 0, chatLast = 0; const chatSeen = new Set();   // who has already been announced as joined
+function chatAdd(name, text, sys){ const box = $("chatlog"); if(!box) return; const d = document.createElement("div");
+  if(sys){ d.className = "sys"; d.textContent = text; } else { const b = document.createElement("b"); b.textContent = name + ": "; d.appendChild(b); d.appendChild(document.createTextNode(text)); }
+  box.appendChild(d); while(box.children.length > 100) box.firstChild.remove(); box.scrollTop = box.scrollHeight; chatShowT = 12; }
+function chatOpen(){ if(!coopOn()) return; const inp = $("chatin"); inp.hidden = false; $("chat").hidden = false; $("chat").classList.add("show"); keys.clear(); inp.value = ""; inp.focus(); }
+function chatClose(){ const inp = $("chatin"); inp.hidden = true; inp.blur(); chatShowT = 6; }
+function chatSend(txt){ txt = (txt||"").trim().slice(0, 200); if(!txt) return; const now = performance.now(); if(now - chatLast < 700) return err("Slow down"); chatLast = now;
+  chatAdd(S.name, txt, false); coopBroadcast({t:"chat", id:coopMyId(), n:S.name, m:txt}); }
+function chatUpd(dt){ const el = $("chat"); if(!el) return; const on = coopOn(); if(el.hidden === on) el.hidden = !on;
+  if(!on){ chatSeen.clear(); const l = $("chatlog"); if(l.children.length) l.innerHTML = ""; if(!$("chatin").hidden) chatClose(); return; }
+  if(chatShowT > 0) chatShowT -= dt; el.classList.toggle("show", !$("chatin").hidden || chatShowT > 0); }
+$("chatin").addEventListener("keydown", e=>{ e.stopPropagation(); if(e.key==="Enter"){ chatSend($("chatin").value); chatClose(); } else if(e.key==="Escape") chatClose(); });
+$("chatlog").addEventListener("click", ()=>{ if($("chatin").hidden) chatOpen(); });
 function coopErr(e){ const t = e && e.type;
   COOP.status = t==="peer-unavailable" ? "No game was found with that code." : t==="network" || t==="server-error" || t==="socket-error" || t==="socket-closed" ? "Could not reach the co-op service. Check your internet connection." : t==="browser-incompatible" ? "This browser does not support co-op." : t==="blocked" ? "The game was found, but your computers could not connect directly. A firewall or the network (for example a work computer or work network) is probably blocking it." : "Something went wrong: " + (t || (e && e.message) || e);
   COOP.busy = false; coopRefresh(); }
@@ -4200,7 +4223,7 @@ function coopAttach(c){
 }
 function coopDrop(c){
   const i = COOP.conns.indexOf(c); if(i < 0) return; COOP.conns.splice(i, 1);
-  for(const [id, r] of Object.entries(COOP.remotes)) if(r.via === c.peer){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[id]; if(COOP.role==="host") coopBroadcast({t:"bye", id}); }
+  for(const [id, r] of Object.entries(COOP.remotes)) if(r.via === c.peer){ log(`${r.name} left the game.`, "#93a4ad"); chatAdd(null, `${r.name} left`, true); delete COOP.remotes[id]; if(COOP.role==="host") coopBroadcast({t:"bye", id}); }
   if(COOP.role==="guest"){ COOP.status = "The host closed the game."; COOP.remotes = {}; COOP.dgWait = null; if(P && P.inDungeon) leaveDungeon(); }
   else if(!coopOn()) COOP.status = "Waiting for friends to join…";
   coopRefresh();
@@ -4214,12 +4237,13 @@ function coopLeave(silent){
 function coopBroadcast(msg, except){ for(const c of COOP.conns) if(c !== except && c.open){ try{ c.send(msg); }catch(e){} } }
 function coopData(c, d){
   if(!d || typeof d !== "object") return;
-  if(COOP.role==="host" && (d.t==="st" || d.t==="bye" || d.t==="dgo" || d.t==="vfx" || d.t==="pfx")) coopBroadcast(d, c);   // relay to the other guests
-  if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); delete COOP.remotes[d.id]; } return; }
+  if(COOP.role==="host" && (d.t==="st" || d.t==="bye" || d.t==="dgo" || d.t==="vfx" || d.t==="pfx" || d.t==="chat")) coopBroadcast(d, c);   // relay to the other guests
+  if(d.t==="bye"){ const r = COOP.remotes[d.id]; if(r){ log(`${r.name} left the game.`, "#93a4ad"); chatAdd(null, `${r.name} left`, true); delete COOP.remotes[d.id]; } return; }
   if(d.t==="op"){ if(COOP.role==="host") coopHostOp(d); return; }
   if(d.t==="dgreq"){ if(COOP.role==="host") coopHostDgReq(c, d); return; }
   if(d.t==="dgst"){ if(COOP.role==="guest") coopDgEnter(d); return; }
   if(d.t==="dgo"){ if(COOP.role==="host" || (P && P.inDungeon===d.dg)) coopDgRemote(d); return; }
+  if(d.t==="chat"){ if(typeof d.m === "string") chatAdd(String(d.n||"?").slice(0, 24), d.m.slice(0, 200), false); return; }
   if(d.t==="vfx"){ coopVfxPlay(d); return; }
   if(d.t==="pfx"){ coopPetFx(d); return; }
   if(d.t==="phit"){ if(d.to===coopMyId()) petDamage(d.dmg, coopMobByNid(d.nid)); return; }
@@ -4229,7 +4253,7 @@ function coopData(c, d){
   if(d.t==="fx"){ if(d.to===coopMyId()) coopReceiveFx(d); else if(COOP.role==="host") coopSendTo(d.to, d); return; }
   if(d.t!=="st" || !d.id || (COOP.peer && d.id===COOP.peer.id)) return;
   let r = COOP.remotes[d.id];
-  if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); snd("qaccept"); coopRefresh(); }
+  if(!r){ r = COOP.remotes[d.id] = {id:d.id, x:d.x, y:d.y}; log(`${d.name} joined the game.`, "#7be08a"); if(!chatSeen.has(d.id)){ chatSeen.add(d.id); chatAdd(null, `${d.name} joined`, true); } snd("qaccept"); coopRefresh(); }
   const oldPet = r.pet && r.pet.kind ? r.pet : null;
   Object.assign(r, d, {x:r.x, y:r.y, tx:d.x, ty:d.y, seen:performance.now(), via:c.peer});
   { const q = d.pet, pd = q && PETS[q.k];   // a friend's pet
@@ -4262,13 +4286,15 @@ function coopState(){
     pet: pet && !pet.dead ? {k:pet.kind, x:Math.round(pet.x), y:Math.round(pet.y), fx:pet.fx, w:pet.walk?1:0, sw:pet.swing>0?1:0, hp:Math.round(pet.hp), mhp:pet.maxHp, res:Math.round(pet.res||0)} : null};
 }
 function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; coopBroadcast(coopState()); }
+// a browser pauses the game in a background tab, so keep sending a heartbeat to stay connected
+setInterval(()=>{ if(document.hidden) coopSendState(); }, 1000);
 function coopUpdate(dt){
   if(!coopOn()) return;
   COOP.sendT -= dt; if(COOP.sendT <= 0){ COOP.sendT = 1/12; coopSendState(); }
   if(COOP.role==="host"){ COOP.mobT = (COOP.mobT||0) - dt; if(COOP.mobT <= 0){ COOP.mobT = 0.1; coopHostMobs(); } }
   const now = performance.now();
   for(const [id, r] of Object.entries(COOP.remotes)){
-    if(now - r.seen > 8000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
+    if(now - r.seen > 20000){ log(`${r.name} lost connection.`, "#93a4ad"); delete COOP.remotes[id]; continue; }
     const k = Math.min(1, dt*12); r.x += (r.tx - r.x)*k; r.y += (r.ty - r.y)*k;
     if(r.act) r.act.t += dt;
     if(r.pet){ r.pet.x += (r.pet.tx - r.pet.x)*k; r.pet.y += (r.pet.ty - r.pet.y)*k; r.pet.flash = Math.max(0, r.pet.flash-dt); r.pet.swing = Math.max(0, r.pet.swing-dt); }
