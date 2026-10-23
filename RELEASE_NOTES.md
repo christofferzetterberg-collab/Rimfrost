@@ -1,27 +1,31 @@
+<!-- For the maintainer: the character select screen shows the three newest sections of this file. Keep the heading format "## vX.Y.Z – date", "### Added/Changed/Fixed" headings and "- " bullets. Only write what a player needs to know. -->
 # Rimfrost – Release notes
 
-Newest version first. Each section is one release: a version number (new features or changes bump the middle number, bug-fix-only releases bump the last number) and the matching `VERSION` string in `sw.js`.
+Newest version first.
+
+## v0.8.0 – 2026-10-23
+### Changed
+- **Zoom:** the game is drawn 50 % closer than before.
+- **Dying in a dungeon:** releasing your spirit now puts you at the nearest graveyard (the closest town or camp). You have to run back to the dungeon entrance to reach your body. The dungeon keeps its progress.
+
+### Fixed
+- **Health and mana are saved.** Logging out and back in no longer refills them. You regenerate for the time you were away.
+- **Monsters and nodes are no longer respawned when you log out and back in.** Dead monsters and picked nodes keep their respawn timers, which also keep counting while you are away. A page refresh still resets the world.
 
 ## v0.7.0 – 2026-10-23
-Build: `rimfrost-20261023-notes1`
-
 ### Added
-- Release notes tab on the character select screen, showing the three latest releases. The text lives in the `RELEASES` list in `index.html` and has to be updated together with this file.
+- Release notes can now be read on the character select screen (the three latest releases).
 
 ## v0.6.1 – 2026-10-23
-Build: `rimfrost-20261023-fix2`
-
 ### Added
 - The game version is shown on the character select screen and at the bottom of the Esc menu.
 
 ## v0.6.0 – 2026-10-23
-Build: `rimfrost-20261023-fix1`
-
 ### Fixed
 - **Water:** ponds and lakes are now large, connected areas. The random single water tiles in Silver Grove, the swamp and Bonefields are gone.
 - **Entangling Roots:** now has a 20 second cooldown, so enemies can no longer be held in place forever.
 - **Humanoid monsters** (Lost Druids, bandits, thieves, ghouls and similar) are drawn at the same smaller size as player characters, so they no longer tower over you.
-- **Dying in a dungeon:** releasing your spirit can no longer get stuck. If anything goes wrong, you are still sent to the entrance as a ghost, on a walkable spot.
+- **Dying in a dungeon:** releasing your spirit can no longer get stuck.
 - **Dungeon progress survives a page refresh.** Killed monsters, opened gates and puzzles are kept if you died or refreshed. Leaving the dungeon on purpose still resets it.
 - **Conversation window:** closes by itself when you walk away from the person you are talking to.
 - **Dungeons have a level requirement:** you cannot enter below the dungeon's minimum level. The Enter button shows the required level.
@@ -34,10 +38,6 @@ Build: `rimfrost-20261023-fix1`
 - **Bonefields:** dead trees are drawn with a dark outline and a pale trunk, so it is clear what you cannot walk through.
 - **Co-op description** no longer lists what is or isn't supported.
 - **Minimap** shows "Click to open map". The old "Press M for the map" line in the quest tracker is removed.
-
-### Not in this version
-- Sprites: Ice Bear colors, Mountain Troll, Cave Bear.
-- The dungeon rework (unique layouts and mechanics).
 
 ## v0.5.0 – earlier changes (before release notes were started)
 

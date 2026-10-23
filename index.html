@@ -358,9 +358,18 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.7.0";   // keep in sync with RELEASE_NOTES.md
-// the latest releases shown on the character select screen (newest first, keep the three latest)
-const RELEASES = [{"v": "0.7.0", "d": "2026-10-23", "s": [["Added", ["Release notes tab on the character select screen (the three latest releases)."]]]}, {"v": "0.6.1", "d": "2026-10-23", "s": [["Added", ["The game version is shown on the character select screen and in the Esc menu."]]]}, {"v": "0.6.0", "d": "2026-10-23", "s": [["Fixed", ["Water is now large ponds and lakes instead of single tiles.", "Entangling Roots has a 20 second cooldown.", "Humanoid monsters are drawn at the same smaller size as characters.", "Dying in a dungeon can no longer get you stuck on the death screen.", "Dungeon progress survives a page refresh.", "The conversation window closes when you walk away.", "Dungeons need their minimum level to enter."]], ["Changed", ["Mana: full cost at level 1 dropping to half by level 20, slower regeneration, sitting regenerates 4x.", "Bear Form text shows the real health bonus and damage reduction.", "Merchants have Buy and Sell tabs, with equipment comparison when selling.", "New cooldown display on skills and spells.", "Bonefields dead trees are easier to see.", "Shorter co-op description.", "Minimap shows Click to open map."]]]}];
+const GAME_VERSION = "0.8.0";   // keep in sync with RELEASE_NOTES.md
+// the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
+function loadReleaseNotes(box){
+  fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
+    const parts = txt.split(/^## /m).slice(1, 4); let h = "";
+    for(const p of parts){ const lines = p.split("\n"), title = lines.shift().trim(); const m = title.match(/^(v[\d.]+)\s*[–-]\s*(.*)$/);
+      h += `<h3 style="margin:10px 0 4px">${esc(m ? m[1] : title)} <span class="muted" style="font-weight:400;font-size:12px">${esc(m ? m[2] : "")}</span></h3>`; let open = false;
+      for(const raw of lines){ const l = raw.trim(); if(!l || l.startsWith("Build:")) continue;
+        if(l.startsWith("### ")){ if(open) h += "</ul>"; h += `<div class="muted" style="margin-top:4px;text-transform:uppercase;font-size:11px;letter-spacing:.08em">${esc(l.slice(4))}</div><ul style="margin:2px 0 4px 18px;padding:0">`; open = true; }
+        else if(l.startsWith("- ")){ if(!open){ h += `<ul style="margin:2px 0 4px 18px;padding:0">`; open = true; } h += `<li style="margin:2px 0">${esc(l.slice(2).replace(/[`*]/g, ""))}</li>`; } }
+      if(open) h += "</ul>"; }
+    box.innerHTML = h || "Release notes unavailable."; }).catch(()=>{ box.textContent = "Release notes unavailable."; }); }
 const BEAR_HP = 1.6, BEAR_ARMOR = 0.7;   // Bear Form: health multiplier and damage taken multiplier
 // Balance: PLAYER_DMG scales ALL player damage (every class). MANA_COST_MULT scales every mana cost, so you can cast more before running dry.
 const PLAYER_DMG = 0.8, MANA_COST_MULT = 0.5;
@@ -2549,7 +2558,7 @@ function showSpiritHealers(on){
 }
 function corpsePos(){ if(!P || !S || !S.death || !P.ghost) return null; if(S.death.dg && P.inDungeon !== S.death.dg) return null; return {x:S.death.x, y:S.death.y}; }
 function ghostSpawnPoint(){
-  if(S.death.dg){ const D = DUNGEONS[S.death.dg]; return {x:D.ent.x*TILE+16, y:(D.ent.y+1)*TILE+16, name:ZONES[D.id].name}; }
+  if(S.death.dg){ const D = DUNGEONS[S.death.dg], h = nearestHub(D.ent.x*TILE, D.ent.y*TILE); return {x:h.x*TILE+16, y:(h.y+2)*TILE+16, name:h.name}; }
   const h = nearestHub(S.death.x, S.death.y); return {x:h.x*TILE+16, y:(h.y+2)*TILE+16, name:h.name};
 }
 function freeNear(x, y){ if(!collides(x, y, 10)) return {x, y};
@@ -2631,7 +2640,7 @@ function drawCorpse(c, p){
 // ======================= RENDER =======================
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, ZOOM = 1; const cam = {x:0, y:0};
-function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = (W < 700 && !matchMedia("(pointer:coarse)").matches) ? 0.8 : 1; }
+function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = ((W < 700 && !matchMedia("(pointer:coarse)").matches) ? 0.8 : 1) * 1.5; }   // 1.5 = 50 % closer than before
 addEventListener("resize", resize);
 
 // tile sprites (3 variants each)
@@ -3914,7 +3923,7 @@ $("panel").addEventListener("click", e=>{
   if(a==="respec"){ const c = respecCost();
     if(!respecArm){ respecArm = true; } else if(S.gold >= c && talentsSpent() > 0){ respecArm = false; S.gold -= c; S.talents = {}; snd("respec"); recompute(false); buildHotbar(); log(`Your talents have been reset (${c} gold).`, "#e6bd5c"); burst(P.x, P.y, "#ffd36b", 16); save(true); } }
   else respecArm = false;
-  if(a==="newchar"){ coopLeave(true); save(true); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
+  if(a==="newchar"){ coopLeave(true); save(true); worldLeftAt = Date.now(); selChar = S.id; closePanel(); running = false; S = null; P = null; showCreate(); return; }
   renderPanel();
 });
 
@@ -3984,13 +3993,17 @@ $("start").addEventListener("click", ()=>{
   startGame(sv, true);
 });
 
+let worldBuilt = false, worldLeftAt = 0;
 function startGame(sv, fresh){
   S = Object.assign(newSave(sv.name, sv.race, sv.cls), sv); if(!S.id){ S.id = newId(); }
   S.skills = Object.assign({mining:1, herb:1}, sv.skills||{});
   if(!Array.isArray(sv.learned)) S.learned = allBarIds().filter(id=>AB[id].lvl<=S.level && AB[id].lvl<=16);
   S.learned = S.learned.filter(id=>AB[id]); ensureBars();
   if(S.cls==="druid" && !S.learned.includes("touch")){ S.learned.push("touch"); autoPlace("touch"); }
-  spawnAll();
+  if(!worldBuilt){ spawnAll(); worldBuilt = true; }
+  else { const el = Math.max(0, (Date.now() - worldLeftAt)/1000);   // same world as before: dead monsters and picked nodes keep their respawn timers, which also ran while you were away
+    for(const m of mobs){ if(m.def.dg) continue; if(m.dead){ m.respawn -= el; if(m.respawn <= 0) respawnMob(m); } else if(m.state !== "idle" || m.hp < m.maxHp) respawnMob(m); }
+    for(const n of nodes.concat(qobjs)) if(!n.active){ n.respawn -= el; if(n.respawn <= 0) n.active = true; } }
   if(sv.dgs && DUNGEONS[sv.dgs.id] && sv.dgs.snap){ const D = DUNGEONS[sv.dgs.id]; resetDungeon(D, sv.dgs.seed); dgApply(D, sv.dgs.snap); DSTATE[D.id].keep = true; }   // dungeon progress survives a refresh
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
   if(!sv.ws){ if(S.x) S.x *= 2; if(S.y) S.y *= 2; if(S.death){ S.death.x *= 2; S.death.y *= 2; } }   // the world became twice as big
@@ -4000,7 +4013,10 @@ function startGame(sv, fresh){
     gcd:0, cds:{}, buffs:{}, hots:[], shield:0, shieldT:0, autoT:0, combatT:0, potCd:0, fx:1, moving:false, dash:null, leap:null, dead:false};
   if(S.x && S.y && !collides(S.x, S.y, 10)){ P.x = S.x; P.y = S.y; }
   recompute(true);
+  if(sv.hp != null && sv.mana != null && sv.t && !S.death){ const el = Math.max(0, (Date.now()-sv.t)/1000);   // keep hp and mana from last time, plus the regeneration while away
+    P.hp = Math.min(P.maxHp, Math.max(1, sv.hp) + P.maxHp*0.04*el); P.mana = Math.min(P.maxMana, sv.mana + P.maxMana*0.016*(1 + gearStat("int")*0.01)*el); }
   $("create").hidden = true; $("dead").hidden = true; closePanel();
+  npcs = npcs.filter(n=>!n.spirit);   // spirit healers from an earlier session
   restoreDeath();
   buildHotbar(); refreshTracker(); running = true; curZone = null;
   localSave = serialize();
@@ -4078,7 +4094,7 @@ $("mmwrap").addEventListener("click", e=>{ e.stopPropagation(); if(!running) ret
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2, dgs:dgSaveNow()}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2, dgs:dgSaveNow(), hp:P?Math.round(P.hp):null, mana:P?Math.round(P.mana):null}; }
 function dgSaveNow(){ try{ for(const D of Object.values(DUNGEONS)){ const st = DSTATE[D.id]; if(st && !st.done && ((P && P.inDungeon===D.id) || st.keep)) return {id:D.id, seed:D.seed, snap:dgSnap(D)}; } }catch(_){ } return null; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
@@ -4132,7 +4148,7 @@ function loop(ts){
 function boot(data){
   { const v = document.getElementById("ver"); if(v) v.textContent = "v" + GAME_VERSION;
     const rb = document.getElementById("relbtn"), rn = document.getElementById("relnotes");
-    if(rb && rn){ rn.innerHTML = RELEASES.slice(0,3).map(r=>`<h3 style="margin:10px 0 4px">v${r.v} <span class="muted" style="font-weight:400;font-size:12px">${r.d}</span></h3>` + r.s.map(([h,items])=>`<div class="muted" style="margin-top:4px;text-transform:uppercase;font-size:11px;letter-spacing:.08em">${h}</div><ul style="margin:2px 0 4px 18px;padding:0">${items.map(i=>`<li style="margin:2px 0">${i}</li>`).join("")}</ul>`).join("")).join("");
+    if(rb && rn){ loadReleaseNotes(rn);
       rb.addEventListener("click", ()=>{ rn.hidden = !rn.hidden; rb.textContent = rn.hidden ? "Release notes" : "Hide release notes"; }); } }
   resize(); genWorld(); makeTiles(); makeMinimap();
   loadLocalChars();
@@ -4455,9 +4471,10 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   row(hubs, btn("Go", ()=>{ if(P.inDungeon) leaveDungeon(false); const h = HUBS[hubs.value]; P.x = h.x*TILE+16; P.y = (h.y+2)*TILE+16; }));
   const dgs = sel(Object.keys(DUNGEONS).map(id=>[id, ZONES[id] ? ZONES[id].name : id]));
   row(dgs, btn("Enter", ()=>{ if(P.inDungeon) leaveDungeon(false); enterDungeon(dgs.value); }));
-  const ts = {sta:num(0,44), int:num(0,44), str:num(0,44), agi:num(0,44)};
-  const tl = document.createElement("span"); tl.textContent = "Sta Int Str Agi"; tl.style.cssText = "font-size:11px;white-space:nowrap";
-  row(tl, ...Object.entries(ts).map(([k,e])=>{ e.title = STAT_NAME[k]; e.placeholder = k; return e; }), btn("Equip", ()=>{ const st = {}; for(const [k,e] of Object.entries(ts)) if(+e.value > 0) st[k] = +e.value;
+  const ts = {sta:num(0), int:num(0), str:num(0), agi:num(0)};
+  const tl = document.createElement("div"); tl.textContent = "Test charm (stats: Sta / Int / Str / Agi)"; tl.style.cssText = "font-size:11px;margin-top:6px"; box.appendChild(tl);
+  row(...Object.entries(ts).map(([k,e])=>{ e.title = STAT_NAME[k]; e.placeholder = k[0].toUpperCase()+k.slice(1); e.style.cssText = "flex:1;min-width:0;width:0"; return e; }));
+  row(btn("Equip test charm", ()=>{ const st = {}; for(const [k,e] of Object.entries(ts)) if(+e.value > 0) st[k] = +e.value;
     if(Object.keys(st).length) S.eq.neck = {id:"devcharm", slot:"neck", q:5, il:S.level, st, n:"[dev] Test Charm", v:2}; else delete S.eq.neck; recompute(false); log("[dev] test charm: "+(Object.entries(st).map(([k,v])=>"+"+v+" "+STAT_NAME[k]).join(", ")||"removed"), "#ffd36b"); }));
   const items = sel(Object.keys(ITEMS).sort().map(id=>[id, ITEMS[id].name || id])), qty = num(1, 44);
   row(items, qty, btn("Give", ()=>{ addItem(items.value, Math.max(1, qty.value|0)); log(`[dev] +${qty.value} ${ITEMS[items.value].name||items.value}`, "#ffd36b"); }));
