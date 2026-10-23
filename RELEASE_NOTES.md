@@ -3,6 +3,28 @@
 
 Newest version first.
 
+## v0.10.0 – 2026-10-23
+### Added
+- **All four dungeons are rebuilt from scratch.** The Iron Mine, the Drowned Temple, the Ember Forge and the Frost Vault each have their own layout, with branching rooms instead of one long corridor, and their own mix of puzzles and dangers.
+  - **Keys and locked doors:** find a key in an old chest, often guarded by a miniboss, and use it on a locked door.
+  - **Secret rooms:** cracked walls can be examined to open a hidden room with a treasure chest (gold and a rare or better item).
+  - **New puzzles:** pressure plates and heavy blocks you push onto them (an altar resets the blocks if you get stuck), alongside the levers and the rune puzzle.
+  - **A unique hazard in each dungeon:** collapsing floors in the Iron Mine, flooding pools in the Drowned Temple, erupting lava vents in the Ember Forge and freezing ice in the Frost Vault.
+  - **Boss fights have phases:** at 70 %, 40 % and 15 % health the boss calls in reinforcements, and marked areas on the floor show where its attacks will land. Move out of the circle in time.
+  - **Solo and group modes:** the dungeon adapts to your party. Alone it is a solo run. In co-op the monsters are tougher, the boss calls more reinforcements, and pressure plates have to be held by the whole group.
+- **Chest rolls in a group.** When someone opens the treasure chest in a dungeon, everyone inside rolls 1–100 and the highest roll wins the gold and the item. The result is shown to everyone, in the log and in the chat. Alone there is no roll.
+- **Party bars show more.** Your friends' mana, rage, energy or focus bar is now shown under their health in the party list.
+- **Pets in the party.** Your own pet and your friends' pets now appear in the party list with health and energy or rage. Click a friend's pet to select it, and your heals go to it.
+
+### Changed
+- **The Mountain Troll is now a Goblin.** The monsters on Iron Ridge are goblins with their own look. The quests are now "Goblins of Iron Ridge" and "Goblin Fangs", and they drop Goblin Teeth. Quest progress you already had carries over.
+- **The Cave Bear** in the Iron Mine and the **Vault Ice Bear** in the Frost Vault now look like real bears. The Cave Bear is large and dark brown, and the Vault Ice Bear is large and white.
+- **Ice Bears are now properly white** and keep their shading, instead of looking like ghosts.
+- **Chests can only be opened out of combat.**
+- **Clicking on empty ground** now clears your current target.
+- **The chat window only opens with the Enter key.** Clicking on it no longer starts typing by accident.
+- Dungeon progress you had saved before this update is reset.
+
 ## v0.9.1 – 2026-10-23
 ### Fixed
 - **Co-op:** players no longer drop out and rejoin over and over when their game window is in the background or minimized. A player is now only counted as disconnected after 20 seconds of silence.

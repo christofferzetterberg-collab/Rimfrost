@@ -79,6 +79,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 #party .pn{display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px}
 #party .pn span{color:var(--mute)}
 #party .bar{height:12px}
+#party .bar.rb{height:5px;margin-top:3px}
+#party .pmem.pet{width:150px;margin-left:18px}
 #abtip{position:fixed;z-index:60;width:260px;background:rgba(12,17,21,.97);border:1px solid #4a5a64;border-radius:8px;padding:9px 11px;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.6);font-size:13px;line-height:1.35;color:var(--text)}
 #abtip[hidden]{display:none}
 #abtip .tip-n{font-weight:800;font-size:15px;color:#fff;margin-bottom:3px}
@@ -118,7 +120,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--frost);outline-
 
 /* log */
 #chat{left:max(10px,env(safe-area-inset-left,0px));top:calc(50% - 70px);width:300px;max-width:42vw;opacity:0;transition:opacity .35s}
-#chat.show{opacity:1;pointer-events:auto}
+#chat.show{opacity:1}
+#chat.typing{pointer-events:auto}
 #chatlog{max-height:180px;overflow-y:auto;font-size:13px;line-height:1.35;background:rgba(10,14,17,.62);border:1px solid var(--line);border-radius:6px;padding:6px 8px;scrollbar-width:thin;cursor:text}
 #chatlog div{margin:1px 0;word-wrap:break-word}
 #chatlog .sys{color:var(--mute);font-style:italic}
@@ -366,7 +369,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.9.1";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.10.0";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -724,7 +727,7 @@ const ITEMS = {
   elixirKeen:{spr:["potions",8], name:"Elixir of Keenness", sell:14, kind:"use", desc:"+5% critical strike chance for 10 minutes."},
   elixirSage:{spr:["potions",17], name:"Elixir of Wisdom", sell:18, kind:"use", desc:"+20% spell power (damage and healing from spells) for 10 minutes."},
   pelt:{name:"Wolf Pelt", sell:1, kind:"junk"}, tusk:{name:"Boar Tusk", sell:1, kind:"junk"}, silk:{name:"Spider Silk", sell:3, kind:"junk"},
-  ring:{name:"Stolen Ring", sell:6, kind:"junk"}, tooth:{name:"Troll Tooth", sell:5, kind:"junk"}, rune:{name:"Runestone", sell:7, kind:"junk"},
+  ring:{name:"Stolen Ring", sell:6, kind:"junk"}, tooth:{name:"Troll Tooth", sell:5, kind:"junk"}, gobtooth:{name:"Goblin Tooth", sell:4, kind:"junk"}, rune:{name:"Runestone", sell:7, kind:"junk"},
   cloth:{name:"Rotten Cloth", sell:6, kind:"junk"}, dust:{name:"Sprite Dust", sell:8, kind:"junk"}, crown:{name:"The Draug Crown", sell:150, kind:"junk"},
   ember:{name:"Glowing Claw", sell:10, kind:"junk"}, cinder:{name:"Slagstone", sell:12, kind:"junk"}, fur:{name:"Frost Fur", sell:14, kind:"junk"},
   shard:{name:"Ice Shard", sell:16, kind:"junk"},
@@ -803,7 +806,7 @@ const AB_SND = {
 };
 // monster voice by type: [aggro, death, attack]
 const UNDEAD = new Set(["shambler","boneguard","vex","drunknad","ghoul","morvel","boss","profeten","skadi","isvaktare"]);
-const ORCISH = new Set(["orcwar","goblin","goblinshaman","smedjeorc","kobold","frostkobold","gruvkobold","snorre","krakk","garuk"]);
+const ORCISH = new Set(["orcwar","goblin","troll","goblinshaman","smedjeorc","kobold","frostkobold","gruvkobold","snorre","krakk","garuk"]);
 function mobVoice(m){
   const t = m.type, sh = m.def.shape;
   if(UNDEAD.has(t)) return ["shade","shade","swing"];
@@ -945,7 +948,7 @@ const MOBS = {
   deer:{name:"Red Deer", lv:[3,6], color:"#7a5a40", r:13, sp:100, shape:"critter", passive:true, drop:"pelt"},
   // shared
   orcwar:{name:"Ironclan Warrior", lv:[11,14], color:"#6a8a3a", r:12, sp:92, shape:"humanoid", drop:"ring"},
-  troll:{name:"Mountain Troll", lv:[10,13], color:"#4f7d63", r:14, sp:88, shape:"troll", drop:"tooth"},
+  troll:{name:"Goblin", lv:[10,13], color:"#7a8a3a", r:10, sp:98, shape:"humanoid", drop:"gobtooth"},
   golem:{name:"Stone Golem", lv:[12,15], color:"#878275", r:15, sp:70, shape:"golem", drop:"rune"},
   ghoul:{name:"Marsh Ghoul", lv:[15,18], color:"#62744a", r:12, sp:100, shape:"ghoul", drop:"cloth"},
   wisp:{name:"Mist Sprite", lv:[16,19], color:"#b4d6e4", glow:"160,210,230", r:10, sp:90, shape:"wisp", drop:"dust", ranged:220},
@@ -972,7 +975,7 @@ const LOOT = {
   lynx:[["foxpelt",0.4]], thorn:[["thornspike",0.4]], wisplight:[["glowdust",0.35]], shadewolf:[["pelt",0.35],["fang",0.2]], lostdruid:[["cloth",0.25]],
   rocksvin:[["tusk",0.35]], kobold:[["candle",0.3]], beetle:[["shell",0.4]], icebear:[["bearfur",0.4]], frostkobold:[["candle",0.3]],
   jackal:[["jackalpelt",0.4]], bristle:[["tusk",0.35]], scorpion:[["stinger",0.4]], raider:[["ring",0.25]], sandgolem:[["rune",0.3]],
-  orcwar:[["ring",0.2],["tooth",0.15]], goblin:[["goblinear",0.4],["ring",0.1]], goblinshaman:[["goblinear",0.4],["dust",0.15]], dragon:[["scale",0.9],["ring",0.4]], gargoyle:[["stonewing",0.35],["rune",0.15]], troll:[["tooth",0.35]], golem:[["rune",0.35]], ghoul:[["cloth",0.35]], wisp:[["dust",0.35]], hound:[["ember",0.35]], elemental:[["cinder",0.35]],
+  orcwar:[["ring",0.2],["tooth",0.15]], goblin:[["goblinear",0.4],["ring",0.1]], goblinshaman:[["goblinear",0.4],["dust",0.15]], dragon:[["scale",0.9],["ring",0.4]], gargoyle:[["stonewing",0.35],["rune",0.15]], troll:[["gobtooth",0.35]], golem:[["rune",0.35]], ghoul:[["cloth",0.35]], wisp:[["dust",0.35]], hound:[["ember",0.35]], elemental:[["cinder",0.35]],
   frostwolf:[["fur",0.4]], icegolem:[["shard",0.35]], rimtroll:[["tooth",0.35]], hare:[["harepelt",0.35]], rat:[["rattail",0.35]], plaguewolf:[["pelt",0.35],["fang",0.15]], shambler:[["cloth",0.3]], robber:[["ring",0.25]], boneguard:[["rune",0.25]], plaguebear:[["bearfur",0.35]], deer:[["deerhide",0.35],["antler",0.15]]
 };
 // animals, spirits and golems carry no gold
@@ -1026,7 +1029,7 @@ const QITEMS = {
   venom:{name:"Scorpion Venom"},
   weaponcrate:{name:"Weapon Crate", look:"crate", zone:"damm", count:8},
   warbanner:{name:"The Raiders' War Banner"},
-  trolltusk:{name:"Troll Tusk"},
+  trolltusk:{name:"Goblin Fang"},
   runestone:{name:"Runestone", look:"stone", zone:"jarn", count:8},
   wispdust:{name:"Glimmering Sprite Dust"},
   gravename:{name:"Name Plaque", look:"stone", zone:"dimma", count:8},
@@ -1169,9 +1172,9 @@ const QUESTS = [
   {id:"u12", npc:"ulvar", lvl:9, req:["u10"], name:"Vex the Necromancer", text:"Behind it all stands Vex the Necromancer in the southeast. His death wave strikes everything around him – run out of the circle! Defeat him.", obj:[["kill","vex",1]], mult:2, items:{potHp2:2}},
   {id:"u13", npc:"ulvar", lvl:10, req:["u12"], to:"halvard", name:"The Road to Rimhaven", text:"Commander Halvard in Rimhaven welcomes all who can fight, even us undead. Go there.", obj:[], mult:0.4},
   // ---- Iron Ridge (10–15)
-  {id:"j1", npc:"halvard", lvl:10, name:"Trolls of Iron Ridge", text:"The mountain trolls are plundering our caravans. Kill 10.", obj:[["kill","troll",10]]},
+  {id:"j1", npc:"halvard", lvl:10, name:"Goblins of Iron Ridge", text:"Goblins from the mountains are plundering our caravans. Kill 10.", obj:[["kill","troll",10]]},
   {id:"j2", npc:"halvard", lvl:11, name:"Iron for the Hold", text:"The city needs iron for new gates. Mine 6 iron ore.", obj:[["gather","iron",6]]},
-  {id:"j3", npc:"arvid", lvl:12, req:["j1"], name:"Troll Tusks", text:"Troll tusks fetch a high price in the south. Get me 6.", obj:[["loot","trolltusk",6,"troll",0.5]]},
+  {id:"j3", npc:"arvid", lvl:12, req:["j1"], name:"Goblin Fangs", text:"Goblin fangs fetch a high price in the south. Get me 6.", obj:[["loot","trolltusk",6,"troll",0.5]]},
   {id:"j4", npc:"halvard", lvl:13, req:["j1"], name:"Hearts of Stone", text:"Stone golems have awakened in the mountains. Smash 8.", obj:[["kill","golem",8]]},
   {id:"j5", npc:"halvard", lvl:13, name:"The Runestones", text:"Ancient runestones lie scattered across the mountains. Bring 5 so our scholars can decipher them.", obj:[["collect","runestone",5]]},
   {id:"j6", npc:"arvid", lvl:14, name:"Gold in the Mountain", text:"There is gold in Iron Ridge for anyone with Mining 60. Mine 4 gold ore.", obj:[["gather","goldore",4]]},
@@ -1338,8 +1341,8 @@ QUESTS.push(
 <script>
 // ======================= WORLD =======================
 const T_GRASS=0,T_FOREST=1,T_WATER=2,T_ROCK=3,T_CLIFF=4,T_TREE=5,T_PATH=6,T_SWAMP=7,T_COBBLE=8,T_HOUSE=9,T_DEAD=10,T_BOULDER=11,T_CRYPT=12,T_CWALL=13,T_PINE=14,T_ASH=15,T_LAVA=16,T_SNOW=17,T_ICE=18,T_SPINE=19,T_OBSID=20,
-  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28,T_BLIGHT=29,T_GLOOM=30,T_GATE=31;
-const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T_PINE,T_LAVA,T_ICE,T_SPINE,T_OBSID,T_BIRCH,T_VTREE,T_RCLIFF,T_CACTUS,T_GATE]);
+  T_ELFGRASS=21,T_BIRCH=22,T_MOSS=23,T_VTREE=24,T_STEPPE=25,T_SAND=26,T_RCLIFF=27,T_CACTUS=28,T_BLIGHT=29,T_GLOOM=30,T_GATE=31,T_BLOCK=32;
+const SOLID = new Set([T_WATER,T_CLIFF,T_TREE,T_HOUSE,T_DEAD,T_BOULDER,T_CWALL,T_PINE,T_LAVA,T_ICE,T_SPINE,T_OBSID,T_BIRCH,T_VTREE,T_RCLIFF,T_CACTUS,T_GATE,T_BLOCK]);
 const TERRAIN = {
   meadow:(n,m)=> n>0.74?T_TREE : m>0.88?T_BOULDER : T_GRASS,
   forest:(n,m)=> n>0.53?T_TREE : T_FOREST,
@@ -1994,6 +1997,7 @@ function update(dt){
 
 function updPlayer(dt){
   P.hurt = Math.max(0, (P.hurt||0)-dt); P.swing = Math.max(0, (P.swing||0)-dt); if(P.act) P.act.t += dt;
+  dgUpdate(dt);
   if(panelKind==="npc" && panelArg){ const np = npcs.find(x=>x.id===panelArg) || (dobjs.find(o=>o.kind==="entrance" && DUNGEONS[o.dgEnt] && DUNGEONS[o.dgEnt].keeper.id===panelArg)); if(np && dist(P,np) > 170) closePanel(); }
   if(P.dead){ if(P.ghost) updGhost(dt); return; }
   P.gcd = Math.max(0, P.gcd-dt); P.potCd = Math.max(0, P.potCd-dt);
@@ -2016,7 +2020,7 @@ function updPlayer(dt){
   } else if(P.leap){ moveEnt(P, P.leap.vx*dt, P.leap.vy*dt); P.leap.t -= dt; P.moving = true; if(P.leap.t <= 0) P.leap = null; }
   else if(il > 0.05){
     if(P.casting) cancelCast(P.casting.kind==="spell" ? "Interrupted – you moved" : null);
-    const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1);
+    const sp = 150 * (P.form==="cat"?1.3:P.form==="leopard"?1.5:1) * (P.buffs.dash?1.7:1) * (P.hzSlow > 0 ? 0.65 : 1);
     moveEnt(P, ix*sp*dt, iy*sp*dt); if(Math.abs(ix) > 0.1) P.fx = ix<0?-1:1; P.moving = true; P.lastMv = {x:ix/il, y:iy/il};
   }
   if(P.casting && P.casting.kind==="spell"){ const _a = AB[P.casting.id], _t = P.casting.t; if(_a && _a.minRange && _t && !_t.dead && dist(P,_t)-_t.r < _a.minRange) cancelCast("Too close"); }
@@ -2353,6 +2357,103 @@ function gearDesc(it, showCmp){
 <script>
 // ======================= DUNGEONS: carving, spawning, puzzles, entering/leaving =======================
 const DG_W = 102, DG_H = 40;
+// ======================= DUNGEONS v2: layouts (rooms + corridors + features) =======================
+// Features: [ch,x,y] = one tile (relative to the room), ["#rect",ch,x,y,w,h], ["#ring",ch,cx,cy,rin,rout].
+// Characters: S start/portal · 1 2 3 pack monsters · M N mini bosses · B boss · w boss reinforcements
+// G H I gates · a b c levers · d e f runes · t tablet · p q u plates · x push block · R block reset altar
+// K J key chests · X Y locked doors · z secret wall · C treasure chest · ~ hazard floor · v collapsing floor
+const DG_SPEC = {
+  d_mine:{ hazard:"collapse",
+    tagline:"Levers, a block puzzle, collapsing floors, a locked door, a secret treasure room, and a boss that calls in reinforcements.",
+    rooms:{a:[2,16,8,8], b:[14,13,14,14], c:[14,2,14,8], d:[14,30,14,8], e:[32,13,14,14], f:[50,13,14,14], g:[68,13,10,14], h:[82,9,18,22], t:[32,31,8,6]},
+    links:[["a","b"],["b","c"],["b","d"],["b","e","G"],["e","f","H"],["f","g","X"],["g","h"],["e","t","z"]],
+    feat:{a:[["S",3,3]],
+      b:[["1",3,3],["2",10,3],["1",3,10],["2",10,10]],
+      c:[["a",1,1],["a",12,1],["a",6,6],["3",4,3],["3",9,3]],
+      d:[["#rect","#",6,0,1,3],["x",3,2],["q",11,5],["R",1,6],["3",9,6]],
+      e:[["2",3,3],["1",10,3],["2",6,10],["1",10,10]],
+      f:[["#ring","v",7,7,3,4],["K",7,8],["M",7,6],["3",2,2],["3",11,11]],
+      g:[["1",3,3],["2",6,10],["N",5,7]],
+      h:[["B",9,11],["w",3,3],["w",14,3],["w",3,18],["w",14,18],["w",9,3],["w",9,18]],
+      t:[["C",4,2]]},
+    bfx:{phases:[0.7,0.4,0.15], msg:"Kobolds pour out of the tunnels!", strike:{name:"Falling rocks", color:"#a08a6a", pct:0.12, r:52, every:3.2, warn:1.4}}},
+  d_temple:{ hazard:"flood",
+    tagline:"Flooding chambers, a rune puzzle, pressure plates, a locked door, a secret chamber, and a prophet who calls the tide.",
+    rooms:{a:[2,26,8,8], b:[14,24,12,12], c:[30,24,16,12], d:[14,6,12,10], e:[34,6,14,10], f:[50,24,12,12], g:[66,24,12,12], i:[66,6,12,10], j:[82,2,18,20], s:[2,6,8,6]},
+    links:[["a","b"],["b","c","G"],["b","d"],["c","e"],["c","f","H"],["f","g"],["g","i","X"],["i","j"],["d","s","z"]],
+    feat:{a:[["S",3,3]],
+      b:[["1",3,3],["2",8,3],["1",5,8]],
+      d:[["d",1,1],["d",10,1],["d",1,8],["d",10,8],["t",5,0],["3",5,5]],
+      c:[["#rect","~",3,2,4,3],["#rect","~",9,7,4,3],["2",8,2],["1",3,8],["2",12,3]],
+      e:[["q",3,4],["q",10,4],["N",6,6],["3",6,2]],
+      f:[["2",3,3],["1",8,3],["2",5,8],["#rect","~",8,8,3,3]],
+      g:[["M",6,5],["K",6,9],["1",2,2],["1",9,2]],
+      i:[["3",3,3],["2",8,3],["1",5,7]],
+      j:[["B",9,10],["w",3,3],["w",14,3],["w",3,16],["w",14,16],["w",9,3],["w",9,16],["#rect","~",2,8,3,4],["#rect","~",13,8,3,4]],
+      s:[["C",4,2]]},
+    bfx:{phases:[0.7,0.4,0.15], msg:"The tide brings the prophet's disciples!", strike:{name:"Tidal surge", color:"#4aa8d8", pct:0.13, r:58, every:3.0, warn:1.5}}},
+  d_forge:{ hazard:"lava",
+    tagline:"Erupting lava vents, valves to close, blocks to push onto plates, a locked door, a hidden vault, and a tyrant with a fiery temper.",
+    rooms:{a:[2,30,8,8], b:[14,28,14,10], c:[14,14,14,10], d:[32,12,14,12], e:[32,28,14,10], f:[50,28,14,10], g:[50,12,14,12], h:[68,12,12,12], i:[84,8,16,20], t:[2,14,8,8]},
+    links:[["a","b"],["b","c"],["c","d","G"],["d","e"],["e","f","H"],["f","g"],["g","h","X"],["h","i"],["c","t","z"]],
+    feat:{a:[["S",3,3]],
+      b:[["#rect","~",4,3,6,3],["a",1,1],["a",12,1],["a",6,8],["1",3,6],["2",10,6],["3",12,2]],
+      c:[["1",3,3],["2",10,3],["2",6,7]],
+      d:[["#rect","#",6,4,1,4],["x",3,3],["x",3,7],["q",10,2],["q",10,9],["R",1,10],["3",8,6]],
+      e:[["2",3,3],["1",10,3],["2",6,7]],
+      f:[["#rect","~",5,3,4,4],["1",2,2],["2",11,2],["3",2,8]],
+      g:[["M",7,5],["K",7,9],["1",3,3],["1",10,3]],
+      h:[["N",6,6],["2",3,3],["2",8,3],["1",5,9]],
+      i:[["B",8,10],["w",2,2],["w",13,2],["w",2,17],["w",13,17],["w",8,2],["w",8,17],["#rect","~",3,8,3,4],["#rect","~",10,8,3,4]],
+      t:[["C",4,3]]},
+    bfx:{phases:[0.7,0.4,0.15], msg:"Embers rise from the forge floor!", strike:{name:"Fire burst", color:"#ff7a2a", pct:0.14, r:56, every:2.8, warn:1.3}}},
+  d_vault:{ hazard:"cold",
+    tagline:"Freezing ice, two keys, a rune puzzle, pressure plates, a secret chamber, and an ice queen who calls her guardians.",
+    rooms:{a:[2,17,8,8], b:[14,15,12,12], c:[14,2,12,9], d:[14,30,12,8], e:[30,15,12,12], f:[46,15,12,12], g:[62,15,12,12], i:[78,10,22,22], t:[30,2,8,6]},
+    links:[["a","b"],["b","c"],["b","d"],["b","e","G"],["e","f","X"],["f","g","H"],["g","i","Y"],["e","t","z"]],
+    feat:{a:[["S",3,3]],
+      b:[["1",3,3],["2",8,3],["1",3,8],["2",8,8]],
+      c:[["d",1,1],["d",10,1],["d",1,7],["d",10,7],["t",5,0],["#rect","~",4,3,4,3],["3",2,4]],
+      d:[["M",6,3],["K",6,6],["#rect","~",2,1,3,2],["1",2,5],["2",9,5]],
+      e:[["2",3,3],["1",8,3],["2",5,8],["#rect","~",3,5,6,2]],
+      f:[["q",1,10],["q",10,10],["#rect","~",3,8,6,3],["2",5,3],["1",5,6]],
+      g:[["N",6,5],["J",6,9],["1",3,3],["2",9,3]],
+      i:[["B",11,11],["w",3,3],["w",18,3],["w",3,18],["w",18,18],["w",11,3],["w",11,18],["#rect","~",4,9,4,4],["#rect","~",14,9,4,4]],
+      t:[["C",4,2]]},
+    bfx:{phases:[0.7,0.4,0.15], msg:"The queen's frost guardians awaken!", strike:{name:"Ice shards", color:"#a8e0ff", pct:0.13, r:54, every:3.0, warn:1.4}}}
+};
+// the three gate letters, then the two locked doors; secret walls come after
+const DG_GATE_CH = ["G","H","I"], DG_LOCK_CH = ["X","Y"];
+function dgBuildGrid(sp, W, H){
+  const g = []; for(let y=0;y<H;y++) g.push(Array(W).fill("#"));
+  const put = (x,y,ch)=>{ if(x>=0 && x<W && y>=0 && y<H) g[y][x] = ch; };
+  for(const [id,[rx,ry,rw,rh]] of Object.entries(sp.rooms)) for(let y=0;y<rh;y++) for(let x=0;x<rw;x++) put(rx+x, ry+y, ".");
+  for(const [a,b,door] of sp.links){ const A = sp.rooms[a], B = sp.rooms[b]; if(!A || !B) throw new Error("bad link "+a+"-"+b);
+    const oy0 = Math.max(A[1], B[1]), oy1 = Math.min(A[1]+A[3], B[1]+B[3]), ox0 = Math.max(A[0], B[0]), ox1 = Math.min(A[0]+A[2], B[0]+B[2]);
+    if(oy1 - oy0 >= 3){ const y = Math.floor((oy0+oy1)/2), [L,R] = A[0] < B[0] ? [A,B] : [B,A], xm = Math.floor((L[0]+L[2]+R[0])/2);
+      for(let x=L[0]+L[2]-1; x<=R[0]; x++) for(let k=-1;k<=1;k++) put(x, y+k, door && x===xm ? door : ".");
+    } else if(ox1 - ox0 >= 3){ const x = Math.floor((ox0+ox1)/2), [T,Bt] = A[1] < B[1] ? [A,B] : [B,A], ym = Math.floor((T[1]+T[3]+Bt[1])/2);
+      for(let y=T[1]+T[3]-1; y<=Bt[1]; y++) for(let k=-1;k<=1;k++) put(x+k, y, door && y===ym ? door : ".");
+    } else throw new Error("link "+a+"-"+b+" has no overlap"); }
+  for(const [id,list] of Object.entries(sp.feat)){ const [rx,ry,rw,rh] = sp.rooms[id];
+    for(const f of list){
+      if(f[0]==="#rect"){ const [,ch,x,y,w,h] = f; for(let j=0;j<h;j++) for(let i=0;i<w;i++) put(rx+x+i, ry+y+j, ch); }
+      else if(f[0]==="#ring"){ const [,ch,cx,cy,rin,rout] = f; for(let j=-rout;j<=rout;j++) for(let i=-rout;i<=rout;i++){ const d = Math.max(Math.abs(i),Math.abs(j)); if(d>=rin && d<=rout) put(rx+cx+i, ry+cy+j, ch); } }
+      else put(rx+f[1], ry+f[2], f[0]); } }
+  return g;
+}
+// every feature tile in reading order, plus the groups of gates and secret walls
+function dgScan(g){
+  const ents = [], gates = {G:[],H:[],I:[],X:[],Y:[]}, zs = [];
+  for(let y=0;y<g.length;y++) for(let x=0;x<g[y].length;x++){ const ch = g[y][x];
+    if(gates[ch]) gates[ch].push([x,y]); else if(ch==="z") zs.push([x,y]); else if(ch!=="#" && ch!==".") ents.push({ch,x,y}); }
+  const seen = new Set(), secrets = [];   // connected groups of secret wall tiles
+  for(const [x,y] of zs){ const k = x+","+y; if(seen.has(k)) continue; const grp = [], q = [[x,y]]; seen.add(k);
+    while(q.length){ const [cx,cy] = q.pop(); grp.push([cx,cy]); for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx = cx+dx, ny = cy+dy, nk = nx+","+ny; if(!seen.has(nk) && zs.some(z=>z[0]===nx && z[1]===ny)){ seen.add(nk); q.push([nx,ny]); } } }
+    secrets.push(grp); }
+  return {ents, gates, secrets};
+}
+
 const TILE_BY_NAME = () => ({T_ROCK, T_CRYPT, T_ASH, T_SNOW, T_CLIFF, T_CWALL, T_ICE, T_BOULDER, T_WATER, T_LAVA, T_SPINE});
 const ROOM_SIZES = [[8,8],[10,9],[11,10],[10,10],[11,10],[10,9],[14,13]];
 let dobjs = [];                 // levers, runes, tablets, portals inside dungeons
@@ -2360,75 +2461,75 @@ let MOB_GEN = 0;                // bumped whenever monsters are rebuilt (invalid
 const DSTATE = {};              // per dungeon: {keep, done}
 const RUNE_COL = [["Red","#e0453a"],["Blue","#3f86e0"],["Green","#3fbf5a"],["Yellow","#f0d040"]];
 
-// lay out the rooms of one dungeon: a chain from left to right, rooms alternate high/low, joined by 3 wide corridors
-function dgLayout(D){
-  const T = TILE_BY_NAME(), x0 = OW + 4, y0 = D.oy, rooms = [];
-  let cx = x0 + 2;
-  ROOM_SIZES.forEach(([w,h], i)=>{
-    const last = i === ROOM_SIZES.length-1, cy = last ? y0 + (DG_H>>1) : y0 + (i%2===0 ? 11 : DG_H-12);
-    rooms.push({x:cx, y:cy-(h>>1), w, h, cx:cx+(w>>1), cy}); cx += w + 4;
-  });
-  return {x0, y0, rooms, floor:T[D.floor], wall:T[D.wall], obst:T[D.obst]};
-}
+// ---- dungeons v2: build the four dungeons from DG_SPEC
 function carveDungeons(){
   for(const D of Object.values(DUNGEONS)){
-    const L = dgLayout(D); D.L = L; D.gates = [];
+    Object.assign(D, DG_SPEC[D.id]);
+    const T = TILE_BY_NAME(), x0 = OW + 4, y0 = D.oy, grid = dgBuildGrid(D, DG_W, DG_H), sc = dgScan(grid);
+    D.L = {x0, y0, floor:T[D.floor], wall:T[D.wall], obst:T[D.obst]}; D.ents = sc.ents; D.hz = []; D.hzMap = new Map(); D.gates = [];
+    const mkGate = (kind, tiles, key)=>({kind, tiles:tiles.map(([x,y])=>[x0+x, y0+y]), open:tiles.length===0, key});
+    for(const ch of DG_GATE_CH) D.gates.push(mkGate("gate", sc.gates[ch]));
+    DG_LOCK_CH.forEach((ch,i)=>D.gates.push(mkGate("lock", sc.gates[ch], i)));
+    for(const grp of sc.secrets) D.gates.push(mkGate("secret", grp));
     const setT = (x,y,t)=>{ if(x>OW && x<MW-1 && y>0 && y<MH-1){ map[y*MW+x] = t; zmap[y*MW+x] = D.id; } };
-    for(let y=L.y0; y<L.y0+DG_H; y++) for(let x=L.x0; x<L.x0+DG_W && x<MW-1; x++) setT(x, y, L.wall);
-    L.rooms.forEach((r,i)=>{
-      for(let y=r.y; y<r.y+r.h; y++) for(let x=r.x; x<r.x+r.w; x++) setT(x, y, L.floor);
-      if(i>0 && i<L.rooms.length-1){ // a few obstacles in the corners, never in the middle
-        for(const [ox,oy] of [[2,2],[r.w-3,r.h-3]]) setT(r.x+ox, r.y+oy, L.obst); }
-      if(i === L.rooms.length-1) for(const [ox,oy] of [[3,3],[r.w-4,3],[3,r.h-4],[r.w-4,r.h-4]]) setT(r.x+ox, r.y+oy, L.obst);
-    });
-    // corridors between room i and i+1 (horizontal out, vertical in the gap, horizontal in)
-    for(let i=0;i<L.rooms.length-1;i++){
-      const a = L.rooms[i], b = L.rooms[i+1], gx = a.x + a.w; // gap columns gx..gx+3: stubs at gx and gx+3, the vertical corridor in gx+1..gx+2
-      for(let x=a.x+a.w-1; x<=gx+2; x++) for(let k=-1;k<=1;k++) setT(x, a.cy+k, L.floor);
-      const yA = Math.min(a.cy, b.cy)-1, yB = Math.max(a.cy, b.cy)+1;
-      for(let y=yA; y<=yB; y++) for(let x=gx+1; x<=gx+2; x++) setT(x, y, L.floor);
-      for(let x=gx+1; x<=b.x; x++) for(let k=-1;k<=1;k++) setT(x, b.cy+k, L.floor);
-      // gates: after each puzzle room (rooms 2 and 4) the way out is closed until the puzzle is solved
-      if(i===2 || i===4){ const g = {room:i, tiles:[]}; for(let k=-1;k<=1;k++) g.tiles.push([gx, a.cy+k]); D.gates.push(g); }
-    }
-    deco.push({k:"brazier", x:(L.rooms[0].x+1)*TILE+16, y:(L.rooms[0].y+1)*TILE+16}, {k:"brazier", x:(L.rooms[0].x+L.rooms[0].w-2)*TILE+16, y:(L.rooms[0].y+1)*TILE+16});
-    const br = L.rooms[L.rooms.length-1]; deco.push({k:"brazier", x:(br.x+1)*TILE+16, y:(br.y+1)*TILE+16}, {k:"brazier", x:(br.x+br.w-2)*TILE+16, y:(br.y+1)*TILE+16},
-      {k:"brazier", x:(br.x+1)*TILE+16, y:(br.y+br.h-2)*TILE+16}, {k:"brazier", x:(br.x+br.w-2)*TILE+16, y:(br.y+br.h-2)*TILE+16});
+    for(let y=0;y<DG_H;y++) for(let x=0;x<DG_W && x0+x<MW-1;x++) setT(x0+x, y0+y, grid[y][x]==="#" ? D.L.wall : D.L.floor);
+    for(const e of sc.ents) if(e.ch==="~" || e.ch==="v"){ const h = {x:x0+e.x, y:y0+e.y, k:e.ch==="v" ? "collapse" : D.hazard, ph:0, t:0, f:false, fT:0}; D.hz.push(h); D.hzMap.set(h.y*MW+h.x, h); }
+    { let pi = 0; const done = new Set(); for(const h0 of D.hz){ if(done.has(h0)) continue; pi++; const st = [h0]; done.add(h0);   // each connected patch of hazard floor shares one rhythm
+      while(st.length){ const h = st.pop(); h.ph = (pi*3) % 8; for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const n = D.hzMap.get((h.y+dy)*MW+h.x+dx); if(n && !done.has(n) && n.k===h.k){ done.add(n); st.push(n); } } } } }
+    const s0 = sc.ents.find(e=>e.ch==="S"), b0 = sc.ents.find(e=>e.ch==="B");
+    D.L.sx = x0+s0.x; D.L.sy = y0+s0.y; D.L.bx = x0+b0.x; D.L.by = y0+b0.y;
+    deco.push({k:"brazier", x:(D.L.sx-2)*TILE+16, y:(D.L.sy-2)*TILE+16}, {k:"brazier", x:(D.L.sx+2)*TILE+16, y:(D.L.sy-2)*TILE+16});
+    for(const [ox,oy] of [[-5,-5],[5,-5],[-5,5],[5,5]]) deco.push({k:"brazier", x:(D.L.bx+ox)*TILE+16, y:(D.L.by+oy)*TILE+16});
     deco.push({k:"brazier", x:(D.ent.x-1)*TILE+16, y:(D.ent.y-1)*TILE+16}, {k:"brazier", x:(D.ent.x+1)*TILE+16, y:(D.ent.y-1)*TILE+16});
   }
 }
-function setGate(D, g, closed){ for(const [x,y] of g.tiles) map[y*MW+x] = closed ? T_GATE : D.L.floor; }
-// (re)build a dungeon: fresh monsters, closed gates, unsolved puzzles
-function resetDungeon(D, seed){
+function setGate(D, g, closed){ for(const [x,y] of g.tiles) map[y*MW+x] = closed ? (g.kind==="secret" ? D.L.wall : T_GATE) : D.L.floor; }
+// (re)build a dungeon: fresh monsters, closed doors, unsolved puzzles. players = group size (1 = solo mode)
+function resetDungeon(D, seed, players){
+  for(const o of (D.objs||[])) if(o.kind==="block" && map[o.ty*MW+o.tx]===T_BLOCK) map[o.ty*MW+o.tx] = D.L.floor;
   MOB_GEN++; mobs = mobs.filter(m=>m.def.dg !== D.id); dobjs = dobjs.filter(o=>o.dg !== D.id);
-  const L = D.L, r = L.rooms, rr = rng(hashStr(D.id) ^ (D.seed = (seed == null ? Math.floor(Math.random()*1e9) : seed))), lv = ZONES[D.id].lv;
-  let nc = 0; const nb = 100000 + Object.keys(DUNGEONS).indexOf(D.id)*1000;   // co-op: same ids on every computer
-  const put = (type, tx, ty, lvl) => { const m = makeMob(type, tx, ty, lvl); m.nid = nb + nc++; mobs.push(m); return m; };
-  const pack = (room, n) => { const rm = r[room]; for(let i=0;i<n;i++){ const a = i/n*Math.PI*2 + 0.4, tx = Math.round(rm.cx + Math.cos(a)*2.2), ty = Math.round(rm.cy + Math.sin(a)*2); put(D.pack[(room+i)%3], tx, ty, lv[0] + Math.floor(rr()*(lv[1]-lv[0]))); } };
-  pack(1, 3); pack(2, 2); pack(4, 3);
-  put(D.mini[0], r[3].cx, r[3].cy, MOBS[D.mini[0]].lv[0]); pack(3, 2);
-  put(D.mini[1], r[5].cx, r[5].cy, MOBS[D.mini[1]].lv[0]);
-  put(D.boss, r[6].cx + 2, r[6].cy, MOBS[D.boss].lv[0]);
-  // corridor guards
-  put(D.pack[0], r[5].x - 2, r[5].cy, lv[1]-1);
-  for(const g of D.gates) setGate(D, g, true);
-  // puzzles: room 2 and room 4
-  D.puzzles.forEach((kind, pi)=>{ const rm = r[pi===0 ? 2 : 4], gate = D.gates[pi];
-    if(kind === "lever"){ [[1,1],[rm.w-2,1],[1,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"lever", gate:pi, i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16})); }
-    else { const order = [0,1,2,3]; for(let k=3;k>0;k--){ const j = Math.floor(rr()*(k+1)); [order[k], order[j]] = [order[j], order[k]]; } D.order = D.order || []; D.order[pi] = order; D.prog = D.prog || []; D.prog[pi] = 0;
-      [[1,1],[rm.w-2,1],[1,rm.h-2],[rm.w-2,rm.h-2]].forEach(([ox,oy],i)=>dobjs.push({dg:D.id, kind:"rune", gate:pi, c:i, on:false, x:(rm.x+ox)*TILE+16, y:(rm.y+oy)*TILE+16}));
-      dobjs.push({dg:D.id, kind:"tablet", gate:pi, x:(rm.cx)*TILE+16, y:(rm.y+1)*TILE+16}); }
-    gate.open = false; });
-  dobjs.push({dg:D.id, kind:"exit", x:(r[0].x+1)*TILE+16, y:(r[0].cy)*TILE+16});
+  D.seed = seed == null ? Math.floor(Math.random()*1e9) : seed;
+  D.players = players || (coopOn() ? 1 + Math.min(3, Object.keys(COOP.remotes).length) : 1); D.mode = D.players > 1 ? "group" : "solo";
+  const rr = rng(hashStr(D.id) ^ D.seed), L = D.L, lv = ZONES[D.id].lv, hpM = 1 + 0.7*(D.players-1), dmM = 1 + 0.12*(D.players-1);
+  let nc = 0; const nb = 100000 + Object.keys(DUNGEONS).indexOf(D.id)*1000; D.mobs = []; D.adds = [];   // co-op: same ids on every computer
+  const put = (type, e, lvl, dormant)=>{ const m = makeMob(type, L.x0+e.x, L.y0+e.y, lvl); m.nid = nb + nc++; if(hpM > 1){ m.maxHp = Math.round(m.maxHp*hpM); m.hp = m.maxHp; m.dmg *= dmM; }
+    D.mobs.push(m); if(dormant){ m.dormant = true; D.adds.push(m); } else mobs.push(m); return m; };
+  const rl = ()=> lv[0] + Math.floor(rr()*(lv[1]-lv[0]+1)), byCh = ch => D.ents.filter(e=>e.ch===ch); let wi = 0;
+  for(const e of D.ents){ const ch = e.ch;
+    if(ch==="1" || ch==="2" || ch==="3") put(D.pack[+ch-1], e, rl());
+    else if(ch==="M") put(D.mini[0], e, MOBS[D.mini[0]].lv[0]);
+    else if(ch==="N") put(D.mini[1], e, MOBS[D.mini[1]].lv[0]);
+    else if(ch==="B") put(D.boss, e, MOBS[D.boss].lv[0]);
+    else if(ch==="w"){ for(let k=0;k<D.players;k++) put(D.pack[wi++ % 3], e, lv[1], true); } }
+  D.keys = [false, false]; D.prog = [0,0,0]; D.order = []; D.ph = D.bfx.phases.map(()=>false); D.stT = 3;
+  for(const g of D.gates){ g.open = g.tiles.length === 0; if(!g.open) setGate(D, g, true); }
+  D.hz.forEach(h=>{ h.t = 0; h.f = false; h.fT = 0; });
+  const mk = o=>{ o.dg = D.id; o.oi = dobjs.filter(x=>x.dg===D.id).length; dobjs.push(o); return o; }, wx = e=>(L.x0+e.x)*TILE+16, wy = e=>(L.y0+e.y)*TILE+16, GI = {a:0,b:1,c:2,d:0,e:1,f:2,p:0,q:1,u:2};
+  for(const ch of ["a","b","c"]) byCh(ch).forEach((e,i)=>mk({kind:"lever", gate:GI[ch], i, on:false, x:wx(e), y:wy(e)}));
+  for(const ch of ["d","e","f"]){ const list = byCh(ch); if(!list.length) continue; const order = [0,1,2,3]; for(let k=3;k>0;k--){ const j = Math.floor(rr()*(k+1)); [order[k], order[j]] = [order[j], order[k]]; }
+    D.order[GI[ch]] = order; list.forEach((e,i)=>mk({kind:"rune", gate:GI[ch], c:i, on:false, x:wx(e), y:wy(e)})); }
+  for(const e of byCh("t")){ let best = null, bd = 1e9; for(const o of dobjs) if(o.dg===D.id && o.kind==="rune"){ const d = Math.hypot(o.x-wx(e), o.y-wy(e)); if(d < bd){ bd = d; best = o; } }
+    if(best) mk({kind:"tablet", gate:best.gate, x:wx(e), y:wy(e)}); }
+  for(const ch of ["p","q","u"]) byCh(ch).forEach(e=>mk({kind:"plate", gate:GI[ch], on:false, tx:L.x0+e.x, ty:L.y0+e.y, x:wx(e), y:wy(e)}));
+  byCh("x").forEach(e=>{ const o = mk({kind:"block", tx:L.x0+e.x, ty:L.y0+e.y, hx:L.x0+e.x, hy:L.y0+e.y, on:false, x:wx(e), y:wy(e)}); map[o.ty*MW+o.tx] = T_BLOCK; });
+  byCh("R").forEach(e=>mk({kind:"altar", x:wx(e), y:wy(e)}));
+  byCh("K").forEach(e=>mk({kind:"chest", key:0, on:false, x:wx(e), y:wy(e)}));
+  byCh("J").forEach(e=>mk({kind:"chest", key:1, on:false, x:wx(e), y:wy(e)}));
+  byCh("C").forEach(e=>mk({kind:"chest", loot:true, on:false, x:wx(e), y:wy(e)}));
+  D.gates.forEach((g,gi)=>{ if(g.kind==="lock" && g.tiles.length){ const t = g.tiles[g.tiles.length>>1]; mk({kind:"lock", key:g.key, gi, on:false, x:t[0]*TILE+16, y:t[1]*TILE+16}); }
+    else if(g.kind==="secret"){ const t = g.tiles[g.tiles.length>>1]; mk({kind:"crack", gi, on:false, x:t[0]*TILE+16, y:t[1]*TILE+16}); } });
+  const s0 = byCh("S")[0]; mk({kind:"exit", x:wx(s0), y:wy(s0)});
+  D.objs = dobjs.filter(o=>o.dg===D.id);
   DSTATE[D.id] = {keep:false, done:false};
 }
 function spawnDungeons(){ dobjs = []; for(const D of Object.values(DUNGEONS)){ resetDungeon(D); dobjs.push({dg:null, dgEnt:D.id, kind:"entrance", x:D.ent.x*TILE+16, y:D.ent.y*TILE+16}); } }
 
-// ---- puzzles
-function openGate(D, pi, quiet){ const g = D.gates[pi]; if(g.open) return; g.open = true; setGate(D, g, false); if(quiet) return; snd("door"); setTimeout(()=>snd("solved"), 250);
-  const [gx, gy] = g.tiles[1]; ring(gx*TILE+16, gy*TILE+16, 70, "#ffd36b"); showBanner(`The ${D.gate} opens!`, "The way forward is clear", 3); log(`The ${D.gate} has opened.`, "#7be08a"); }
+function openGate(D, gi, quiet){ const g = D.gates[gi]; if(!g || g.open) return; g.open = true; setGate(D, g, false); if(quiet) return; snd("door"); setTimeout(()=>snd("solved"), 250);
+  const [gx, gy] = g.tiles[g.tiles.length>>1]; ring(gx*TILE+16, gy*TILE+16, 70, "#ffd36b");
+  const txt = g.kind==="lock" ? ["The door unlocks!", "The way forward is open"] : g.kind==="secret" ? ["A hidden passage opens!", "Something was hidden here"] : [`The ${D.gate} opens!`, "The way forward is clear"];
+  showBanner(txt[0], txt[1], 3); log(txt[0], "#7be08a"); }
 // remote = this action was done by a co-op friend (no damage to you; quiet = you are not inside that dungeon)
-function useDObj(o, remote){
+function useDObj(o, remote, ex){
   const D = DUNGEONS[o.dg], q = !!remote && P.inDungeon !== o.dg;
   if(o.kind === "entrance") return openPanel("npc", DUNGEONS[o.dgEnt].keeper.id);
   if(o.kind === "exit" || o.kind === "exitEnd") return leaveDungeon(false);
@@ -2453,14 +2554,118 @@ function useDObj(o, remote){
       if(!q){ floatText(o.x, o.y-40, "Wrong order! The runes go dark.", "#ff6b5e"); snd("fail"); burst(o.x, o.y-10, "#ff5a40", 12); }
       if(!remote) playerDamage(P.maxHp*0.08, null); }
   }
+  if(o.kind === "chest"){
+    if(!remote && !o.on && P.combatT > 0){ floatText(o.x, o.y-40, "You can't open it in combat", "#ff9a7a"); return; }
+    if(o.on) return; o.on = true; if(!remote) coopDgEvent(o);
+    if(!q){ burst(o.x, o.y-10, "#e6bd5c", 12); snd("loot"); }
+    if(o.loot){ if(coopOn() && D.players > 1){ if(COOP.role === "host") dgRollChest(D, o); } else if(!remote) dgLoot(D, o); }   // in a group the host rolls for everybody inside
+    else { D.keys[o.key] = true; if(!q){ floatText(o.x, o.y-40, "You found a key!", "#ffd36b"); log(`You found a key. Somewhere in ${ZONES[D.id].name} a door is locked.`, "#ffd36b"); } }
+  }
+  if(o.kind === "lock"){
+    if(o.on) return; if(!D.keys[o.key]){ if(!q) floatText(o.x, o.y-40, "The door is locked", "#ff9a7a"); return; }
+    o.on = true; if(!remote) coopDgEvent(o); openGate(D, o.gi, q);
+  }
+  if(o.kind === "crack"){ if(o.on) return; o.on = true; if(!remote) coopDgEvent(o); if(!q){ burst(o.x, o.y-10, "#cdb98a", 14); snd("lever"); } openGate(D, o.gi, q); }
+  if(o.kind === "block") dgPush(D, o, remote, ex, q);
+  if(o.kind === "altar"){ if(!remote) coopDgEvent(o); dgResetBlocks(D, q); }
 }
-// ---- boss / progress
+function dgPush(D, o, remote, ex, q){
+  let sx, sy; if(remote && ex){ sx = ex.dx; sy = ex.dy; } else { const dx = o.x - P.x, dy = o.y - P.y; if(Math.abs(dx) > Math.abs(dy)){ sx = Math.sign(dx); sy = 0; } else { sx = 0; sy = Math.sign(dy); } }
+  const nx = o.tx + sx, ny = o.ty + sy, tx = nx*TILE+16, ty = ny*TILE+16;
+  if(map[ny*MW+nx] !== D.L.floor || (!remote && dist(P, {x:tx, y:ty}) < 30)){ if(!q) floatText(o.x, o.y-34, "It won't move", "#ff9a7a"); return; }
+  map[o.ty*MW+o.tx] = D.L.floor; o.tx = nx; o.ty = ny; o.x = tx; o.y = ty; map[ny*MW+nx] = T_BLOCK;
+  if(!q){ snd("lever", {rate:0.7}); burst(o.x, o.y, "#9a948a", 6); }
+  if(!remote) coopDgEvent(o, {dx:sx, dy:sy});
+}
+function dgResetBlocks(D, q){ for(const o of D.objs) if(o.kind==="block"){ if(map[o.ty*MW+o.tx]===T_BLOCK) map[o.ty*MW+o.tx] = D.L.floor; o.tx = o.hx; o.ty = o.hy; o.x = o.tx*TILE+16; o.y = o.ty*TILE+16; map[o.ty*MW+o.tx] = T_BLOCK; }
+  for(const o of D.objs) if(o.kind==="plate" && !D.gates[o.gate].open) o.on = false;
+  if(!q){ snd("lever"); const a = D.objs.find(x=>x.kind==="altar"); if(a) floatText(a.x, a.y-40, "The blocks return", "#9fd6e8"); } }
+// in a group everybody inside rolls 1-100 for the chest and the highest roll takes the gold and the item
+function dgRollChest(D, o){
+  const who = []; if(P.inDungeon === D.id) who.push({id:coopMyId(), n:S.name});
+  for(const r of Object.values(COOP.remotes)) if(r.dg === D.id && !r.dead) who.push({id:r.id, n:r.name});
+  if(!who.length) return; const rolls = who.map(w=>({id:w.id, n:w.n, v:1 + Math.floor(Math.random()*100)})), top = Math.max(...rolls.map(r=>r.v)), tied = rolls.filter(r=>r.v === top), win = tied[Math.floor(Math.random()*tied.length)].id;
+  coopBroadcast({t:"dgo", dg:D.id, e:"roll", oi:o.oi, rolls, win}); dgRollApply(D, o, rolls, win); }
+function dgRollApply(D, o, rolls, win){
+  const line = "Chest roll: " + rolls.map(r=>`${r.n} ${r.v}`).join(", ") + " – " + (rolls.find(r=>r.id===win)||{n:"?"}).n + " wins!";
+  log(line, "#ffd84a"); if(typeof chatAdd === "function" && coopOn()) chatAdd(null, line, true);
+  if(P.inDungeon === D.id) floatText(o.x, o.y-60, win === coopMyId() ? "You won the roll!" : "Roll lost", win === coopMyId() ? "#ffd84a" : "#9fb0b9");
+  if(win === coopMyId()) dgLoot(D, o); }
+function dgLoot(D, o){
+  const lv = ZONES[D.id].lv, gold = Math.round((25 + lv[1]*7)*rand(0.8,1.3)); S.gold += gold;
+  const it = makeGear({slot:Object.keys(SLOTS)[Math.floor(Math.random()*Object.keys(SLOTS).length)], cls:S.cls, q:Math.max(3, rollQuality("boss")), il:lv[1]});
+  floatText(o.x, o.y-40, `${gold} gold`, "#ffd84a"); log(`The hidden chest holds ${gold} gold.`, "#ffd84a"); gainGear(it, "You found"); refreshTracker && refreshTracker(); }
+// ---- boss progress
 function dungeonKill(m){
   const D = DUNGEONS[m.def.dg]; if(!D) return;
-  if(m.def.boss){ DSTATE[D.id].done = true; const br = D.L.rooms[D.L.rooms.length-1];
-    dobjs.push({dg:D.id, kind:"exitEnd", x:(br.x+br.w-3)*TILE+16, y:br.cy*TILE+16});
+  if(m.def.boss){ DSTATE[D.id].done = true; if(!dobjs.some(o=>o.dg===D.id && o.kind==="exitEnd")) dobjs.push({dg:D.id, kind:"exitEnd", x:D.L.bx*TILE+16, y:D.L.by*TILE+16});
     if(P.inDungeon===D.id){ setTimeout(()=>showBanner(`${ZONES[D.id].name} cleared!`, "A portal out has opened", 5), 1500); log(`You have cleared ${ZONES[D.id].name}! Step into the portal to leave.`, "#7be08a"); } }
 }
+// ---- per-frame work: pressure plates, boss phases, hazards, boss strikes
+const dgStrikes = [];
+function dgWake(D, i, quiet){ const n = D.bfx.phases.length; let any = false;
+  D.adds.forEach((m, j)=>{ if(j % n === i && !m.woken){ m.woken = true; m.dormant = false; m.state = "chase"; mobs.push(m); any = true; if(!quiet) burst(m.x, m.y, "#e6bd5c", 8); } });
+  if(any && !quiet && P.inDungeon === D.id){ showBanner(D.bfx.msg, "", 3); log(D.bfx.msg, "#ff9a7a"); snd("fail"); } }
+function dgUpdate(dt){
+  let inside = false;
+  for(const D of Object.values(DUNGEONS)){ if(!D.objs) continue;
+    const here = P && P.inDungeon === D.id, other = coopRemoteIn(D.id); if(!here && !other) continue; if(here) inside = true;
+    if(COOP.role !== "guest"){ dgPlates(D); dgBoss(D); }
+    for(const h of D.hz) if(h.k==="collapse" && h.f){ h.fT -= dt; if(h.fT <= 0){ h.f = false; h.t = 0; } }
+    if(here) dgLocal(D, dt); }
+  if(!inside && dgStrikes.length) dgStrikes.length = 0;
+  for(let i=dgStrikes.length-1;i>=0;i--){ const s = dgStrikes[i]; s.t -= dt; if(s.t > 0) continue; dgStrikes.splice(i,1);
+    burst(s.x, s.y, s.color, 14); ring(s.x, s.y, s.r, s.color);
+    if(!P.dead && P.inDungeon === s.dg && dist(P, s) < s.r) playerDamage(P.maxHp*s.pct, null); }
+}
+function dgPlates(D){ const pl = D.objs.filter(o=>o.kind==="plate"); if(!pl.length) return;
+  const actors = []; if(P.inDungeon===D.id && !P.dead) actors.push(P); if(typeof pet !== "undefined" && pet && !pet.dead && pet.dg===D.id) actors.push(pet);
+  if(coopOn()) for(const r of Object.values(COOP.remotes)) if(r.dg===D.id && !r.dead){ actors.push(r); if(r.pet) actors.push(r.pet); }
+  const blocks = D.objs.filter(o=>o.kind==="block");
+  for(let gi=0;gi<3;gi++){ const mine = pl.filter(o=>o.gate===gi); if(!mine.length || D.gates[gi].open) continue; let all = true;
+    for(const o of mine){ const pressed = actors.some(a=>Math.hypot(a.x-o.x, a.y-o.y) < 22) || blocks.some(b=>b.tx===o.tx && b.ty===o.ty);
+      let on = o.on; if(D.mode==="solo"){ if(pressed) on = true; } else on = pressed;   // alone the plates stay down, in a group everyone has to hold one at the same time
+      if(on !== o.on){ o.on = on; snd("lever", {rate:1.3}); coopBroadcast({t:"dgo", dg:D.id, e:"plate", oi:o.oi, on}); }
+      if(!o.on) all = false; }
+    if(all){ openGate(D, gi, P.inDungeon !== D.id); coopBroadcast({t:"dgo", dg:D.id, e:"gate", gi}); } } }
+function dgBoss(D){ const b = D.mobs.find(m=>m.def.boss); if(!b || b.dead) return; const f = b.hp / b.maxHp;
+  D.bfx.phases.forEach((at, i)=>{ if(!D.ph[i] && f <= at){ D.ph[i] = true; dgWake(D, i, false); coopBroadcast({t:"dgo", dg:D.id, e:"phase", ph:i}); } }); }
+function dgLocal(D, dt){
+  P.hzSlow = Math.max(0, (P.hzSlow||0) - dt);
+  if(P.dead) return;
+  const b = D.mobs.find(m=>m.def.boss);   // boss strikes: marked circles on the floor near you
+  if(b && !b.dead && b.state==="chase" && dist(P,b) < 700){ D.stT -= dt;
+    if(D.stT <= 0){ const s = D.bfx.strike, done = D.ph.filter(Boolean).length; D.stT = Math.max(1.6, s.every*(1 - 0.12*done));
+      for(let k=0;k<(D.players>2 ? 2 : 1);k++) dgStrikes.push({x:P.x+rand(-50,50), y:P.y+rand(-40,40), r:s.r, t:s.warn, tot:s.warn, pct:s.pct, color:s.color, name:s.name, dg:D.id}); } }
+  const tx = Math.floor(P.x/TILE), ty = Math.floor(P.y/TILE), h = D.hzMap.get(ty*MW+tx), now = Date.now()/1000;
+  if(!h){ P.hzAcc = 0; if(!P.hzSafeT || P.hzSafeT <= 0){ let near = false; for(let j=-1;j<=1 && !near;j++) for(let i=-1;i<=1;i++) if(D.hzMap.has((ty+j)*MW+tx+i)){ near = true; break; } if(!near){ P.safeX = P.x; P.safeY = P.y; } P.hzSafeT = 0.25; } else P.hzSafeT -= dt; return; }
+  P.hzAcc = (P.hzAcc||0) + dt;
+  if(h.k === "cold"){ P.hzSlow = 0.3; if(P.hzAcc >= 0.5){ P.hzAcc = 0; playerDamage(P.maxHp*0.012, null); } }
+  else if(h.k === "flood"){ const on = ((now + h.ph) % 14) < 6; if(on){ P.hzSlow = 0.3; if(P.hzAcc >= 0.5){ P.hzAcc = 0; playerDamage(P.maxHp*0.03, null); } } }
+  else if(h.k === "lava"){ const c = Math.floor((now + h.ph) / 8), ph = (now + h.ph) % 8; if(ph >= 6.2 && ph < 7.2 && h.hit !== c){ h.hit = c; playerDamage(P.maxHp*0.15, null); burst(P.x, P.y, "#ff7a2a", 10); } }
+  else if(h.k === "collapse"){ if(!h.f){ h.t += dt; if(h.t > 0.9){ h.f = true; h.fT = 5; } } if(h.f){ playerDamage(P.maxHp*0.15, null); floatText(P.x, P.y-40, "You fell!", "#ff9a7a"); snd("fail"); if(P.safeX != null){ P.x = P.safeX; P.y = P.safeY; } } }
+}
+function dgHazardColor(h, now){ // returns [fill, glow]
+  if(h.k === "flood"){ const on = ((now + h.ph) % 14) < 6; return on ? "rgba(60,150,220,.55)" : "rgba(40,90,140,.16)"; }
+  if(h.k === "lava"){ const ph = (now + h.ph) % 8; return ph >= 6.2 && ph < 7.2 ? "rgba(255,90,20,.85)" : ph >= 5 && ph < 6.2 ? `rgba(255,140,40,${0.35 + 0.25*Math.sin(now*14)})` : "rgba(110,25,10,.45)"; }
+  if(h.k === "cold") return "rgba(170,220,255,.32)";
+  return h.f ? "rgba(8,6,6,.96)" : h.t > 0 ? `rgba(60,45,30,${0.2 + h.t*0.5})` : "rgba(80,56,34,.42)"; }
+function dgDrawGround(c){
+  if(!P || !P.inDungeon) return; const D = DUNGEONS[P.inDungeon]; if(!D || !D.hz) return; const now = Date.now()/1000, x0 = cam.x - 40, x1 = cam.x + W/ZOOM + 40, y0 = cam.y - 40, y1 = cam.y + H/ZOOM + 40;
+  for(const h of D.hz){ const px = h.x*TILE, py = h.y*TILE; if(px < x0 || px > x1 || py < y0 || py > y1) continue; c.fillStyle = dgHazardColor(h, now); c.fillRect(px, py, TILE, TILE);
+    if(h.k==="collapse" && !h.f){ c.strokeStyle = h.t > 0 ? "rgba(20,14,8,.85)" : "rgba(20,14,8,.45)"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px+4,py+5); c.lineTo(px+15,py+16); c.lineTo(px+10,py+27); c.moveTo(px+15,py+16); c.lineTo(px+27,py+12); c.stroke(); } }
+  for(const s of dgStrikes){ const k = 1 - s.t/s.tot; c.fillStyle = s.color + "33"; c.beginPath(); c.arc(s.x, s.y, s.r, 0, 7); c.fill(); c.fillStyle = s.color + "66"; c.beginPath(); c.arc(s.x, s.y, s.r*k, 0, 7); c.fill();
+    c.strokeStyle = s.color; c.lineWidth = 2; c.beginPath(); c.arc(s.x, s.y, s.r, 0, 7); c.stroke(); } }
+function dgDrawExtra(c, o, t){   // the new object kinds; true = handled
+  if(o.kind === "block" || o.kind === "lock") return true;   // blocks are tiles, locked doors are drawn as gates
+  if(o.kind === "plate"){ c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(-13, -9, 26, 20); c.fillStyle = o.on ? "#7be08a" : "#8a8478"; c.fillRect(-11, -11, 22, 18); c.fillStyle = o.on ? "#c6f5cc" : "#a89f90"; c.fillRect(-9, -9, 18, 4);
+    if(!o.on){ c.fillStyle = `rgba(255,211,107,${0.12 + Math.sin(t*3)*0.08})`; c.fillRect(-14, -14, 28, 24); } return true; }
+  if(o.kind === "altar"){ c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 4, 14, 4); c.fillStyle = "#5d6068"; c.fillRect(-9, -16, 18, 20); c.fillStyle = "#3b3d44"; c.fillRect(-11, -18, 22, 4);
+    c.fillStyle = `rgba(159,214,232,${0.6 + Math.sin(t*2.5)*0.3})`; c.beginPath(); c.moveTo(0,-30); c.lineTo(5,-23); c.lineTo(0,-16); c.lineTo(-5,-23); c.closePath(); c.fill(); return true; }
+  if(o.kind === "chest"){ c.fillStyle = "rgba(0,0,0,.35)"; ell(c, 0, 4, 14, 4); c.fillStyle = o.loot ? "#8a5a22" : "#5a4a8a"; c.fillRect(-12, -12, 24, 14); c.fillStyle = o.loot ? "#a8742e" : "#7a68b8"; c.fillRect(-12, o.on ? -22 : -16, 24, o.on ? 6 : 6);
+    c.fillStyle = "#d8b84a"; c.fillRect(-2, -10, 4, 5); if(!o.on){ c.fillStyle = `rgba(255,220,120,${0.25 + Math.sin(t*3)*0.15})`; c.beginPath(); c.arc(0, -8, 16, 0, 7); c.fill(); } return true; }
+  if(o.kind === "crack"){ if(!o.on){ c.strokeStyle = "rgba(10,8,6,.75)"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-8,-4); c.lineTo(-2,2); c.lineTo(-5,10); c.moveTo(-2,2); c.lineTo(6,6); c.stroke(); } return true; }
+  return false; }
 function camBounds(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x0:L.x0*TILE, y0:L.y0*TILE, x1:Math.min(MW, L.x0+DG_W)*TILE, y1:(L.y0+DG_H)*TILE}; } return {x0:0, y0:0, x1:OW*TILE, y1:MH*TILE}; }
 function mapRegion(){ if(P && P.inDungeon){ const L = DUNGEONS[P.inDungeon].L; return {x:L.x0, y:L.y0, w:Math.min(MW, L.x0+DG_W)-L.x0, h:DG_H}; } return {x:0, y:0, w:OW, h:MH}; }
 // ---- entering and leaving
@@ -2485,7 +2690,7 @@ function enterDungeonLocal(id, synced){
   if(!synced && (!DSTATE[id] || !DSTATE[id].keep || DSTATE[id].done) && !coopRemoteIn(id)) resetDungeon(D);
   closePanel(); P.casting = null; P.autoTarget = null; P.target = null; projs = []; zones = [];
   for(const m of mobs) if(m.state==="chase" && !coopMob(m)) evade(m);
-  const r0 = D.L.rooms[0]; P.x = (r0.cx)*TILE+16; P.y = (r0.cy)*TILE+16; P.inDungeon = id; DSTATE[id].keep = false;
+  P.x = (D.L.sx+1)*TILE+16; P.y = D.L.sy*TILE+16; P.inDungeon = id; DSTATE[id].keep = false;
   snd("dg_enter");
   showBanner(ZONES[id].name, `Dungeon · level ${ZONES[id].lv[0]}–${ZONES[id].lv[1]}`, 4);
   log(`You entered ${ZONES[id].name}. The portal behind you leads back out.`, "#9fd6e8");
@@ -2513,7 +2718,7 @@ function dungeonInfoHTML(id){
   const D = DUNGEONS[id], z = ZONES[id], st = DSTATE[id] || {}, lvlCol = S.level < z.lv[0]-1 ? "var(--bad)" : S.level > z.lv[1]+3 ? "var(--mute)" : "var(--coin)";
   const quests = QUESTS.filter(q=>q.obj.some(o=>(o[0]==="kill"&&MOBS[o[1]].dg===id)||(o[0]==="loot"&&MOBS[o[3]].dg===id)));
   return `<h3>${z.name}</h3><div class="item"><div><b style="color:${lvlCol}">Dungeon · level ${z.lv[0]}–${z.lv[1]}</b><div class="d">${esc(D.intro)}</div>
-    <div class="d">Harder than regular areas – packs of enemies, two puzzles, two minibosses (always drop green gear) and a final boss that always drops blue or better. If you die you wake up out here, and whatever you have already cleared stays cleared.</div>
+    <div class="d">${esc(D.tagline)} Minibosses always drop green gear or better and the final boss always drops blue or better. The dungeon adapts to your party: alone it is a solo run, and in co-op the monsters are tougher, the boss calls more reinforcements and the pressure plates need everyone. If you die you wake up out here, and whatever you have already cleared stays cleared.</div>
     ${st.keep && !st.done ? `<div class="d" style="color:var(--coin)">You have started this dungeon – entering again continues where you left off.</div>` : ""}
     ${quests.length ? `<div class="d">Quests here: ${quests.map(q=>`${esc(q.name)} (${esc(npcName(q.npc))})`).join(", ")}</div>` : ""}</div>
     <button class="btn pri" data-act="enterdg" data-id="${id}" ${S.level < z.lv[0] && !P.ghost ? "disabled" : ""}>${S.level < z.lv[0] && !P.ghost ? `Requires level ${z.lv[0]}` : "Enter"}</button></div>
@@ -2523,6 +2728,7 @@ function dungeonInfoHTML(id){
 function drawDObj(c, o){
   const t = time;
   c.save(); c.translate(o.x, o.y);
+  if(dgDrawExtra(c, o, t)){ c.restore(); return; }
   if(o.kind === "lever"){
     c.fillStyle = "rgba(0,0,0,.3)"; ell(c, 0, 4, 12, 4); c.fillStyle = "#4a4d55"; c.fillRect(-9, -6, 18, 10); c.fillStyle = "#2a2d33"; c.fillRect(-9, 2, 18, 2);
     c.strokeStyle = "#8a7a5a"; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -2); c.lineTo(o.on ? 9 : -9, -18); c.stroke();
@@ -2547,7 +2753,17 @@ function drawDObj(c, o){
   c.restore();
 }
 function dobjLabel(o){ if(o.kind==="entrance") return `[E] Enter ${ZONES[o.dgEnt].name}`; const D = DUNGEONS[o.dg];
-  return o.kind==="lever" ? (o.on ? null : `[E] Activate the ${D.lever.toLowerCase()}`) : o.kind==="rune" ? (o.on ? null : `[E] Awaken the ${RUNE_COL[o.c][0].toLowerCase()} rune`) : o.kind==="tablet" ? "[E] Read the tablet" : "[E] Leave the dungeon"; }
+  switch(o.kind){
+    case "lever": return o.on ? null : `[E] Activate the ${D.lever.toLowerCase()}`;
+    case "rune": return o.on ? null : `[E] Awaken the ${RUNE_COL[o.c][0].toLowerCase()} rune`;
+    case "tablet": return "[E] Read the tablet";
+    case "block": return "[E] Push the block";
+    case "altar": return "[E] Reset the blocks";
+    case "chest": return o.on ? null : o.loot ? "[E] Open the chest" : "[E] Open the old chest";
+    case "lock": return o.on ? null : D.keys[o.key] ? "[E] Unlock the door" : "[E] The door is locked";
+    case "crack": return o.on ? null : "[E] Examine the cracked wall";
+    case "plate": return null;
+    default: return "[E] Leave the dungeon"; } }
 // darkness inside dungeons: only a circle around the hero (and fires) is lit
 function drawDungeonDark(c, cam, vw, vh){
   if(!P.inDungeon) return;
@@ -2707,6 +2923,7 @@ function makeTilesInner(){
   tileSprites[T_BLIGHT] = mk((g, r) => { g.fillStyle = "#5a5a48"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#6a6a52","#4a4a3c","#7a6a5a"], 2); });
   tileSprites[T_GLOOM] = mk((g, r) => { g.fillStyle = "#3a3a40"; g.fillRect(0,0,TILE,TILE); speck(g, r, 14, ["#48484e","#2c2c32","#5a4a5a"], 2); });
   tileSprites[T_GATE] = mk((g, r) => { g.fillStyle = "#1c1d22"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#6a6d75"; for(let i=0;i<4;i++) g.fillRect(3+i*8, 0, 3, TILE); g.fillRect(0, 6, TILE, 3); g.fillRect(0, 22, TILE, 3); g.fillStyle = "#9aa0a8"; for(let i=0;i<4;i++) g.fillRect(3+i*8, 0, 1, TILE); });
+  tileSprites[T_BLOCK] = mk((g, r) => { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(2,5,TILE-4,TILE-5); g.fillStyle = "#6f7077"; g.fillRect(3,3,TILE-6,TILE-8); g.fillStyle = "#8b8c93"; g.fillRect(3,3,TILE-6,5); g.fillStyle = "#54555c"; g.fillRect(3,TILE-9,TILE-6,3); g.strokeStyle = "#3a3b40"; g.lineWidth = 2; g.strokeRect(4,4,TILE-8,TILE-10); g.beginPath(); g.moveTo(8,9); g.lineTo(TILE-8,TILE-12); g.moveTo(TILE-8,9); g.lineTo(8,TILE-12); g.stroke(); g.lineWidth = 1; });
   tileSprites[T_CWALL] = mk((g, r) => { g.fillStyle = "#1f2227"; g.fillRect(0,0,TILE,TILE); g.fillStyle = "#3a3f47"; g.fillRect(0,0,TILE,8); g.strokeStyle = "#2a2e34"; g.strokeRect(0.5,8.5,15,11); g.strokeRect(16.5,8.5,15,11); g.strokeRect(8.5,20.5,15,11); });
 }
 // ground textures (CC0, Screaming Brain Studios) drawn continuously across tiles; objects drawn on top
@@ -2735,7 +2952,7 @@ function tileSprite(t, x, y){
 
 // minimap base
 const mmBase = document.createElement("canvas"); mmBase.width = MW; mmBase.height = MH;
-const MM_COL = {[T_GATE]:"#8a8d95",[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40",[T_BLIGHT]:"#6a6a54",[T_GLOOM]:"#44444c"};
+const MM_COL = {[T_GATE]:"#8a8d95",[T_BLOCK]:"#8a8d95",[T_GRASS]:"#4a7a3d",[T_FOREST]:"#2f4d2b",[T_WATER]:"#2c6a8c",[T_ROCK]:"#77797c",[T_CLIFF]:"#3a3d42",[T_TREE]:"#24421f",[T_PATH]:"#a48b5e",[T_SWAMP]:"#3f4d33",[T_COBBLE]:"#8d877d",[T_HOUSE]:"#9a4632",[T_DEAD]:"#3a332b",[T_BOULDER]:"#5d6063",[T_CRYPT]:"#4a4d55",[T_CWALL]:"#202227",[T_PINE]:"#2a4d39",[T_ASH]:"#47403c",[T_LAVA]:"#c4481f",[T_SNOW]:"#dfe9ef",[T_ICE]:"#86b9d1",[T_SPINE]:"#3a6355",[T_OBSID]:"#241f2c",[T_ELFGRASS]:"#5a9a6a",[T_BIRCH]:"#a8d8b0",[T_MOSS]:"#2c3a52",[T_VTREE]:"#43307a",[T_STEPPE]:"#a3713f",[T_SAND]:"#cfa268",[T_RCLIFF]:"#7a3e24",[T_CACTUS]:"#5a8a40",[T_BLIGHT]:"#6a6a54",[T_GLOOM]:"#44444c"};
 function makeMinimap(){ const mm = document.getElementById("mm"); mm.width = 120; mm.height = 80; const g = mmBase.getContext("2d"); for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){ g.fillStyle = MM_COL[map[y*MW+x]]; g.fillRect(x,y,1,1); } }
 
 function shade(hex, f){ const n = parseInt(hex.slice(1),16); let r=n>>16, g=(n>>8)&255, b=n&255; r=clamp(Math.round(r*f),0,255); g=clamp(Math.round(g*f),0,255); b=clamp(Math.round(b*f),0,255); return `rgb(${r},${g},${b})`; }
@@ -2877,6 +3094,7 @@ function render(){
     else { ctx.strokeStyle = t.state==="chase" ? "#ff8a5a" : "#f3dc55"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(t.x, t.y, rw, rh, 0, 0, 7); ctx.stroke(); }
     ctx.lineWidth = 1; }
   // y-sorted entities
+  dgDrawGround(ctx);
   const ents = [];
   for(const m of mobs) if(!m.dead && inView(m)) ents.push({y:m.y, f:()=>drawMob(ctx, m)});
   for(const n of npcs) if(inView(n)) ents.push({y:n.y, f:()=>{ const [sx,sy] = raceScale(n.race); if(!drawLPC(ctx, npcLook(n), n.x, n.y, {anim:"walk", frame:0, dir:2}, sx, sy)) drawHero(ctx, n.x, n.y, {race:n.race, skin:RACES[n.race||"human"].skin, body:n.color, fx:n.fx, hair:RACES[n.race||"human"].hair, ph:n.x}); }});
@@ -3196,9 +3414,10 @@ const CREATURES = {
 };
 const CREATURE_LOOK = {
   wolf:{c:"Wolf"}, oldgray:{c:"Wolf", tint:["#ffffff",0.55], s:1.25}, boar:{c:"Boar"}, lynx:{c:"Fox", tint:["#d8b070",0.35], s:1.1},
-  shadewolf:{c:"Wolf", tint:["#6a4aa0",0.35]}, rocksvin:{c:"Boar", tint:["#9aa0a8",0.5]}, icebear:{c:"Bear", tint:["#ffffff",0.6], s:1.1},
+  shadewolf:{c:"Wolf", tint:["#6a4aa0",0.35]}, rocksvin:{c:"Boar", tint:["#9aa0a8",0.5]}, icebear:{c:"Bear", tint:["@white",1], s:1.1},
   jackal:{c:"Fox", tint:["#e0c080",0.4]}, bristle:{c:"Boar", tint:["#2a1a10",0.3]}, hound:{c:"Wolf", tint:["#d0441a",0.4], s:1.1},
   frostwolf:{c:"Wolf", tint:["#cfe8ff",0.5], s:1.2}, hare:{c:"Rabbit"}, deer:{c:"Deer"}, rat:{c:"Rabbit", tint:["#4a4a50",0.6], s:0.85}, plaguewolf:{c:"Wolf", tint:["#7a9a40",0.4]}, plaguebear:{c:"Bear", tint:["#6a8a40",0.35], s:1.1},
+  grottbjorn:{c:"Bear", tint:["#2a1c12",0.4], s:1.75}, valvbjorn:{c:"Bear", tint:["@white",1], s:1.75},
   petbear:{c:"Bear", s:1.0}, petwolf:{c:"Wolf", tint:["#e6d3a8",0.3]}
 };
 const CSHEETS = {};
@@ -3207,7 +3426,11 @@ function creatureSheet(c, file, tint){
   const im = sImg(`assets/creatures/${c}/${file}.png`); if(!im.complete || !im.naturalWidth) return null;
   if(!tint){ CSHEETS[key] = im; return im; }
   const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; const g = cv.getContext("2d");
-  g.drawImage(im,0,0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = tint[1]; g.fillStyle = tint[0]; g.fillRect(0,0,cv.width,cv.height);
+  g.drawImage(im,0,0);
+  if(tint[0] === "@white"){ try{ const d = g.getImageData(0,0,cv.width,cv.height), px = d.data;   // keep the shading, turn the fur white
+      for(let i=0;i<px.length;i+=4){ if(!px[i+3]) continue; const l = (px[i]*0.3 + px[i+1]*0.59 + px[i+2]*0.11)/255, v = 70 + l*205; px[i] = v*0.96; px[i+1] = v*0.98; px[i+2] = Math.min(255, v + 6); }
+      g.putImageData(d,0,0); CSHEETS[key] = cv; return cv; }catch(e){ g.drawImage(im,0,0); tint = ["#ffffff", 0.7]; } }
+  g.globalCompositeOperation = "source-atop"; g.globalAlpha = tint[1]; g.fillStyle = tint[0]; g.fillRect(0,0,cv.width,cv.height);
   CSHEETS[key] = cv; return cv;
 }
 function drawCreature(c, look, x, y, anim, fx, ph, lunge){
@@ -3278,7 +3501,7 @@ const SIDE = {
   dragon:{f:"assets/monsters/dragon.png", w:80, h:80, idle:[0,4], walk:[1,4], attack:[2,3], foot:15, tall:45, fly:8}
 };
 const SIDE_LOOK = { raider:{c:"orc", s:1.55}, orcwar:{c:"orc", s:1.75, tint:["#3a4a1a",0.25]},
-  goblin:{c:"goblin", s:1.3}, goblinshaman:{c:"goblin", s:1.25, tint:["#4a2a7a",0.22]}, gargoyle:{c:"gargoyle", s:1.4}, dragon:{c:"dragon", s:1.55} };
+  goblin:{c:"goblin", s:1.3}, troll:{c:"goblin", s:1.2, tint:["#7a5a2a",0.25]}, goblinshaman:{c:"goblin", s:1.25, tint:["#4a2a7a",0.22]}, gargoyle:{c:"gargoyle", s:1.4}, dragon:{c:"dragon", s:1.55} };
 const ORC_LOOK = SIDE_LOOK;
 const OSHEETS = {};
 function sideSheet(c, tint){ const key = c + (tint ? tint.join() : ""); if(OSHEETS[key]) return OSHEETS[key];
@@ -4012,7 +4235,7 @@ function startGame(sv, fresh){
   else { const el = Math.max(0, (Date.now() - worldLeftAt)/1000);   // same world as before: dead monsters and picked nodes keep their respawn timers, which also ran while you were away
     for(const m of mobs){ if(m.def.dg) continue; if(m.dead){ m.respawn -= el; if(m.respawn <= 0) respawnMob(m); } else if(m.state !== "idle" || m.hp < m.maxHp) respawnMob(m); }
     for(const n of nodes.concat(qobjs)) if(!n.active){ n.respawn -= el; if(n.respawn <= 0) n.active = true; } }
-  if(sv.dgs && DUNGEONS[sv.dgs.id] && sv.dgs.snap){ const D = DUNGEONS[sv.dgs.id]; resetDungeon(D, sv.dgs.seed); dgApply(D, sv.dgs.snap); DSTATE[D.id].keep = true; }   // dungeon progress survives a refresh
+  if(sv.dgs && DUNGEONS[sv.dgs.id] && sv.dgs.snap && sv.dgs.snap.v === 2){ const D = DUNGEONS[sv.dgs.id]; resetDungeon(D, sv.dgs.seed, sv.dgs.snap.players); dgApply(D, sv.dgs.snap); DSTATE[D.id].keep = true; }   // dungeon progress survives a refresh
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
   if(!sv.ws){ if(S.x) S.x *= 2; if(S.y) S.y *= 2; if(S.death){ S.death.x *= 2; S.death.y *= 2; } }   // the world became twice as big
   S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; retireOldGear();
@@ -4080,7 +4303,7 @@ cv.addEventListener("pointerdown", e=>{
   if(P.ghost){ ghostTap(wx, wy); return; }
   for(const n of npcs){ if(Math.hypot(n.x-wx, n.y-20-wy) < 26){ if(dist(P,n) < 90) openPanel("npc", n.id); else err("Too far away"); return; } }
   for(const n of nodes){ if(n.active && Math.hypot(n.x-wx, n.y-wy) < 22){ if(dist(P,n) < 60) startGather(n); else err("Too far away"); return; } }
-  if(isTouch && P.target){ setTarget(null); P.autoTarget = null; }   // tapping empty ground clears the target on phones
+  if(e.button === 0 && (P.target || P.ftarget)){ setTarget(null); P.autoTarget = null; P.ftarget = null; }   // clicking empty ground clears the target
 });
 $("tclear").addEventListener("click", e=>{ e.stopPropagation(); setTarget(null); P.autoTarget = null; });
 // touch joystick
@@ -4190,9 +4413,9 @@ function chatSend(txt){ txt = (txt||"").trim().slice(0, 200); if(!txt) return; c
   chatAdd(S.name, txt, false); coopBroadcast({t:"chat", id:coopMyId(), n:S.name, m:txt}); }
 function chatUpd(dt){ const el = $("chat"); if(!el) return; const on = coopOn(); if(el.hidden === on) el.hidden = !on;
   if(!on){ chatSeen.clear(); const l = $("chatlog"); if(l.children.length) l.innerHTML = ""; if(!$("chatin").hidden) chatClose(); return; }
-  if(chatShowT > 0) chatShowT -= dt; el.classList.toggle("show", !$("chatin").hidden || chatShowT > 0); }
+  if(chatShowT > 0) chatShowT -= dt; el.classList.toggle("show", !$("chatin").hidden || chatShowT > 0); el.classList.toggle("typing", !$("chatin").hidden); }
 $("chatin").addEventListener("keydown", e=>{ e.stopPropagation(); if(e.key==="Enter"){ chatSend($("chatin").value); chatClose(); } else if(e.key==="Escape") chatClose(); });
-$("chatlog").addEventListener("click", ()=>{ if($("chatin").hidden) chatOpen(); });
+
 function coopErr(e){ const t = e && e.type;
   COOP.status = t==="peer-unavailable" ? "No game was found with that code." : t==="network" || t==="server-error" || t==="socket-error" || t==="socket-closed" ? "Could not reach the co-op service. Check your internet connection." : t==="browser-incompatible" ? "This browser does not support co-op." : t==="blocked" ? "The game was found, but your computers could not connect directly. A firewall or the network (for example a work computer or work network) is probably blocking it." : "Something went wrong: " + (t || (e && e.message) || e);
   COOP.busy = false; coopRefresh(); }
@@ -4283,6 +4506,7 @@ function coopState(){
   const cast = P.casting ? {kind:P.casting.kind, el:P.casting.el, total:P.casting.total} : null;
   return {t:"st", id:COOP.peer.id, name:S.name, race:S.race, cls:S.cls, lvl:S.level, x:Math.round(P.x), y:Math.round(P.y), dir:P.dir, fx:P.fx, mv:!!P.moving,
     hp:Math.round(P.hp), mhp:P.maxHp, form:P.form||null, dead:!!P.dead, ghost:!!P.ghost, sit:!!P.sitting, dg:P.inDungeon||null, act, cast,
+    rt:resType(), rv:Math.round(P[resType()]||0), rm:Math.round(maxRes(resType())),
     pet: pet && !pet.dead ? {k:pet.kind, x:Math.round(pet.x), y:Math.round(pet.y), fx:pet.fx, w:pet.walk?1:0, sw:pet.swing>0?1:0, hp:Math.round(pet.hp), mhp:pet.maxHp, res:Math.round(pet.res||0)} : null};
 }
 function coopSendState(force){ if(!coopOn() || !COOP.peer || !S || !P) return; coopBroadcast(coopState()); }
@@ -4369,16 +4593,24 @@ function coopGuestUpd(m, dt){ m.flash = Math.max(0, (m.flash||0)-dt); m.swing = 
 // ---------- step 3: healing and buffing each other
 let COOP_CAP = null;   // while set, heals/HoTs/shields are collected to be sent to a friend instead of applied to you
 const FRIENDLY = new Set(["heal","renew","pws","palheal","touch","rejuv","bloom"]);
-function coopFriendSel(){ const r = coopOn() && P.ftarget && COOP.remotes[P.ftarget]; return r && !r.dead && (r.dg||null) === (P.inDungeon||null) ? r : null; }
+function coopFriendSel(){ if(!coopOn() || !P.ftarget) return null; const id = P.ftarget;
+  if(id === "pet"){ return pet && !pet.dead ? {id:"pet", own:true, pet:true, ownerId:coopMyId(), name:pet.name, x:pet.x, y:pet.y, hp:pet.hp, mhp:pet.maxHp} : null; }
+  if(id.endsWith(":pet")){ const r = COOP.remotes[id.slice(0,-4)]; if(!r || !r.pet || r.dead || (r.dg||null) !== (P.inDungeon||null)) return null; const p = r.pet; return {id, pet:true, ownerId:r.id, name:p.name, x:p.x, y:p.y, hp:p.hp, mhp:p.maxHp}; }
+  const r = COOP.remotes[id]; return r && !r.dead && (r.dg||null) === (P.inDungeon||null) ? r : null; }
+function coopFtExists(id){ if(id === "pet") return !!(pet && !pet.dead); if(id.endsWith(":pet")){ const r = COOP.remotes[id.slice(0,-4)]; return !!(r && r.pet); } return !!COOP.remotes[id]; }
 function coopFriendTarget(id){ return FRIENDLY.has(id) ? coopFriendSel() : null; }
 function coopFriendRange(id){ const r = coopFriendTarget(id); return r && Math.hypot(r.x-P.x, r.y-P.y) > 330 ? `${r.name} is too far away` : null; }
 function coopCastOn(r, a, t){ COOP_CAP = {scale:(r.mhp||P.maxHp)/P.maxHp, fx:[]}; try{ a.run(t); } finally{ const cap = COOP_CAP; COOP_CAP = null; coopSendFx(r, cap.fx, a.name); }
   burst(r.x, r.y-10, SCHOOL_COLOR[a.school]||"#fff", 12); }
-function coopSendFx(r, fx, label){ if(!fx.length) return; const msg = {t:"fx", to:r.id, from:S.name, label, fx};
-  if(COOP.role==="host") coopSendTo(r.id, msg); else coopBroadcast(msg);
+function coopSendFx(r, fx, label){ if(!fx.length) return; const to = r.ownerId || r.id, msg = {t:"fx", to, from:S.name, label, fx, pet:!!r.pet};
+  if(r.own){ coopReceiveFx(msg); return; }
+  if(COOP.role==="host") coopSendTo(to, msg); else coopBroadcast(msg);
   for(const f of fx) if(f[0]==="heal") floatText(r.x, r.y-40, "+"+f[1], "#7be08a"); }
 function coopGroupFx(radius, fx, label){ if(!coopOn()) return; for(const r of coopVisible()) if(!r.dead && Math.hypot(r.x-P.x, r.y-P.y) < radius) coopSendFx(r, fx.map(f=>f.slice()), label); }
-function coopReceiveFx(d){ if(P.dead) return;
+function coopReceiveFx(d){
+  if(d.pet){ if(!pet || pet.dead) return; for(const f of d.fx){ if(f[0]==="heal") pet.hp = Math.min(pet.maxHp, pet.hp + f[1]); else if(f[0]==="healPct") pet.hp = Math.min(pet.maxHp, pet.hp + pet.maxHp*f[1]); }
+    floatText(pet.x, pet.y-40, "+"+Math.round(d.fx.filter(f=>f[0]==="heal").reduce((a,f)=>a+f[1],0) || 0), "#7be08a"); burst(pet.x, pet.y-10, "#9cf07a", 8); if(!d.label.startsWith("Holy") && d.from !== S.name) log(`${d.from} cast ${d.label} on your ${pet.name.toLowerCase()}.`, "#7be08a"); return; }
+  if(P.dead) return;
   for(const f of d.fx){
     if(f[0]==="heal") healP(f[1]);
     else if(f[0]==="healPct") healP(P.maxHp*f[1]);
@@ -4388,17 +4620,25 @@ function coopReceiveFx(d){ if(P.dead) return;
   burst(P.x, P.y-10, "#9cf07a", 8);
   if(!d.label.startsWith("Holy")) log(`${d.from} cast ${d.label} on you.`, "#7be08a"); }
 function coopFriendAt(wx, wy){ if(!coopOn()) return null; let best = null, bd = 30; for(const r of coopVisible()){ const d = Math.hypot(r.x-wx, r.y-24-wy); if(d < bd){ bd = d; best = r; } } return best; }
-function coopSelect(id){ P.ftarget = P.ftarget===id ? null : id; const r = COOP.remotes[id]; if(P.ftarget && r) floatText(r.x, r.y-70, "Selected", "#7fc4ff"); }
+function coopSelect(id){ P.ftarget = P.ftarget===id ? null : id; const t = id === "pet" ? pet : id.endsWith(":pet") ? (COOP.remotes[id.slice(0,-4)]||{}).pet : COOP.remotes[id]; if(P.ftarget && t) floatText(t.x, t.y-70, "Selected", "#7fc4ff"); }
 function coopPartyHUD(){
   let el = document.getElementById("party");
   if(!coopOn() || isTouch){ if(el) el.hidden = true; return; }
   if(!el){ el = document.createElement("div"); el.id = "party"; document.body.appendChild(el);
     el.addEventListener("click", e=>{ const b = e.target.closest("[data-pid]"); if(b) coopSelect(b.dataset.pid); }); }
-  if(P.ftarget && !COOP.remotes[P.ftarget]) P.ftarget = null;
+  if(P.ftarget && !coopFtExists(P.ftarget)) P.ftarget = null;
   const fr = document.getElementById("frames").getBoundingClientRect(); el.style.top = (fr.bottom + 8) + "px"; el.style.left = fr.left + "px"; el.hidden = false;
-  const rs = Object.values(COOP.remotes); const key = rs.map(r=>[r.id, r.name, r.lvl, Math.round(r.hp), r.mhp, r.dead, r.dg, P.ftarget===r.id].join(",")).join("|");
+  const rs = Object.values(COOP.remotes), mem = [];
+  if(pet && !pet.dead) mem.push({id:"pet", p:pet, who:"Your pet"});
+  for(const r of rs){ mem.push({id:r.id, r}); if(r.pet) mem.push({id:r.id+":pet", p:r.pet, who:r.name+"'s pet"}); }
+  const key = mem.map(m=>m.r ? [m.id, m.r.name, m.r.lvl, Math.round(m.r.hp), m.r.mhp, m.r.dead, m.r.dg, m.r.rt, Math.round(m.r.rv||0), m.r.rm, P.ftarget===m.id].join(",") : [m.id, m.p.name, Math.round(m.p.hp), m.p.maxHp, Math.round(m.p.res||0), P.ftarget===m.id].join(",")).join("|");
   if(el.dataset.k === key) return; el.dataset.k = key;
-  el.innerHTML = rs.map(r=>{ const pct = Math.max(0, Math.min(1, r.hp/(r.mhp||1))); return `<div class="pmem ${P.ftarget===r.id?"sel":""}" data-pid="${r.id}" title="Click to select – your heals then go to ${esc(r.name)}"><div class="pn"><b style="color:${CLASSES[r.cls]?.color||"#fff"}">${esc(r.name)}</b><span>${r.dead?"Dead":r.dg?"In a dungeon":"Level "+r.lvl}</span></div><div class="bar"><i style="width:${pct*100}%;background:${r.dead?"#555":"#4fd06a"}"></i><b>${Math.round(r.hp)} / ${r.mhp}</b></div></div>`; }).join("");
+  const RC = {mana:"#3a7be0", rage:"#d84a42", energy:"#e8c84a", focus:"#7cc46a"}, bar = (v, m, col)=>`<div class="bar rb"><i style="width:${Math.max(0, Math.min(1, v/(m||1)))*100}%;background:${col}"></i></div>`;
+  el.innerHTML = mem.map(m=>{
+    if(m.r){ const r = m.r, pct = Math.max(0, Math.min(1, r.hp/(r.mhp||1)));
+      return `<div class="pmem ${P.ftarget===r.id?"sel":""}" data-pid="${r.id}" title="Click to select – your heals then go to ${esc(r.name)}"><div class="pn"><b style="color:${CLASSES[r.cls]?.color||"#fff"}">${esc(r.name)}</b><span>${r.dead?"Dead":r.dg?"In a dungeon":"Level "+r.lvl}</span></div><div class="bar"><i style="width:${pct*100}%;background:${r.dead?"#555":"#4fd06a"}"></i><b>${Math.round(r.hp)} / ${r.mhp}</b></div>${r.rt && !r.dead ? bar(r.rv||0, r.rm||1, RC[r.rt]||"#888") : ""}</div>`; }
+    const p = m.p, pct = Math.max(0, Math.min(1, p.hp/(p.maxHp||1)));
+    return `<div class="pmem pet ${P.ftarget===m.id?"sel":""}" data-pid="${m.id}" title="Click to select this pet"><div class="pn"><b style="color:#8fe39a">${esc(p.name)}</b><span>${esc(m.who)}</span></div><div class="bar"><i style="width:${pct*100}%;background:#4fd06a"></i><b>${Math.round(p.hp)} / ${p.maxHp}</b></div>${bar(p.res||0, 100, p.kind==="wolf" ? RC.energy : RC.rage)}</div>`; }).join("");
 }
 function coopVisible(){ return Object.values(COOP.remotes).filter(r=>(r.dg||null) === (P.inDungeon||null)); }
 function drawRemote(c, r){
@@ -4432,26 +4672,31 @@ function coopHTML(){
 // ---------- step 4: dungeons. The host owns every dungeon. A guest asks for its seed + progress, builds the same dungeon, and then
 // the host's monsters, the levers/runes and the kill rewards work just like in the open world.
 const coopRemoteIn = dg => coopOn() && Object.values(COOP.remotes).some(r=>(r.dg||null)===dg);
-function dgSnap(D){ return {done:!!DSTATE[D.id].done, gates:D.gates.map(g=>g.open?1:0), prog:(D.prog||[]).map(v=>v||0),
-  objs:dobjs.filter(o=>o.dg===D.id).map(o=>o.on?1:0), dead:mobs.filter(m=>m.def.dg===D.id).map(m=>m.dead?1:0)}; }
-function dgApply(D, s){ if(!s) return;
+// ---- saving, and co-op: everybody walks the same dungeon
+function dgSnap(D){ return {v:2, done:!!DSTATE[D.id].done, players:D.players, gates:D.gates.map(g=>g.open?1:0), prog:(D.prog||[]).map(v=>v||0), keys:D.keys.map(k=>k?1:0), ph:D.ph.map(v=>v?1:0),
+  objs:D.objs.map(o=>o.on?1:0), blk:D.objs.map(o=>o.kind==="block" ? [o.tx,o.ty] : 0), dead:D.mobs.map(m=>m.dead?1:0)}; }
+function dgApply(D, s){ if(!s || s.v !== 2) return;
   D.gates.forEach((g,i)=>{ if(s.gates[i]){ g.open = true; setGate(D, g, false); } });
-  (s.prog||[]).forEach((v,i)=>{ if(D.prog) D.prog[i] = v; });
-  dobjs.filter(o=>o.dg===D.id).forEach((o,i)=>{ if(s.objs[i]) o.on = true; });
-  const dm = mobs.filter(m=>m.def.dg===D.id); (s.dead||[]).forEach((v,i)=>{ if(v && dm[i]){ dm[i].dead = true; dm[i].hp = 0; } });
-  if(s.done){ DSTATE[D.id].done = true; const br = D.L.rooms[D.L.rooms.length-1]; dobjs.push({dg:D.id, kind:"exitEnd", x:(br.x+br.w-3)*TILE+16, y:br.cy*TILE+16}); } }
+  (s.prog||[]).forEach((v,i)=>{ D.prog[i] = v; }); (s.keys||[]).forEach((v,i)=>{ D.keys[i] = !!v; });
+  D.objs.forEach((o,i)=>{ if(s.objs[i]) o.on = true; const b = s.blk && s.blk[i]; if(b && o.kind==="block"){ if(map[o.ty*MW+o.tx]===T_BLOCK) map[o.ty*MW+o.tx] = D.L.floor; o.tx = b[0]; o.ty = b[1]; o.x = o.tx*TILE+16; o.y = o.ty*TILE+16; map[o.ty*MW+o.tx] = T_BLOCK; } });
+  (s.ph||[]).forEach((v,i)=>{ if(v && !D.ph[i]){ D.ph[i] = true; dgWake(D, i, true); } });
+  (s.dead||[]).forEach((v,i)=>{ const m = D.mobs[i]; if(v && m){ m.dead = true; m.hp = 0; } });
+  if(s.done){ DSTATE[D.id].done = true; if(!dobjs.some(o=>o.dg===D.id && o.kind==="exitEnd")) dobjs.push({dg:D.id, kind:"exitEnd", x:D.L.bx*TILE+16, y:D.L.by*TILE+16}); } }
 function coopHostDgReq(c, d){ const D = DUNGEONS[d.dg]; if(!D) return;
   const st = DSTATE[d.dg], inside = P.inDungeon===d.dg || coopRemoteIn(d.dg);
   if(!inside && (!st || !st.keep || st.done)) resetDungeon(D);   // nobody inside and no saved progress: fresh dungeon
   DSTATE[d.dg].keep = false;
-  try{ c.send({t:"dgst", dg:d.dg, seed:D.seed, snap:dgSnap(D)}); }catch(e){} }
+  try{ c.send({t:"dgst", dg:d.dg, seed:D.seed, players:D.players, snap:dgSnap(D)}); }catch(e){} }
 function coopDgEnter(d){ if(COOP.dgWait !== d.dg) return; COOP.dgWait = null; clearTimeout(COOP.dgWaitT);
   const D = DUNGEONS[d.dg]; if(!D || (P.dead && !P.ghost)) return;
-  resetDungeon(D, d.seed); dgApply(D, d.snap); enterDungeonLocal(d.dg, true); }
-function coopDgEvent(o){ if(!coopOn()) return; coopBroadcast({t:"dgo", dg:o.dg, kind:o.kind, gate:o.gate, i:o.i, c:o.c}); }
-function coopDgRemote(d){ if(!DUNGEONS[d.dg]) return;
-  const o = dobjs.find(x=>x.dg===d.dg && x.kind===d.kind && x.gate===d.gate && (d.kind==="lever" ? x.i===d.i : x.c===d.c));
-  if(o) useDObj(o, true); }
+  resetDungeon(D, d.seed, d.players); dgApply(D, d.snap); enterDungeonLocal(d.dg, true); }
+function coopDgEvent(o, ex){ if(!coopOn()) return; coopBroadcast({t:"dgo", dg:o.dg, e:"use", oi:o.oi, ...(ex||{})}); }
+function coopDgRemote(d){ const D = DUNGEONS[d.dg]; if(!D || !D.objs) return;
+  if(d.e === "use"){ const o = D.objs[d.oi]; if(o) useDObj(o, true, d); }
+  else if(d.e === "plate"){ const o = D.objs[d.oi]; if(o) o.on = !!d.on; }
+  else if(d.e === "gate") openGate(D, d.gi, P.inDungeon !== D.id);
+  else if(d.e === "roll"){ const o = D.objs[d.oi]; if(o) dgRollApply(D, o, d.rolls || [], d.win); }
+  else if(d.e === "phase" && !D.ph[d.ph]){ D.ph[d.ph] = true; dgWake(D, d.ph, false); } }
 addEventListener("beforeunload", ()=>{ if(coopOn()) coopLeave(true); });
 </script>
 <button id="swupdate" hidden>A new version of Rimfrost is available – tap to update</button>
