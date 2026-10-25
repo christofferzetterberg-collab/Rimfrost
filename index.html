@@ -263,6 +263,16 @@ body.touch #interact{right:max(152px,calc(env(safe-area-inset-right,0px) + 152px
   body.touch #cast{top:auto;bottom:calc(var(--hb) + 100px)}
 }
 body.touch .menu-grid .muted{display:none}
+body.touch #joy{transform:scale(var(--joy,1));transform-origin:left bottom}
+body.touch.joy-right #bottom{right:auto;left:max(12px,env(safe-area-inset-left,0px));align-items:flex-start}
+body.touch.joy-right #joy{left:auto;right:max(14px,env(safe-area-inset-right,0px));transform-origin:right bottom}
+body.touch #atkbtn,body.touch #tabbtn,body.touch #interact{transform:scale(var(--btn,1));transform-origin:right bottom}
+body.touch.joy-right #atkbtn{right:auto;left:max(12px,env(safe-area-inset-left,0px));transform-origin:left bottom}
+body.touch.joy-right #tabbtn{right:auto;left:max(88px,calc(env(safe-area-inset-left,0px) + 88px));transform-origin:left bottom}
+body.touch.joy-right #interact{right:auto;left:max(152px,calc(env(safe-area-inset-left,0px) + 152px));transform-origin:left bottom}
+body.no-atk #atkbtn,body.no-int #interact,body.no-tab #tabbtn{display:none!important}
+#pframe{pointer-events:auto;cursor:pointer}
+.frame.selself{border-color:#7fc4ff;box-shadow:0 0 0 1px #7fc4ff}
 body.touch.pnl #joy, body.touch.pnl #atkbtn, body.touch.pnl #tabbtn, body.touch.pnl #interact, body.touch.pnl #bottom{display:none}
 body.touch :is(#frames,#side,#log,#bottom,#joy,#interact,#tabbtn,#atkbtn,#swupdate){zoom:.8}
 body.touch :is(#panel > *,#dead .box,#create .wrap){zoom:.8}
@@ -369,7 +379,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.10.0";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.11.0";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -2863,8 +2873,14 @@ function drawCorpse(c, p){
 <script>
 // ======================= RENDER =======================
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
+// display and control settings (saved in the browser)
+const UI_DEF = {zoom:null, joy:1, btn:1, joySide:"left", showAtk:true, showInteract:true, showTab:true};
+let UI = {...UI_DEF}; try{ Object.assign(UI, JSON.parse(localStorage.getItem("rimfrost_ui")||"{}")); }catch(e){}
+function saveUI(){ try{ localStorage.setItem("rimfrost_ui", JSON.stringify(UI)); }catch(e){} }
+function applyUI(){ const b = document.body; b.style.setProperty("--joy", UI.joy); b.style.setProperty("--btn", UI.btn); b.classList.toggle("joy-right", UI.joySide==="right");
+  b.classList.toggle("no-atk", !UI.showAtk); b.classList.toggle("no-int", !UI.showInteract); b.classList.toggle("no-tab", !UI.showTab); resize(); }
 let W = 0, H = 0, DPR = 1, ZOOM = 1; const cam = {x:0, y:0};
-function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = ((W < 700 && !matchMedia("(pointer:coarse)").matches) ? 0.8 : 1) * 1.5; }   // 1.5 = 50 % closer than before
+function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = UI.zoom != null ? UI.zoom : matchMedia("(pointer:coarse)").matches ? 1 : (W < 700 ? 0.8 : 1) * 1.5; }   // desktop: 1.5 = 50 % closer than before; phones keep 1.0 unless you change it
 addEventListener("resize", resize);
 
 // tile sprites (3 variants each)
@@ -3109,8 +3125,9 @@ function render(){
     if(P.hurt>0){ ctx.fillStyle = `rgba(255,60,60,${P.hurt*2})`; ctx.beginPath(); ctx.arc(P.x, P.y-16, 18, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1; }});
   for(const r of coopVisible()) if(inView(r,90)) ents.push({y:r.y, f:()=>drawRemote(ctx, r)});
-  if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)) ents.push({y:pet.y, f:()=>drawMob(ctx, pet)});
-  if(coopOn()) for(const r of coopVisible()) if(r.pet && !r.dead && inView(r.pet)){ const rp = r.pet; ents.push({y:rp.y, f:()=>drawMob(ctx, rp)}); }
+  const selRing = p=>{ ctx.strokeStyle = "rgba(127,196,255,.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(p.x, p.y+2, 16, 7, 0, 0, 7); ctx.stroke(); ctx.lineWidth = 1; };
+  if(pet && !pet.dead && pet.dg===(P.inDungeon||null) && inView(pet)) ents.push({y:pet.y, f:()=>{ if(P.ftarget === "pet") selRing(pet); drawMob(ctx, pet); }});
+  if(coopOn()) for(const r of coopVisible()) if(r.pet && !r.dead && inView(r.pet)){ const rp = r.pet; ents.push({y:rp.y, f:()=>{ if(P.ftarget === r.id+":pet") selRing(rp); drawMob(ctx, rp); }}); }
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // projectiles
   for(const p of projs){
@@ -3604,6 +3621,7 @@ function menuHTML(){
   return `<h2>Menu</h2><div class="menu-grid">
     <button class="btn pri" data-act="close">Continue Playing</button>
     <button class="btn" data-act="open" data-k="spells">Spellbook <span class="muted">${keyName(KB.spells)}</span></button>
+    <button class="btn" data-act="open" data-k="settings">Display and controls</button>
     ${isTouch ? "" : `<button class="btn" data-act="open" data-k="keys">Keybindings</button><button class="btn ${coopOn()?"glowb":""}" data-act="open" data-k="coop">Co-op${coopOn()?` · ${Object.keys(COOP.remotes).length+1} players`:""}</button>`}
     <button class="btn" data-act="open" data-k="char">Character <span class="muted">${keyName(KB.char)}</span></button>
     <button class="btn" data-act="open" data-k="bag">Bag <span class="muted">${keyName(KB.bag)}</span></button>
@@ -3617,6 +3635,15 @@ function menuHTML(){
     <div class="muted" style="text-align:center;font-size:12px;margin-top:4px">Rimfrost v${GAME_VERSION}</div>
   </div>`;
 }
+function settingsHTML(){
+  const z = UI.zoom != null ? UI.zoom : (isTouch ? 1 : 1.5), row = (label, key, min, max, val)=>`<label class="item" style="display:flex;gap:10px;align-items:center"><span style="min-width:140px">${label}</span><input type="range" data-ui="${key}" min="${min}" max="${max}" step="0.1" value="${val}" style="flex:1;accent-color:var(--frost)"><span class="muted" data-uv="${key}" style="min-width:36px;text-align:right">${(+val).toFixed(1)}×</span></label>`;
+  let h = `<h2>Display and controls</h2><div class="list">${row("Zoom", "zoom", 0.7, 2, z)}</div>`;
+  if(isTouch) h += `<h3>Touch controls</h3><div class="list">${row("Joystick size", "joy", 0.7, 1.6, UI.joy)}${row("Button size", "btn", 0.7, 1.6, UI.btn)}
+    <div class="item" style="display:flex;gap:10px;align-items:center"><span style="min-width:140px">Joystick side</span><button class="btn ${UI.joySide==="left"?"pri":""}" data-act="uijoy" data-k="left">Left</button><button class="btn ${UI.joySide==="right"?"pri":""}" data-act="uijoy" data-k="right">Right</button></div>
+    <label class="item"><input type="checkbox" data-ui="showAtk" ${UI.showAtk?"checked":""}> Show the attack button</label>
+    <label class="item"><input type="checkbox" data-ui="showInteract" ${UI.showInteract?"checked":""}> Show the interact button</label>
+    <label class="item"><input type="checkbox" data-ui="showTab" ${UI.showTab?"checked":""}> Show the target button</label></div>`;
+  return h + `<div class="row" style="margin-top:10px"><button class="btn" data-act="uireset">Reset to defaults</button></div>`; }
 function keysHTML(){
   let h = `<h2>Keybindings</h2><div class="muted">Click a key to change it, then press the new key. Esc cancels. The arrow keys can always be used to move.</div>`;
   for(const [title, list] of KB_GROUPS){
@@ -4108,16 +4135,21 @@ function renderPanel(){
   }
   if(panelKind==="menu") h += menuHTML();
   else if(panelKind==="keys") h += keysHTML();
+  else if(panelKind==="settings") h += settingsHTML();
   else if(panelKind==="spells") h += spellsHTML();
   else if(panelKind==="craft") h += craftHTML();
   el.innerHTML = h;
   if(panelKind==="map"){ el.style.width = "min(1100px, calc(100vw - 24px))"; drawWorldMap($("wmap")); } else el.style.width = "";
 }
-$("panel").addEventListener("input", e=>{ if(e.target.id!=="volrange") return; setVolume(e.target.value/100); const v = $("volval"); if(v) v.textContent = e.target.value+"%"; });
-$("panel").addEventListener("change", e=>{ if(e.target.id==="volrange"){ snd("click", {vol:2}); return; } const s = e.target.closest("select[data-act=bind]"); if(!s) return; setBarSlot(s.dataset.bar, s.dataset.id, +s.value); renderPanel(); });
+$("panel").addEventListener("input", e=>{ const uk = e.target.dataset && e.target.dataset.ui; if(uk && e.target.type==="range"){ UI[uk] = +e.target.value; const v = document.querySelector(`[data-uv="${uk}"]`); if(v) v.textContent = (+e.target.value).toFixed(1) + "×"; saveUI(); applyUI(); return; }
+  if(e.target.id!=="volrange") return; setVolume(e.target.value/100); const v = $("volval"); if(v) v.textContent = e.target.value+"%"; });
+$("panel").addEventListener("change", e=>{ const uk = e.target.dataset && e.target.dataset.ui; if(uk && e.target.type==="checkbox"){ UI[uk] = e.target.checked; saveUI(); applyUI(); return; }
+  if(e.target.id==="volrange"){ snd("click", {vol:2}); return; } const s = e.target.closest("select[data-act=bind]"); if(!s) return; setBarSlot(s.dataset.bar, s.dataset.id, +s.value); renderPanel(); });
 $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
+  if(a==="uireset"){ UI = {...UI_DEF}; saveUI(); applyUI(); renderPanel(); return; }
+  if(a==="uijoy"){ UI.joySide = k; saveUI(); applyUI(); renderPanel(); return; }
   if(a==="mtab"){ merchTab = k; renderPanel(); return; }
   if(a==="mapzoom"){ if(k==="in") mapZoom(1.4); else if(k==="out") mapZoom(1/1.4); else if(k==="me"){ MAPV.cx = P.x/TILE; MAPV.cy = P.y/TILE; mapRedraw(); } else if(k==="all"){ MAPV.z = 1; MAPV.cx = OW/2; MAPV.cy = MH/2; mapRedraw(); } return; }
   if(a==="bind") return;
@@ -4296,6 +4328,7 @@ cv.addEventListener("pointerdown", e=>{
   if(!running) return;
   const wx = e.clientX/ZOOM + cam.x, wy = e.clientY/ZOOM + cam.y;
   const fr = coopFriendAt(wx, wy); if(fr && e.button === 0 && !e.ctrlKey){ coopSelect(fr.id); return; }
+  const pt = e.button === 0 && !e.ctrlKey ? coopPetAt(wx, wy) : null; if(pt){ coopSelect(pt); return; }
   const best = mobAt(e);
   if(e.button === 2 || (e.button === 0 && e.ctrlKey)){ lastRight = performance.now(); startAttack(best); return; }
   if(best){ setTarget(best); return; }
@@ -4305,6 +4338,7 @@ cv.addEventListener("pointerdown", e=>{
   for(const n of nodes){ if(n.active && Math.hypot(n.x-wx, n.y-wy) < 22){ if(dist(P,n) < 60) startGather(n); else err("Too far away"); return; } }
   if(e.button === 0 && (P.target || P.ftarget)){ setTarget(null); P.autoTarget = null; P.ftarget = null; }   // clicking empty ground clears the target
 });
+$("pframe").addEventListener("click", ()=>{ if(!coopOn()) return; P.ftarget = null; floatText(P.x, P.y-70, "Selected", "#7fc4ff"); });
 $("tclear").addEventListener("click", e=>{ e.stopPropagation(); setTarget(null); P.autoTarget = null; });
 // touch joystick
 const isTouch = matchMedia("(pointer:coarse)").matches || "ontouchstart" in window;
@@ -4382,7 +4416,7 @@ function boot(data){
     const rb = document.getElementById("relbtn"), rn = document.getElementById("relnotes");
     if(rb && rn){ loadReleaseNotes(rn);
       rb.addEventListener("click", ()=>{ rn.hidden = !rn.hidden; rb.textContent = rn.hidden ? "Release notes" : "Hide release notes"; }); } }
-  resize(); genWorld(); makeTiles(); makeMinimap();
+  applyUI(); genWorld(); makeTiles(); makeMinimap();
   loadLocalChars();
   const hs = data && data.save;
   if(hs && hs.name) startGame(hs); else showCreate();
@@ -4411,7 +4445,8 @@ function chatOpen(){ if(!coopOn()) return; const inp = $("chatin"); inp.hidden =
 function chatClose(){ const inp = $("chatin"); inp.hidden = true; inp.blur(); chatShowT = 6; }
 function chatSend(txt){ txt = (txt||"").trim().slice(0, 200); if(!txt) return; const now = performance.now(); if(now - chatLast < 700) return err("Slow down"); chatLast = now;
   chatAdd(S.name, txt, false); coopBroadcast({t:"chat", id:coopMyId(), n:S.name, m:txt}); }
-function chatUpd(dt){ const el = $("chat"); if(!el) return; const on = coopOn(); if(el.hidden === on) el.hidden = !on;
+function chatUpd(dt){ const pf = $("pframe"); if(pf) pf.classList.toggle("selself", coopOn() && !P.ftarget);   // heals and buffs go to you when nobody else is selected
+  const el = $("chat"); if(!el) return; const on = coopOn(); if(el.hidden === on) el.hidden = !on;
   if(!on){ chatSeen.clear(); const l = $("chatlog"); if(l.children.length) l.innerHTML = ""; if(!$("chatin").hidden) chatClose(); return; }
   if(chatShowT > 0) chatShowT -= dt; el.classList.toggle("show", !$("chatin").hidden || chatShowT > 0); el.classList.toggle("typing", !$("chatin").hidden); }
 $("chatin").addEventListener("keydown", e=>{ e.stopPropagation(); if(e.key==="Enter"){ chatSend($("chatin").value); chatClose(); } else if(e.key==="Escape") chatClose(); });
@@ -4620,6 +4655,10 @@ function coopReceiveFx(d){
   burst(P.x, P.y-10, "#9cf07a", 8);
   if(!d.label.startsWith("Holy")) log(`${d.from} cast ${d.label} on you.`, "#7be08a"); }
 function coopFriendAt(wx, wy){ if(!coopOn()) return null; let best = null, bd = 30; for(const r of coopVisible()){ const d = Math.hypot(r.x-wx, r.y-24-wy); if(d < bd){ bd = d; best = r; } } return best; }
+function coopPetAt(wx, wy){ if(!coopOn()) return null; let best = null, bd = 30;
+  if(pet && !pet.dead && pet.dg === (P.inDungeon||null)){ const d = Math.hypot(pet.x-wx, pet.y-14-wy); if(d < bd){ bd = d; best = "pet"; } }
+  for(const r of coopVisible()) if(r.pet){ const d = Math.hypot(r.pet.x-wx, r.pet.y-14-wy); if(d < bd){ bd = d; best = r.id + ":pet"; } }
+  return best; }
 function coopSelect(id){ P.ftarget = P.ftarget===id ? null : id; const t = id === "pet" ? pet : id.endsWith(":pet") ? (COOP.remotes[id.slice(0,-4)]||{}).pet : COOP.remotes[id]; if(P.ftarget && t) floatText(t.x, t.y-70, "Selected", "#7fc4ff"); }
 function coopPartyHUD(){
   let el = document.getElementById("party");
