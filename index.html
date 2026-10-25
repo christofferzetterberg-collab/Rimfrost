@@ -379,7 +379,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.11.0";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.12.0";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -1051,6 +1051,115 @@ const QITEMS = {
   gravegift:{name:"Grave Offering", look:"chest", zone:"gravmark", count:7},
   urn:{name:"Stolen Urn", look:"crate", zone:"benfalt", count:8}
 };
+// ======================= QUESTS v2: explore spots, chains, dungeon quests, gear picks =======================
+// obj types: ["kill",mob,n] ["loot",item,n,mob,chance] ["gather",node,n] ["explore",spot,1] ["clear",dungeon,1]
+// pick:{q:quality} = choose one of three gear pieces for your class. mult = bigger reward (chain finales).
+const EXPLORE = {
+  windmill:{name:"the Old Windmill", x:74, y:150}, wolfhill:{name:"Wolf Hill", x:30, y:176}, hunterscairn:{name:"the Hunter's Cairn", x:126, y:152},
+  stones:{name:"the Whispering Stones", x:84, y:60}, moonwell:{name:"the Moon Well", x:146, y:106}, oldshaft:{name:"the Abandoned Shaft", x:184, y:50},
+  frozenfalls:{name:"the Frozen Falls", x:204, y:76}, skullrock:{name:"Bleached Skull Rock", x:84, y:278}, rustcaravan:{name:"the Rusted Caravan", x:108, y:204},
+  cryptdoor:{name:"the Sealed Crypt Door", x:78, y:308}, barrow:{name:"the Hollow Barrow", x:208, y:326},
+  watchtower:{name:"the Broken Watchtower", x:232, y:150}, minershrine:{name:"the Miner's Shrine", x:178, y:198},
+  witchhut:{name:"the Witch's Hut", x:256, y:224}, sunkenbell:{name:"the Sunken Bell", x:300, y:268},
+  obelisk:{name:"the Cinder Obelisk", x:328, y:102}, scorchbridge:{name:"the Scorched Bridge", x:282, y:58},
+  frozencamp:{name:"the Frozen Camp", x:404, y:160}, giantprint:{name:"the Giant's Footprint", x:364, y:208}
+};
+const QITEMS_NEW = {
+  wolfpelt:{name:"Thick Wolf Pelt"}, banditmap:{name:"Torn Bandit Map"}, glowseed:{name:"Seed of Light"}, moonfur:{name:"Moon-touched Fur"},
+  kobcandle:{name:"Kobold Candle"}, bearclaw:{name:"Ice Bear Claw"}, jackalfang:{name:"Jackal Fang"}, raiderbrand:{name:"Raider's Brand"},
+  gravedust:{name:"Pinch of Gravedust"}, boneamulet:{name:"Stolen Amulet"}, ironorders:{name:"Torn Watch Orders"}, offering:{name:"Stolen Offering"}, obeliskshard:{name:"Obelisk Shard"},
+  hagcharm:{name:"Hagga's Charm"}, bellmetal:{name:"Bell Fragment"}, emberpelt:{name:"Singed Hound Pelt"},
+  pilgrimring:{name:"Pilgrim's Ring"}, rimtusk:{name:"Rime Tusk"}
+};
+const NEW_NPCS = [
+  ["traskvakten", {id:"oswin", name:"Oswin the Marsh Guide", role:"Quest Giver", color:"#6a8a6a", race:"human"}],
+  ["askvakten", {id:"kira", name:"Scout Kira", role:"Quest Giver", color:"#b0684a", race:"human"}],
+  ["isporten", {id:"orm", name:"Veteran Orm", role:"Quest Giver", color:"#8a9ab0", race:"dwarf"}]
+];
+const QUESTS_NEW = [
+  // ---- Human: Frost Meadows and Shadowwood
+  {id:"z1", npc:"olle", lvl:2, name:"The Silent Windmill", text:"Old Aldric's windmill east of the village has stopped turning, and nobody has seen him for days. Walk out to the Old Windmill and take a look.", obj:[["explore","windmill",1]]},
+  {id:"z2", npc:"edda", lvl:2, name:"Signs of the Pack", text:"The sheep were found torn up near Wolf Hill, in the southwest. Go and see what is going on out there.", obj:[["explore","wolfhill",1]]},
+  {id:"z3", npc:"edda", lvl:3, req:["z2"], name:"Thinning the Pack", text:"It is as I feared: the wolves have made a den on Wolf Hill. Kill 8 of them before winter.", obj:[["kill","wolf",8]]},
+  {id:"z4", npc:"edda", lvl:4, req:["z3"], to:"bror", name:"A Token for the Smith", text:"Bror has been asking after wolf pelts for a new batch of armor. Take this pelt strap to him and tell him there are more to be had.", obj:[], mult:0.4},
+  {id:"z5", npc:"bror", lvl:4, req:["z4"], name:"Pelts for the Forge", text:"Good, good. I need 5 thick pelts to line the armor. Wolves have them, and they are not shy about defending them. Do this for me and I will make it worth your while.", obj:[["loot","wolfpelt",5,"wolf",0.5]], mult:1.6, pick:{q:2}},
+  {id:"z6", npc:"holger", lvl:6, name:"The Hunter's Cairn", text:"There is a stone cairn in the forest where hunters leave a trinket before a long trip. Something is wrong out there: birds have gone quiet. Go and look.", obj:[["explore","hunterscairn",1]]},
+  {id:"z7", npc:"holger", lvl:7, req:["z6"], name:"Bandit Scouts", text:"Bandit scouts have been watching the road from the cairn. Kill 8 of them so they stop reporting back.", obj:[["kill","bandit",8]]},
+  {id:"z8", npc:"holger", lvl:8, req:["z7"], name:"The Bandits' Plans", text:"One of the scouts carries a map of the road with marked ambush spots. Find it.", obj:[["loot","banditmap",1,"bandit",0.25]]},
+  {id:"z9", npc:"holger", lvl:9, req:["z8"], name:"Webs on the Road", text:"With the map I can warn the caravans. But the spiders have taken over half the road meanwhile. Clear out 12 of them, and the road is yours to use.", obj:[["kill","spider",12]], mult:2, pick:{q:3}},
+  // ---- Elf: Silver Grove and Moonwood
+  {id:"z10", npc:"ilsa", lvl:2, name:"The Whispering Stones", text:"The old stones north of the grove are said to speak at dawn. The elders hear nothing now. Go to the Whispering Stones and listen.", obj:[["explore","stones",1]]},
+  {id:"z11", npc:"faelin", lvl:3, name:"Choked by Thorns", text:"The thorn creepers are spreading and choking the young trees. Cut down 8 of them.", obj:[["kill","thorn",8]]},
+  {id:"z12", npc:"faelin", lvl:4, req:["z11"], name:"Seeds of Light", text:"The will-o'-wisps carry seeds of light that make the soil healthy again. Gather 5 from them.", obj:[["loot","glowseed",5,"wisplight",0.5]]},
+  {id:"z13", npc:"mirel", lvl:4, req:["z12"], to:"ilsa", name:"Tidings for Ilsa", text:"The seeds are enough to start the healing. Carry this word to Ilsa, so she can tell the council.", obj:[], mult:0.4},
+  {id:"z14", npc:"ilsa", lvl:5, req:["z13"], name:"The Fox Pack", text:"With the soil healing, the forest foxes are returning too, and they are bolder than before. Hunt 8 of them to keep the balance.", obj:[["kill","lynx",8]], mult:1.6, pick:{q:2}},
+  {id:"z15", npc:"lyra", lvl:6, name:"The Moon Well", text:"The Moon Well in the heart of the wood has gone dark. Go there and find out why.", obj:[["explore","moonwell",1]]},
+  {id:"z16", npc:"lyra", lvl:7, req:["z15"], name:"The Lost Druids", text:"Druids who lost their way have taken over the well. They no longer know friend from foe. Put 8 of them to rest.", obj:[["kill","lostdruid",8]]},
+  {id:"z17", npc:"lyra", lvl:8, req:["z16"], name:"Moon-touched Fur", text:"The shadow wolves shed fur that glows under the moon, and it can be used to relight the well. Bring me 5 tufts.", obj:[["loot","moonfur",5,"shadewolf",0.5]]},
+  {id:"z18", npc:"lyra", lvl:9, req:["z17"], name:"Shadows in the Moonwood", text:"The well glows again, but the shadow wolves keep dimming it. End the threat: kill 12 of them.", obj:[["kill","shadewolf",12]], mult:2, pick:{q:3}},
+  // ---- Dwarf: Copper Cliffs and Snowvale
+  {id:"z19", npc:"hjalmar", lvl:2, name:"The Abandoned Shaft", text:"A shaft north of the hold was sealed years ago. Last night there were lights inside. Go to the Abandoned Shaft and see who is down there.", obj:[["explore","oldshaft",1]]},
+  {id:"z20", npc:"torvald", lvl:3, name:"Kobolds in the Dark", text:"Kobolds have been creeping up out of the old workings. Kill 8 of them before they find the storerooms.", obj:[["kill","kobold",8]]},
+  {id:"z21", npc:"torvald", lvl:4, req:["z20"], name:"Tallow for the Hold", text:"Kobolds steal candles and tallow from us. Take it back: 6 candles from their camps.", obj:[["loot","kobcandle",6,"kobold",0.55]]},
+  {id:"z22", npc:"ingrid", lvl:4, req:["z21"], to:"hjalmar", name:"Word for the Elder", text:"Torvald wants the Elder to know the kobolds are getting bolder. Take this message to Hjalmar.", obj:[], mult:0.4},
+  {id:"z23", npc:"hjalmar", lvl:5, req:["z22"], name:"Shell Cracker", text:"The stone beetles are undermining the walls. Crack 10 of them, and I will see you rewarded.", obj:[["kill","beetle",10]], mult:1.6, pick:{q:2}},
+  {id:"z24", npc:"sune", lvl:6, name:"The Frozen Falls", text:"The Frozen Falls are the only source of clean water in the valley, and the ice has stopped moving. Go and see what is blocking it.", obj:[["explore","frozenfalls",1]]},
+  {id:"z25", npc:"sune", lvl:7, req:["z24"], name:"Frost Kobold Raiders", text:"Frost kobolds have built a camp by the falls. Drive them off: kill 8.", obj:[["kill","frostkobold",8]]},
+  {id:"z26", npc:"sune", lvl:8, req:["z25"], name:"Claws of the Ice Bear", text:"Ice bears stalk the pass. Their claws are strong enough to cut ice. Bring me 4, and we can free the falls.", obj:[["loot","bearclaw",4,"icebear",0.45]]},
+  {id:"z27", npc:"sune", lvl:9, req:["z26"], name:"The Bear Menace", text:"The falls are free, but the bears will return to them. Kill 10 of them to keep the valley safe.", obj:[["kill","icebear",10]], mult:2, pick:{q:3}},
+  // ---- Orc: Red Plains and Dust Canyon
+  {id:"z28", npc:"ragna", lvl:2, name:"Bleached Skull Rock", text:"Hunters go missing near Bleached Skull Rock to the south. Go there and see what draws them.", obj:[["explore","skullrock",1]]},
+  {id:"z29", npc:"urk", lvl:3, name:"Thinning the Jackals", text:"The jackals have grown fat on stray cattle. Kill 8 of them.", obj:[["kill","jackal",8]]},
+  {id:"z30", npc:"urk", lvl:4, req:["z29"], name:"Jackal Fangs", text:"A fang on a string is a mark of a hunter. Bring me 6 jackal fangs and I will make you a necklace.", obj:[["loot","jackalfang",6,"jackal",0.55]]},
+  {id:"z31", npc:"grosh", lvl:4, req:["z30"], to:"ragna", name:"A Trophy for Ragna", text:"Urk made a trophy from the fangs. Bring it to Ragna so she can see you are ready for harder work.", obj:[], mult:0.4},
+  {id:"z32", npc:"ragna", lvl:5, req:["z31"], name:"Sting of the Plains", text:"Scorpions are nesting in the camp's old well. Kill 10 of them and the water is ours again.", obj:[["kill","scorpion",10]], mult:1.6, pick:{q:2}},
+  {id:"z33", npc:"kruk", lvl:6, name:"The Rusted Caravan", text:"A caravan has been sitting in the canyon for days without moving. Go to the Rusted Caravan and find out what happened.", obj:[["explore","rustcaravan",1]]},
+  {id:"z34", npc:"kruk", lvl:7, req:["z33"], name:"Caravan Raiders", text:"Canyon raiders took the caravan. Kill 8 of them.", obj:[["kill","raider",8]]},
+  {id:"z35", npc:"kruk", lvl:8, req:["z34"], name:"Raider's Brands", text:"Each raider wears a brand that shows who leads them. Bring me 4, and I will know whom to hunt.", obj:[["loot","raiderbrand",4,"raider",0.45]]},
+  {id:"z36", npc:"kruk", lvl:9, req:["z35"], name:"Sand and Stone", text:"The brands lead to the golems who guard their camp. Break 10 sand golems and the raiders have nothing to hide behind.", obj:[["kill","sandgolem",10]], mult:2, pick:{q:3}},
+  // ---- Undead: Gravelands and Bonefields
+  {id:"z37", npc:"morten", lvl:2, name:"The Sealed Crypt Door", text:"A crypt door that has been sealed for centuries was found standing open. Go to the Sealed Crypt Door and take a look.", obj:[["explore","cryptdoor",1]]},
+  {id:"z38", npc:"hilde", lvl:3, name:"Grave Rats", text:"Grave rats are gnawing at the old coffins. Kill 10 of them.", obj:[["kill","rat",10]]},
+  {id:"z39", npc:"hilde", lvl:4, req:["z38"], name:"Pinch of Gravedust", text:"The shamblers are made of old dust, and a pinch of it is needed for mourning rites. Gather 5.", obj:[["loot","gravedust",5,"shambler",0.5]]},
+  {id:"z40", npc:"knota", lvl:4, req:["z39"], to:"morten", name:"Dust for the Mourner", text:"Take this dust to Morten. He will know what to do with it.", obj:[], mult:0.4},
+  {id:"z41", npc:"morten", lvl:5, req:["z40"], name:"The Plague Wolves", text:"The dust has told me what is behind the opened door: plague wolves, spreading sickness. Kill 8 of them.", obj:[["kill","plaguewolf",8]], mult:1.6, pick:{q:2}},
+  {id:"z42", npc:"ulvar", lvl:6, name:"The Hollow Barrow", text:"A barrow in the Bonefields has been robbed. Go to the Hollow Barrow and see what remains.", obj:[["explore","barrow",1]]},
+  {id:"z43", npc:"ulvar", lvl:7, req:["z42"], name:"Grave Robbers", text:"Grave robbers are stripping the barrows. Stop them: kill 8.", obj:[["kill","robber",8]]},
+  {id:"z44", npc:"ulvar", lvl:8, req:["z43"], name:"Stolen Amulets", text:"The bone guardians have taken the amulets and now wear them. Bring me 4 of them back.", obj:[["loot","boneamulet",4,"boneguard",0.45]]},
+  {id:"z45", npc:"ulvar", lvl:9, req:["z44"], name:"The Plague Bears", text:"The amulets are home, but the plague bears keep digging. Kill 7 of them.", obj:[["kill","plaguebear",7]], mult:2, pick:{q:3}},
+  // ---- Iron Ridge (10-15)
+  {id:"z46", npc:"brenna", lvl:11, name:"The Broken Watchtower", text:"I want eyes on the watchtower in the north of the ridge. It went dark two nights ago. Go to the Broken Watchtower and tell me what you find.", obj:[["explore","watchtower",1]]},
+  {id:"z47", npc:"brenna", lvl:11, req:["z46"], name:"Goblins in the Tower", text:"Goblins have moved into the tower since the guard left it. Kill 8 of them.", obj:[["kill","troll",8]]},
+  {id:"z48", npc:"brenna", lvl:12, req:["z47"], name:"Torn Watch Orders", text:"The Ironclan left the watch orders behind when they took the tower, and their warriors have torn them up. Find 3 pages.", obj:[["loot","ironorders",3,"orcwar",0.3]]},
+  {id:"z49", npc:"brenna", lvl:13, req:["z48"], to:"halvard", name:"Orders for the Commander", text:"The pages say the Ironclan plan to take the tower back. Take them to Halvard at once.", obj:[], mult:0.4},
+  {id:"z50", npc:"halvard", lvl:14, req:["z49"], name:"Hold the Tower", text:"The Ironclan will counter-attack the moment they realize what we know. Kill 12 of their warriors and the tower stays ours.", obj:[["kill","orcwar",12]], mult:2.2, pick:{q:3}},
+  {id:"z51", npc:"arvid", lvl:12, name:"The Miner's Shrine", text:"Miners leave an offering at the shrine on the south side of the ridge before a shift. No offerings have been seen for weeks. Go to the Miner's Shrine.", obj:[["explore","minershrine",1]]},
+  {id:"z52", npc:"arvid", lvl:13, req:["z51"], name:"Stolen Offerings", text:"Goblins have been stealing the offerings left at the shrine. Take 4 of them back.", obj:[["loot","offering",4,"troll",0.5]]},
+  // ---- Mistmarsh (15-20)
+  {id:"z54", npc:"oswin", lvl:16, name:"The Witch's Hut", text:"There is a hut out in the reeds where no one is supposed to live. Smoke rose from it last night. Go and have a look, but be careful.", obj:[["explore","witchhut",1]]},
+  {id:"z55", npc:"oswin", lvl:17, req:["z54"], name:"Shaman Circle", text:"The goblin shamans are working for whoever is in that hut. Kill 6 of them.", obj:[["kill","goblinshaman",6]]},
+  {id:"z56", npc:"oswin", lvl:17, req:["z55"], name:"Hagga's Charms", text:"The shamans carry charms from the witch. Bring me 3 so we can learn who she is.", obj:[["loot","hagcharm",3,"goblinshaman",0.45]]},
+  {id:"z57", npc:"oswin", lvl:18, req:["z56"], to:"sigvard", name:"Charms for the Captain", text:"The charms are from the Drowned Temple. Take them to Captain Sigvard.", obj:[], mult:0.4},
+  {id:"z58", npc:"sigvard", lvl:19, req:["z57"], name:"Wisps of the Deep", text:"The witch and her cultists work by the light of the temple wisps, deep in the Drowned Temple. Go in and put out 8 of them.", obj:[["kill","templebloss",8]], mult:2.2, pick:{q:3}},
+  {id:"z59", npc:"mora", lvl:16, name:"The Sunken Bell", text:"A bell sank in the marsh long ago, and sometimes it is heard at night. I want to know where it lies. Go to the Sunken Bell.", obj:[["explore","sunkenbell",1]]},
+  {id:"z60", npc:"mora", lvl:17, req:["z59"], name:"Bell Fragments", text:"Something has broken the bell. Marsh ghouls carry the pieces. Bring me 5 fragments.", obj:[["loot","bellmetal",5,"ghoul",0.4]]},
+  // ---- Ashfields (20-25)
+  {id:"z62", npc:"kira", lvl:21, name:"The Cinder Obelisk", text:"There is an obelisk east of the watch that glows red at night. I want to know why. Go to the Cinder Obelisk.", obj:[["explore","obelisk",1]]},
+  {id:"z63", npc:"kira", lvl:22, req:["z62"], name:"Obelisk Shards", text:"The gargoyles that guard the obelisk are breaking pieces off it. Bring me 6 shards, and we will learn what it is made of.", obj:[["loot","obeliskshard",6,"gargoyle",0.45]]},
+  {id:"z65", npc:"kira", lvl:23, req:["z63"], to:"runa", name:"Shards for Runa", text:"The shards are forge-stone, from a forge beneath the ashes. Take them to Runa.", obj:[], mult:0.4},
+  {id:"z66", npc:"runa", lvl:24, req:["z65"], name:"Free the Forge Slaves", text:"Whoever runs that forge keeps slaves in the dark. Go into the Ember Forge and put 10 of the forge slaves out of their misery, since they cannot be freed.", obj:[["kill","smedjeorc",10]], mult:2.2, pick:{q:3}},
+  {id:"z67", npc:"siv", lvl:21, name:"The Scorched Bridge", text:"The bridge in the north burned down overnight, and no merchants can get through. Go to the Scorched Bridge and see how bad it is.", obj:[["explore","scorchbridge",1]]},
+  {id:"z68", npc:"siv", lvl:22, req:["z67"], name:"Singed Pelts", text:"Hounds burned the bridge. Their pelts are good for fireproofing, so bring me 5 of them.", obj:[["loot","emberpelt",5,"hound",0.4]]},
+  // ---- Frostcrown (25-30)
+  {id:"z69", npc:"orm", lvl:26, name:"The Frozen Camp", text:"A camp of pilgrims was last seen to the northeast, heading for the vault. Go to the Frozen Camp and see what is left.", obj:[["explore","frozencamp",1]]},
+  {id:"z70", npc:"orm", lvl:27, req:["z69"], name:"Pilgrim's Rings", text:"The ice golems took what the pilgrims had. Bring back 5 rings so we can tell their families.", obj:[["loot","pilgrimring",5,"icegolem",0.4]]},
+  {id:"z71", npc:"orm", lvl:28, req:["z70"], to:"hedda", name:"Rings for Hedda", text:"Hedda should know who is lost. Take the rings to her.", obj:[], mult:0.4},
+  {id:"z72", npc:"hedda", lvl:29, req:["z71"], name:"Silence the Spirits", text:"The pilgrims were headed for the Frost Vault, and the spirits there have been gathering the cold. Go in and silence 8 of them.", obj:[["kill","isande",8]], mult:2.5, pick:{q:4}},
+  {id:"z73", npc:"frode", lvl:26, name:"The Giant's Footprint", text:"There is a footprint in the ice big enough to bathe in. I do not believe it is old. Go to the Giant's Footprint.", obj:[["explore","giantprint",1]]},
+  {id:"z74", npc:"frode", lvl:28, req:["z73"], name:"Rime Tusks", text:"The rime trolls serve the giant. Their tusks sell well, and each one we take weakens him. Bring me 5.", obj:[["loot","rimtusk",5,"rimtroll",0.4]]}
+];
+Object.assign(QITEMS, QITEMS_NEW);
+
 
 // NPCs. hub = where they stand. trains = class trainer. shop/smith/alch = services.
 const NPCS = [];
@@ -1098,6 +1207,7 @@ const NPCS = [];
   add("snostugan", [{id:"gunnar", name:"Gunnar the Trapper", role:"Merchant", color:"#8a7a6a", shop:"basic", race:"dwarf"}]);
   add("kanjonlagret", [{id:"drogg", name:"Drogg the Trader", role:"Merchant", color:"#7a6a3a", shop:"basic", race:"orc"}]);
   add("benvakten", [{id:"vesper", name:"Vesper the Scavenger", role:"Merchant", color:"#6a6a7a", shop:"basic", race:"undead"}]);
+  for(const [hub, n] of NEW_NPCS) add(hub, [n]);
   add("traskvakten", [{id:"sigvard", name:"Sigvard the Witch Hunter", role:"Quest Giver", color:"#4a5a4a", race:"human"},{id:"mora", name:"Old Mora", role:"Merchant", color:"#8a8a6a", shop:true, race:"orc"}]);
   add("askvakten", [{id:"runa", name:"Runa the Warden", role:"Quest Giver", color:"#8a6a9a", race:"elf"},{id:"siv", name:"Quartermaster Siv", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
   add("isporten", [{id:"hedda", name:"Hedda the Icewarden", role:"Quest Giver", color:"#8ab0c8", race:"dwarf"},{id:"frode", name:"Frode the Merchant", role:"Merchant", color:"#c09a40", shop:true, race:"human"}]);
@@ -1214,6 +1324,9 @@ const QUESTS = [
   {id:"f6", npc:"frode", lvl:28, name:"Ice Blooms", text:"Ice blooms (requires Herbalism 140) make the strongest potions. Pick 6.", obj:[["gather","iceflower",6]]},
   {id:"f7", npc:"hedda", lvl:29, req:["f5"], name:"Hrimgar the Ice Giant", text:"Hrimgar sits upon his throne in the heart of Frostcrown. His Glacier Crush is devastating – run out of the circle. Defeat him and save the land.", obj:[["kill","giant",1]], mult:3}
 ];
+QUESTS_NEW.forEach(q=>{ q.n = 1; });   // new quests: gear comes from pick rewards, not the old chain rule
+QUESTS.push(...QUESTS_NEW);
+
 
 // ======================= DUNGEONS (instances) =======================
 // Each dungeon is carved in the area right of the overworld (x >= OW) and reached through an entrance next to a camp.
@@ -1919,7 +2032,7 @@ function qGold(q){ return Math.round((3 + q.lvl*q.lvl*0.5)*(q.mult||1)); }
 const qTurnInNpc = q => q.to || q.npc;
 function qProg(q, i){ const o = q.obj[i]; if(o[0]==="gather") return Math.min(S.bag[o[1]]||0, o[2]); if(o[0]==="collect"||o[0]==="loot") return Math.min(S.qbag[o[1]]||0, o[2]); return Math.min(S.quests[q.id].prog[i]||0, o[2]); }
 function qReady(q){ const s = S.quests[q.id]; return !!s && s.state==="active" && q.obj.every((o,i)=>qProg(q,i)>=o[2]); }
-function objName(o){ return o[0]==="kill" ? MOBS[o[1]].name : o[0]==="gather" ? ITEMS[o[1]].name : QITEMS[o[1]].name; }
+function objName(o){ if(o[0]==="explore") return "Find " + EXPLORE[o[1]].name; return o[0]==="kill" ? MOBS[o[1]].name : o[0]==="gather" ? ITEMS[o[1]].name : QITEMS[o[1]].name; }
 function needsQItem(item){ return QUESTS.some(q=>{ const s = S.quests[q.id]; return s && s.state==="active" && q.obj.some(o=>(o[0]==="collect"||o[0]==="loot") && o[1]===item && (S.qbag[item]||0) < o[2]); }); }
 function questProgressLog(item){ for(const q of QUESTS){ const s = S.quests[q.id]; if(!s || s.state!=="active") continue; q.obj.forEach((o,i)=>{ if(o[1]===item && (o[0]==="collect"||o[0]==="loot")) log(`${q.name}: ${QITEMS[item].name} ${qProg(q,i)}/${o[2]}`, "#e6bd5c"); }); if(qReady(q)) log(`${q.name} is complete – turn it in to ${npcName(qTurnInNpc(q))}.`, "#7be08a"); } }
 const npcName = id => (NPCS.find(n=>n.id===id)||{}).name || id;
@@ -1932,6 +2045,22 @@ function questKill(type){
     }); }
   refreshTracker();
 }
+let exploreReady = false, exploreT = 0;
+function initExplore(){ if(exploreReady) return; exploreReady = true;
+  for(const [id, qq] of [["m3",3],["t3",3],["g3",3],["v3",4]]){ const q = QUESTS.find(x=>x.id===id); if(q && !q.pick){ q.pick = {q:qq}; q.mult = (q.mult||1)*1.6; } }   // the dungeon boss quests now let you choose your gear
+  for(const sp of Object.values(EXPLORE)){ let best = null;
+    for(let r=0; r<=14 && !best; r++) for(let dy=-r; dy<=r && !best; dy++) for(let dx=-r; dx<=r; dx++){ if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const tx = sp.x+dx, ty = sp.y+dy;
+      if(tx>1 && ty>1 && tx<OW-1 && ty<MH-1 && !solidAt(tx,ty) && !solidAt(tx+1,ty) && !solidAt(tx-1,ty) && !solidAt(tx,ty+1) && !solidAt(tx,ty-1)){ best = [tx,ty]; break; } }
+    best = best || [sp.x, sp.y]; sp.tx = best[0]; sp.ty = best[1]; sp.px = sp.tx*TILE+16; sp.py = sp.ty*TILE+16; deco.push({k:"sign", x:sp.px, y:sp.py}); } }
+function questExplore(dt){ exploreT -= dt; if(exploreT > 0 || P.dead || P.inDungeon) return; exploreT = 0.4;
+  for(const q of QUESTS){ const s = S.quests[q.id]; if(!s || s.state !== "active") continue;
+    q.obj.forEach((o,i)=>{ if(o[0] !== "explore" || s.prog[i] >= o[2]) return; const sp = EXPLORE[o[1]]; if(sp.px == null || Math.hypot(P.x-sp.px, P.y-sp.py) > 5*TILE) return;
+      s.prog[i] = o[2]; snd("qaccept"); showBanner(sp.name[0].toUpperCase() + sp.name.slice(1), "Location discovered", 3); log(`${q.name}: you found ${sp.name}.`, "#e6bd5c");
+      if(qReady(q)) log(`${q.name} is complete – turn it in to ${npcName(qTurnInNpc(q))}.`, "#7be08a"); refreshTracker(); }); } }
+// a reward you choose: three pieces of gear for your class
+function questPickItems(q){ const slots = Object.keys(SLOTS).sort(()=>Math.random()-0.5).slice(0, 3); return slots.map(sl=>makeGear({slot:sl, cls:S.cls, q:q.pick.q, il:q.lvl + 1})); }
+function pickHTML(){ const p = S.pick; if(!p) return `<h2>Reward</h2><div class="muted">There is nothing to choose right now.</div>`; const q = qById(p.qid);
+  return `<h2>Choose your reward</h2><div class="muted">${esc(q.name)} – take one of these:</div><div class="list">${p.items.map((it,i)=>`<div class="item"><div style="flex:1">${gearDesc(it, true)}</div><button class="btn pri" data-act="takepick" data-i="${i}">Take</button></div>`).join("")}</div>`; }
 function turnIn(id){
   const q = qById(id); if(!qReady(q)) return;
   q.obj.forEach(o=>{ if(o[0]==="gather") removeItem(o[1], o[2]); if(o[0]==="collect"||o[0]==="loot"){ S.qbag[o[1]] -= o[2]; if(S.qbag[o[1]]<=0) delete S.qbag[o[1]]; } });
@@ -1939,6 +2068,7 @@ function turnIn(id){
   S.quests[id].state = "done"; S.gold += gold; snd("qdone");
   if(q.items) for(const [k,n] of Object.entries(q.items)) addItem(k, n);
   const qg = questGear(q); if(qg) gainGear(qg, "Quest reward");
+  if(q.pick){ S.pick = {qid:id, items:questPickItems(q)}; setTimeout(()=>openPanel("pick"), 500); }
   log(`Quest complete: ${q.name}. +${gold} gold.`, "#7be08a");
   gainXP(xp); refreshTracker(); save(true);
   if(id==="f7") showBanner("Hero of Rimfrost", `${S.name} has defeated the Ice Giant!`, 6);
@@ -1951,6 +2081,7 @@ function questSpot(q){
   if(!o) return null;
   const dgt = o[0]==="kill" ? MOBS[o[1]].dg : o[0]==="loot" ? MOBS[o[3]].dg : null;
   if(dgt && !(P && P.inDungeon===dgt)) return {x:DUNGEONS[dgt].ent.x, y:DUNGEONS[dgt].ent.y};
+  if(o[0]==="explore"){ const sp = EXPLORE[o[1]]; return sp.tx != null ? {x:sp.tx, y:sp.ty} : null; }
   if(o[0]==="kill") return avg(mobs.filter(m=>m.type===o[1]).map(m=>({x:m.hx,y:m.hy})));
   if(o[0]==="loot") return avg(mobs.filter(m=>m.type===o[3]).map(m=>({x:m.hx,y:m.hy})));
   if(o[0]==="collect") return avg(qobjs.filter(n=>n.qitem===o[1]));
@@ -2007,7 +2138,7 @@ function update(dt){
 
 function updPlayer(dt){
   P.hurt = Math.max(0, (P.hurt||0)-dt); P.swing = Math.max(0, (P.swing||0)-dt); if(P.act) P.act.t += dt;
-  dgUpdate(dt);
+  dgUpdate(dt); questExplore(dt);
   if(panelKind==="npc" && panelArg){ const np = npcs.find(x=>x.id===panelArg) || (dobjs.find(o=>o.kind==="entrance" && DUNGEONS[o.dgEnt] && DUNGEONS[o.dgEnt].keeper.id===panelArg)); if(np && dist(P,np) > 170) closePanel(); }
   if(P.dead){ if(P.ghost) updGhost(dt); return; }
   P.gcd = Math.max(0, P.gcd-dt); P.potCd = Math.max(0, P.potCd-dt);
@@ -2319,7 +2450,7 @@ function mobGearDrop(m){
   if(src==="boss" && Math.random() < 0.5) gainGear(makeGear({q:rollQuality("elite"), il:m.lvl, cls:S.cls}), "Loot");
 }
 // quest rewards: every third quest and every chain's last quest give gear
-function questGearQ(q){ const num = +q.id.replace(/\D/g,""); const last = !QUESTS.some(o=>o.id[0]===q.id[0] && +o.id.replace(/\D/g,"") > num); return last ? 3 : num % 3 === 0 ? 2 : -1; }
+function questGearQ(q){ if(q.n || q.pick) return -1; const num = +q.id.replace(/\D/g,""); const last = !QUESTS.some(o=>o.id[0]===q.id[0] && +o.id.replace(/\D/g,"") > num); return last ? 3 : num % 3 === 0 ? 2 : -1; }
 function questGear(q){ const qq = questGearQ(q); if(qq < 0) return null; return makeGear({q:qq, il:q.lvl + 1, cls:S.cls}); }
 
 // vendor stock: stable per vendor, class and level band
@@ -3621,6 +3752,7 @@ function menuHTML(){
   return `<h2>Menu</h2><div class="menu-grid">
     <button class="btn pri" data-act="close">Continue Playing</button>
     <button class="btn" data-act="open" data-k="spells">Spellbook <span class="muted">${keyName(KB.spells)}</span></button>
+    ${S.pick ? `<button class="btn glowb" data-act="open" data-k="pick">Choose your reward</button>` : ""}
     <button class="btn" data-act="open" data-k="settings">Display and controls</button>
     ${isTouch ? "" : `<button class="btn" data-act="open" data-k="keys">Keybindings</button><button class="btn ${coopOn()?"glowb":""}" data-act="open" data-k="coop">Co-op${coopOn()?` · ${Object.keys(COOP.remotes).length+1} players`:""}</button>`}
     <button class="btn" data-act="open" data-k="char">Character <span class="muted">${keyName(KB.char)}</span></button>
@@ -4136,6 +4268,7 @@ function renderPanel(){
   if(panelKind==="menu") h += menuHTML();
   else if(panelKind==="keys") h += keysHTML();
   else if(panelKind==="settings") h += settingsHTML();
+  else if(panelKind==="pick") h += pickHTML();
   else if(panelKind==="spells") h += spellsHTML();
   else if(panelKind==="craft") h += craftHTML();
   el.innerHTML = h;
@@ -4148,6 +4281,7 @@ $("panel").addEventListener("change", e=>{ const uk = e.target.dataset && e.targ
 $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
+  if(a==="takepick"){ const p = S.pick; if(!p) return; const it = p.items[+b.dataset.i]; if(!it) return; if(gainGear(it, "Quest reward") === false) return; S.pick = null; closePanel(); save(true); return; }
   if(a==="uireset"){ UI = {...UI_DEF}; saveUI(); applyUI(); renderPanel(); return; }
   if(a==="uijoy"){ UI.joySide = k; saveUI(); applyUI(); renderPanel(); return; }
   if(a==="mtab"){ merchTab = k; renderPanel(); return; }
@@ -4270,7 +4404,7 @@ function startGame(sv, fresh){
   if(sv.dgs && DUNGEONS[sv.dgs.id] && sv.dgs.snap && sv.dgs.snap.v === 2){ const D = DUNGEONS[sv.dgs.id]; resetDungeon(D, sv.dgs.seed, sv.dgs.snap.players); dgApply(D, sv.dgs.snap); DSTATE[D.id].keep = true; }   // dungeon progress survives a refresh
   if(!sv.v || sv.v < 3){ S.quests = {}; S.qbag = {}; S.x = S.y = null; }
   if(!sv.ws){ if(S.x) S.x *= 2; if(S.y) S.y *= 2; if(S.death){ S.death.x *= 2; S.death.y *= 2; } }   // the world became twice as big
-  S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; retireOldGear();
+  S.qbag = S.qbag || {}; S.gear = Array.isArray(S.gear) ? S.gear : []; S.eq = S.eq || {}; retireOldGear(); S.pick = sv.pick || null; initExplore(); if(S.pick) setTimeout(()=>openPanel("pick"), 1500);
   const home = HUBS[RACE_HUB[S.race]];
   P = {x:home.x*TILE+16, y:(home.y+2)*TILE+16, r:11, hp:1, maxHp:0, mana:0, maxMana:0, rage:0, focus:100, energy:100, cp:0, form:null, target:null, casting:null,
     gcd:0, cds:{}, buffs:{}, hots:[], shield:0, shieldT:0, autoT:0, combatT:0, potCd:0, fx:1, moving:false, dash:null, leap:null, dead:false};
@@ -4360,7 +4494,7 @@ $("mmwrap").addEventListener("click", e=>{ e.stopPropagation(); if(!running) ret
 // Up to 5 characters, kept in this browser and (on claude.ai) in your account.
 const LS_KEY = "rimfrost-save-v1", LS_CHARS = "rimfrost-chars-v1";
 let cloud = null, cloudBusy = false, cloudDirty = false, lastCloud = 0, saveT = 0;
-function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, ws:2, dgs:dgSaveNow(), hp:P?Math.round(P.hp):null, mana:P?Math.round(P.mana):null}; }
+function serialize(){ return {v:3, id:S.id, qbag:S.qbag, name:S.name, race:S.race, cls:S.cls, level:S.level, xp:S.xp, gold:S.gold, weapon:S.weapon, bag:S.bag, gear:S.gear||[], eq:S.eq||{}, bars:S.bars||null, skills:S.skills, talents:S.talents, quests:S.quests, learned:S.learned, x:P?(P.inDungeon?DUNGEONS[P.inDungeon].ent.x*TILE+16:Math.round(P.x)):null, y:P?(P.inDungeon?(DUNGEONS[P.inDungeon].ent.y+1)*TILE+16:Math.round(P.y)):null, t:Date.now(), death:S.death||null, petType:S.petType||null, pick:S.pick||null, ws:2, dgs:dgSaveNow(), hp:P?Math.round(P.hp):null, mana:P?Math.round(P.mana):null}; }
 function dgSaveNow(){ try{ for(const D of Object.values(DUNGEONS)){ const st = DSTATE[D.id]; if(st && !st.done && ((P && P.inDungeon===D.id) || st.keep)) return {id:D.id, seed:D.seed, snap:dgSnap(D)}; } }catch(_){ } return null; }
 function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}

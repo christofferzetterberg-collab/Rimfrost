@@ -3,6 +3,15 @@
 
 Newest version first.
 
+## v0.12.0 – 2026-10-25
+### Added
+- **71 new quests** across all zones, from level 1 to level 29, including story chains with several steps (talk, deliver, return), and quests where you have to find a place out in the world. Places to find are marked by a signpost, and the quest log shows where to go.
+- **Choose your reward.** The last quest of each chain gives a bigger reward and lets you choose one of three gear pieces for your class. If you close the window before choosing, a "Choose your reward" button waits in the menu.
+- **Three new quest givers:** Oswin the Marsh Guide in Marshwatch, Scout Kira in Ashwatch and Veteran Orm in Icegate.
+
+### Changed
+- **The four dungeon boss quests** (the Bull from the Deep, the Sunken Prophet, the Fire Tyrant and the Ice Queen) now give a bigger reward and let you choose your gear.
+
 ## v0.11.0 – 2026-10-25
 ### Added
 - **Display and controls settings** in the menu. Change the zoom (on phones and on PC), and on phones the size of the joystick and the buttons, which side the joystick is on, and which buttons are shown. Your choices are saved, and there is a reset button.
