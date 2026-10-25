@@ -3,6 +3,14 @@
 
 Newest version first.
 
+## v0.13.0 – 2026-10-25
+### Added
+- **Move the controls on phones.** Open the menu, then Display and controls, then "Move the controls", and drag the joystick, the Hit, Interact and Target buttons, the pet button and both skill bars to wherever you want them. Your layout is saved, and "Reset layout" puts everything back.
+- **Skill bar size** slider in Display and controls.
+
+### Fixed
+- **The pet button on phones** is no longer hidden behind the skill bars. It now has its own spot above the Hit button, and you can move it.
+
 ## v0.12.0 – 2026-10-25
 ### Added
 - **71 new quests** across all zones, from level 1 to level 29, including story chains with several steps (talk, deliver, return), and quests where you have to find a place out in the world. Places to find are marked by a signpost, and the quest log shows where to go.

@@ -271,6 +271,15 @@ body.touch.joy-right #atkbtn{right:auto;left:max(12px,env(safe-area-inset-left,0
 body.touch.joy-right #tabbtn{right:auto;left:max(88px,calc(env(safe-area-inset-left,0px) + 88px));transform-origin:left bottom}
 body.touch.joy-right #interact{right:auto;left:max(152px,calc(env(safe-area-inset-left,0px) + 152px));transform-origin:left bottom}
 body.no-atk #atkbtn,body.no-int #interact,body.no-tab #tabbtn{display:none!important}
+body.touch #petbar{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(var(--hb) + 96px + env(safe-area-inset-bottom,0px));z-index:7}
+body.touch.joy-right #petbar{right:auto;left:max(12px,env(safe-area-inset-left,0px))}
+body.touch #petbar button{height:42px;padding:0 16px;font-size:14px}
+body.touch #hotbar,body.touch #hotbar2{transform:scale(var(--bar,1));transform-origin:right bottom}
+#uiedit{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:8px;align-items:center;background:rgba(10,14,17,.92);border:1px solid #ffd36b;border-radius:10px;padding:8px 12px;color:#ffd36b;font:600 13px system-ui,sans-serif}
+body.edit-ui [data-uil]{outline:2px dashed #ffd36b!important;touch-action:none;user-select:none}
+body.edit-ui [data-uil]::after{content:attr(data-uil);position:absolute;top:-17px;left:0;font:700 10px system-ui,sans-serif;color:#ffd36b;background:rgba(0,0,0,.75);padding:1px 5px;border-radius:3px;white-space:nowrap;pointer-events:none}
+body.edit-ui #joy,body.edit-ui #atkbtn,body.edit-ui #interact,body.edit-ui #tabbtn{display:block!important}
+body.edit-ui #petbar,body.edit-ui #hotbar2{display:flex!important;min-width:90px;min-height:42px}
 #pframe{pointer-events:auto;cursor:pointer}
 .frame.selself{border-color:#7fc4ff;box-shadow:0 0 0 1px #7fc4ff}
 body.touch.pnl #joy, body.touch.pnl #atkbtn, body.touch.pnl #tabbtn, body.touch.pnl #interact, body.touch.pnl #bottom{display:none}
@@ -303,6 +312,7 @@ body.touch .panel{padding:12px 13px}
   <div id="tracker"></div>
 </div>
 
+<div id="uiedit" hidden><span>Drag the controls where you want them</span><button class="btn pri" id="uidone" type="button">Done</button><button class="btn" id="uiresetpos" type="button">Reset layout</button></div>
 <div class="hud" id="chat" hidden><div id="chatlog"></div><input id="chatin" type="text" maxlength="200" placeholder="Message" autocomplete="off" hidden></div>
 <div class="hud" id="log"></div>
 <div class="hud" id="banner"></div>
@@ -379,7 +389,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.12.0";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.13.0";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -3005,11 +3015,19 @@ function drawCorpse(c, p){
 // ======================= RENDER =======================
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
 // display and control settings (saved in the browser)
-const UI_DEF = {zoom:null, joy:1, btn:1, joySide:"left", showAtk:true, showInteract:true, showTab:true};
-let UI = {...UI_DEF}; try{ Object.assign(UI, JSON.parse(localStorage.getItem("rimfrost_ui")||"{}")); }catch(e){}
+const UI_DEF = {zoom:null, joy:1, btn:1, bar:1, joySide:"left", showAtk:true, showInteract:true, showTab:true};
+let UI = {...UI_DEF, pos:{}}; try{ Object.assign(UI, JSON.parse(localStorage.getItem("rimfrost_ui")||"{}")); }catch(e){}
 function saveUI(){ try{ localStorage.setItem("rimfrost_ui", JSON.stringify(UI)); }catch(e){} }
 function applyUI(){ const b = document.body; b.style.setProperty("--joy", UI.joy); b.style.setProperty("--btn", UI.btn); b.classList.toggle("joy-right", UI.joySide==="right");
-  b.classList.toggle("no-atk", !UI.showAtk); b.classList.toggle("no-int", !UI.showInteract); b.classList.toggle("no-tab", !UI.showTab); resize(); }
+  b.style.setProperty("--bar", UI.bar); b.classList.toggle("no-atk", !UI.showAtk); b.classList.toggle("no-int", !UI.showInteract); b.classList.toggle("no-tab", !UI.showTab); if(!UI.pos) UI.pos = {}; applyPositions(); resize(); }
+// every control can be moved: positions are saved as a share of the screen so they survive turning the phone
+const UI_ELS = {joy:"Joystick", atkbtn:"Hit", interact:"Interact", tabbtn:"Target", petbar:"Pet button", hotbar:"Skill bar", hotbar2:"Second skill bar"};
+function applyPositions(){ const touch = document.body.classList.contains("touch"), Z = touch ? 0.8 : 1;
+  for(const id of Object.keys(UI_ELS)){ const el = document.getElementById(id); if(!el) continue; el.dataset.uil = UI_ELS[id];
+    const p = touch && UI.pos ? UI.pos[id] : null, sc = id==="joy" ? "var(--joy,1)" : (id==="hotbar" || id==="hotbar2" || id==="petbar") ? "var(--bar,1)" : "var(--btn,1)";
+    if(p){ el.style.position = "fixed"; el.style.zIndex = "7"; el.style.left = (p.x*innerWidth/Z) + "px"; el.style.top = (p.y*innerHeight/Z) + "px"; el.style.right = "auto"; el.style.bottom = "auto"; el.style.transformOrigin = "center"; el.style.transform = `translate(-50%,-50%) scale(${sc})`; }
+    else for(const k of ["position","zIndex","left","top","right","bottom","transform","transformOrigin"]) el.style[k] = ""; } }
+addEventListener("resize", ()=>{ if(typeof applyPositions === "function") applyPositions(); });
 let W = 0, H = 0, DPR = 1, ZOOM = 1; const cam = {x:0, y:0};
 function resize(){ DPR = Math.min(2, window.devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; ZOOM = UI.zoom != null ? UI.zoom : matchMedia("(pointer:coarse)").matches ? 1 : (W < 700 ? 0.8 : 1) * 1.5; }   // desktop: 1.5 = 50 % closer than before; phones keep 1.0 unless you change it
 addEventListener("resize", resize);
@@ -3770,11 +3788,12 @@ function menuHTML(){
 function settingsHTML(){
   const z = UI.zoom != null ? UI.zoom : (isTouch ? 1 : 1.5), row = (label, key, min, max, val)=>`<label class="item" style="display:flex;gap:10px;align-items:center"><span style="min-width:140px">${label}</span><input type="range" data-ui="${key}" min="${min}" max="${max}" step="0.1" value="${val}" style="flex:1;accent-color:var(--frost)"><span class="muted" data-uv="${key}" style="min-width:36px;text-align:right">${(+val).toFixed(1)}×</span></label>`;
   let h = `<h2>Display and controls</h2><div class="list">${row("Zoom", "zoom", 0.7, 2, z)}</div>`;
-  if(isTouch) h += `<h3>Touch controls</h3><div class="list">${row("Joystick size", "joy", 0.7, 1.6, UI.joy)}${row("Button size", "btn", 0.7, 1.6, UI.btn)}
+  if(isTouch) h += `<h3>Touch controls</h3><div class="list">${row("Joystick size", "joy", 0.7, 1.6, UI.joy)}${row("Button size", "btn", 0.7, 1.6, UI.btn)}${row("Skill bar size", "bar", 0.7, 1.4, UI.bar)}
     <div class="item" style="display:flex;gap:10px;align-items:center"><span style="min-width:140px">Joystick side</span><button class="btn ${UI.joySide==="left"?"pri":""}" data-act="uijoy" data-k="left">Left</button><button class="btn ${UI.joySide==="right"?"pri":""}" data-act="uijoy" data-k="right">Right</button></div>
     <label class="item"><input type="checkbox" data-ui="showAtk" ${UI.showAtk?"checked":""}> Show the attack button</label>
     <label class="item"><input type="checkbox" data-ui="showInteract" ${UI.showInteract?"checked":""}> Show the interact button</label>
-    <label class="item"><input type="checkbox" data-ui="showTab" ${UI.showTab?"checked":""}> Show the target button</label></div>`;
+    <label class="item"><input type="checkbox" data-ui="showTab" ${UI.showTab?"checked":""}> Show the target button</label></div>
+    <div class="row" style="margin-top:10px"><button class="btn pri" data-act="uiedit">Move the controls</button></div><div class="muted" style="margin-top:4px">Drag the joystick, the buttons, the pet button and the skill bars to where you want them.</div>`;
   return h + `<div class="row" style="margin-top:10px"><button class="btn" data-act="uireset">Reset to defaults</button></div>`; }
 function keysHTML(){
   let h = `<h2>Keybindings</h2><div class="muted">Click a key to change it, then press the new key. Esc cancels. The arrow keys can always be used to move.</div>`;
@@ -4282,7 +4301,8 @@ $("panel").addEventListener("click", e=>{
   const b = e.target.closest("[data-act]"); if(!b || b.disabled) return; const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k;
   if(a==="close") return closePanel();
   if(a==="takepick"){ const p = S.pick; if(!p) return; const it = p.items[+b.dataset.i]; if(!it) return; if(gainGear(it, "Quest reward") === false) return; S.pick = null; closePanel(); save(true); return; }
-  if(a==="uireset"){ UI = {...UI_DEF}; saveUI(); applyUI(); renderPanel(); return; }
+  if(a==="uireset"){ UI = {...UI_DEF, pos:{}}; saveUI(); applyUI(); renderPanel(); return; }
+  if(a==="uiedit"){ closePanel(); document.body.classList.add("edit-ui"); $("uiedit").hidden = false; return; }
   if(a==="uijoy"){ UI.joySide = k; saveUI(); applyUI(); renderPanel(); return; }
   if(a==="mtab"){ merchTab = k; renderPanel(); return; }
   if(a==="mapzoom"){ if(k==="in") mapZoom(1.4); else if(k==="out") mapZoom(1/1.4); else if(k==="me"){ MAPV.cx = P.x/TILE; MAPV.cy = P.y/TILE; mapRedraw(); } else if(k==="all"){ MAPV.z = 1; MAPV.cx = OW/2; MAPV.cy = MH/2; mapRedraw(); } return; }
@@ -4484,6 +4504,13 @@ if(isTouch){ document.body.classList.add("touch"); $("side").appendChild($("menu
   const end = e=>{ if(e.pointerId!==id) return; id = null; joy.x = joy.y = 0; k.style.transform = ""; };
   j.addEventListener("pointerup", end); j.addEventListener("pointercancel", end);
 })();
+let uiDrag = null; const uiEditOn = ()=>document.body.classList.contains("edit-ui"), uiTarget = t=>t && t.closest ? t.closest("#joy,#atkbtn,#interact,#tabbtn,#petbar,#hotbar,#hotbar2") : null;
+document.addEventListener("pointerdown", e=>{ if(!uiEditOn()) return; const el = uiTarget(e.target); if(!el) return; e.preventDefault(); e.stopPropagation(); const r = el.getBoundingClientRect(); uiDrag = {id:el.id, dx:e.clientX-(r.left+r.width/2), dy:e.clientY-(r.top+r.height/2)}; }, true);
+document.addEventListener("pointermove", e=>{ if(!uiDrag) return; e.preventDefault(); UI.pos[uiDrag.id] = {x:+clamp((e.clientX-uiDrag.dx)/innerWidth, 0.04, 0.96).toFixed(4), y:+clamp((e.clientY-uiDrag.dy)/innerHeight, 0.05, 0.95).toFixed(4)}; applyPositions(); }, {passive:false});
+const uiDragEnd = ()=>{ if(uiDrag){ uiDrag = null; saveUI(); } }; document.addEventListener("pointerup", uiDragEnd); document.addEventListener("pointercancel", uiDragEnd);
+for(const ev of ["click","mousedown","touchstart"]) document.addEventListener(ev, e=>{ if(uiEditOn() && uiTarget(e.target)){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); } }, true);
+$("uidone").addEventListener("click", ()=>{ document.body.classList.remove("edit-ui"); $("uiedit").hidden = true; saveUI(); });
+$("uiresetpos").addEventListener("click", ()=>{ UI.pos = {}; saveUI(); applyPositions(); });
 $("interact").addEventListener("click", interact);
 $("tabbtn").addEventListener("click", cycleTarget);
 $("atkbtn").addEventListener("click", ()=>startAttack());
