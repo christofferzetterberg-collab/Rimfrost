@@ -3,7 +3,7 @@
 
 Newest version first.
 
-## v0.11.0 – 2026-10-23
+## v0.11.0 – 2026-10-25
 ### Added
 - **Display and controls settings** in the menu. Change the zoom (on phones and on PC), and on phones the size of the joystick and the buttons, which side the joystick is on, and which buttons are shown. Your choices are saved, and there is a reset button.
 - **Click pets on the field** to select them, your own pet or a friend's, just like clicking a player. A selected pet gets a ring around it.
@@ -12,7 +12,7 @@ Newest version first.
 ### Changed
 - **Phones are no longer too zoomed in.** The extra zoom from the last update now only applies on PC. You can still change it in the settings.
 
-## v0.10.0 – 2026-10-23
+## v0.10.0 – 2026-10-24
 ### Added
 - **All four dungeons are rebuilt from scratch.** The Iron Mine, the Drowned Temple, the Ember Forge and the Frost Vault each have their own layout, with branching rooms instead of one long corridor, and their own mix of puzzles and dangers.
   - **Keys and locked doors:** find a key in an old chest, often guarded by a miniboss, and use it on a locked door.
