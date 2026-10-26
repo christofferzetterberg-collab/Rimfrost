@@ -389,7 +389,7 @@ const CLASSES = {
   paladin:{name:"Paladin", color:"#e0c050", res:"mana", hp:1.15, armor:0.88}
 };
 // Balance: damage multiplier per class (applies to direct hits and damage-over-time). 1 = unchanged. Tune these after running the dev balance test.
-const GAME_VERSION = "0.13.0";   // keep in sync with RELEASE_NOTES.md
+const GAME_VERSION = "0.15.1";   // keep in sync with RELEASE_NOTES.md
 // the character select screen shows the three newest sections of RELEASE_NOTES.md (it must be pushed together with index.html)
 function loadReleaseNotes(box){
   fetch("RELEASE_NOTES.md", {cache:"no-store"}).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
@@ -1616,8 +1616,10 @@ function spawnAll(){
   const used = new Set();
   const free = (x,y,t) => !used.has(y*MW+x) && !(t===T_PATH && R()<0.7) && !nearHub(x,y,5) && !(y>=CRYPT.y0-1 && y<=CRYPT.y1+1 && x>=CRYPT.x0-1 && x<=CRYPT.x1+1);
   const mark = p => { for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++) used.add((p.y+oy)*MW+p.x+ox); };
-  for(const [type, count, zone, opt] of SPAWNS){
-    const d = MOBS[type];
+  // the world is 4x bigger than the first version, so the big end zones need more monsters to feel alive (elite types grow slower)
+  const ZONE_MOB_MULT = {dimma:1.9, aska:2.9, frost:2.2, rod:1.3, jarn:1.2, gravmark:1.2, benfalt:1.2};
+  for(const [type, count0, zone, opt] of SPAWNS){
+    const d = MOBS[type], zm = ZONE_MOB_MULT[zone] || 1, count = Math.round(count0 * (d.elite ? Math.min(zm, 1.5) : zm));
     for(let i=0;i<count;i++){
       const p = pickTile((x,y,z,t)=>{ if(z!==zone || !free(x,y,t)) return false;
         if(opt && opt.near){ const l = LAIRS[opt.near]; if(Math.hypot(x-l.x,y-l.y) > opt.r) return false; }
@@ -2061,7 +2063,7 @@ function initExplore(){ if(exploreReady) return; exploreReady = true;
   for(const sp of Object.values(EXPLORE)){ let best = null;
     for(let r=0; r<=14 && !best; r++) for(let dy=-r; dy<=r && !best; dy++) for(let dx=-r; dx<=r; dx++){ if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const tx = sp.x+dx, ty = sp.y+dy;
       if(tx>1 && ty>1 && tx<OW-1 && ty<MH-1 && !solidAt(tx,ty) && !solidAt(tx+1,ty) && !solidAt(tx-1,ty) && !solidAt(tx,ty+1) && !solidAt(tx,ty-1)){ best = [tx,ty]; break; } }
-    best = best || [sp.x, sp.y]; sp.tx = best[0]; sp.ty = best[1]; sp.px = sp.tx*TILE+16; sp.py = sp.ty*TILE+16; deco.push({k:"sign", x:sp.px, y:sp.py}); } }
+    best = best || [sp.x, sp.y]; sp.tx = best[0]; sp.ty = best[1]; sp.px = sp.tx*TILE+16; sp.py = sp.ty*TILE+16; deco.push({k:"sign", text:sp.name[0].toUpperCase() + sp.name.slice(1), x:sp.px, y:sp.py}); } }
 function questExplore(dt){ exploreT -= dt; if(exploreT > 0 || P.dead || P.inDungeon) return; exploreT = 0.4;
   for(const q of QUESTS){ const s = S.quests[q.id]; if(!s || s.state !== "active") continue;
     q.obj.forEach((o,i)=>{ if(o[0] !== "explore" || s.prog[i] >= o[2]) return; const sp = EXPLORE[o[1]]; if(sp.px == null || Math.hypot(P.x-sp.px, P.y-sp.py) > 5*TILE) return;
@@ -4417,7 +4419,7 @@ function startGame(sv, fresh){
   if(!Array.isArray(sv.learned)) S.learned = allBarIds().filter(id=>AB[id].lvl<=S.level && AB[id].lvl<=16);
   S.learned = S.learned.filter(id=>AB[id]); ensureBars();
   if(S.cls==="druid" && !S.learned.includes("touch")){ S.learned.push("touch"); autoPlace("touch"); }
-  if(!worldBuilt){ spawnAll(); worldBuilt = true; }
+  if(!worldBuilt){ spawnAll(); loadWorld(); worldBuilt = true; }
   else { const el = Math.max(0, (Date.now() - worldLeftAt)/1000);   // same world as before: dead monsters and picked nodes keep their respawn timers, which also ran while you were away
     for(const m of mobs){ if(m.def.dg) continue; if(m.dead){ m.respawn -= el; if(m.respawn <= 0) respawnMob(m); } else if(m.state !== "idle" || m.hp < m.maxHp) respawnMob(m); }
     for(const n of nodes.concat(qobjs)) if(!n.active){ n.respawn -= el; if(n.respawn <= 0) n.active = true; } }
@@ -4465,6 +4467,11 @@ addEventListener("keydown", e=>{
 });
 addEventListener("keyup", e=>{ const d = moveDir(e.key.toLowerCase()); if(d) keys.delete(d); });
 addEventListener("blur", ()=>keys.clear());
+// a context menu, a lost focus or a hidden tab swallows the key-up, which left the character running on its own
+addEventListener("contextmenu", ()=>keys.clear(), true);
+addEventListener("pointerdown", e=>{ if(e.button === 2) keys.clear(); }, true);
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) keys.clear(); });
+addEventListener("pagehide", ()=>keys.clear());
 $("menu").addEventListener("click", e=>{ const b = e.target.closest("[data-p]"); if(b) openPanel(b.dataset.p); });
 $("revive").addEventListener("click", releaseSpirit);
 // start auto attack on the current target (right-click, T or the touch button)
@@ -4527,8 +4534,18 @@ function storeChars(important){
   try{ localStorage.setItem(LS_CHARS, JSON.stringify(chars)); }catch(_){}
   if(cloud && (important || Date.now()-lastCloud > 30000)) pushCloud();
 }
+// killed monsters and picked nodes keep their respawn timers through a page refresh (saved in this browser; every character shares the same world)
+function saveWorld(){ if(!running || !mobs.length || (coopOn() && COOP.role === "guest")) return; /* a guest only sees the host's world */ try{ const ow = mobs.filter(m=>!m.def.dg);
+  localStorage.setItem("rimfrost-world", JSON.stringify({v:1, t:Date.now(), n:ow.length, nn:nodes.length, nq:qobjs.length,
+    m:ow.map((m,i)=>m.dead ? [i, Math.round(m.respawn)] : null).filter(Boolean), nd:nodes.map((n,i)=>n.active ? null : [i, Math.round(n.respawn)]).filter(Boolean), q:qobjs.map((n,i)=>n.active ? null : [i, Math.round(n.respawn)]).filter(Boolean)})); }catch(e){} }
+function loadWorld(){ try{ const w = JSON.parse(localStorage.getItem("rimfrost-world") || "null"), ow = mobs.filter(m=>!m.def.dg);
+  if(!w || w.v !== 1 || w.n !== ow.length || w.nn !== nodes.length || w.nq !== qobjs.length) return; const el = Math.max(0, (Date.now() - w.t)/1000);   // the time you were away counts too
+  for(const [i, rem] of w.m){ const m = ow[i], r = rem - el; if(m && r > 0){ m.dead = true; m.hp = 0; m.respawn = r; } }
+  for(const [i, rem] of w.nd){ const n = nodes[i], r = rem - el; if(n && r > 0){ n.active = false; n.respawn = r; } }
+  for(const [i, rem] of w.q){ const n = qobjs[i], r = rem - el; if(n && r > 0){ n.active = false; n.respawn = r; } } }catch(e){} }
+setInterval(saveWorld, 10000);
 function save(important){
-  if(!S || !running) return;
+  if(!S || !running) return; saveWorld();
   const data = serialize(); localSave = data;
   const i = chars.findIndex(c=>c.id===data.id); if(i>=0) chars[i] = data; else chars.push(data);
   storeChars(important);
@@ -4880,7 +4897,7 @@ function dgApply(D, s){ if(!s || s.v !== 2) return;
   (s.prog||[]).forEach((v,i)=>{ D.prog[i] = v; }); (s.keys||[]).forEach((v,i)=>{ D.keys[i] = !!v; });
   D.objs.forEach((o,i)=>{ if(s.objs[i]) o.on = true; const b = s.blk && s.blk[i]; if(b && o.kind==="block"){ if(map[o.ty*MW+o.tx]===T_BLOCK) map[o.ty*MW+o.tx] = D.L.floor; o.tx = b[0]; o.ty = b[1]; o.x = o.tx*TILE+16; o.y = o.ty*TILE+16; map[o.ty*MW+o.tx] = T_BLOCK; } });
   (s.ph||[]).forEach((v,i)=>{ if(v && !D.ph[i]){ D.ph[i] = true; dgWake(D, i, true); } });
-  (s.dead||[]).forEach((v,i)=>{ const m = D.mobs[i]; if(v && m){ m.dead = true; m.hp = 0; } });
+  (s.dead||[]).forEach((v,i)=>{ const m = D.mobs[i]; if(v && m){ m.dead = true; m.hp = 0; m.respawn = 1e9; } });   // dungeon monsters never respawn
   if(s.done){ DSTATE[D.id].done = true; if(!dobjs.some(o=>o.dg===D.id && o.kind==="exitEnd")) dobjs.push({dg:D.id, kind:"exitEnd", x:D.L.bx*TILE+16, y:D.L.by*TILE+16}); } }
 function coopHostDgReq(c, d){ const D = DUNGEONS[d.dg]; if(!D) return;
   const st = DSTATE[d.dg], inside = P.inDungeon===d.dg || coopRemoteIn(d.dg);

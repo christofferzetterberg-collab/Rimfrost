@@ -3,6 +3,23 @@
 
 Newest version first.
 
+## v0.15.1 – 2026-10-26
+### Fixed
+- **The signposts that mark places to find** on explore quests now show the name of the place, such as "The Witch's Hut", instead of "undefined".
+
+## v0.15.0 – 2026-10-26
+### Changed
+- **Monsters and gathering nodes stay dead and picked through a page refresh.** The respawn timers are saved in your browser and keep counting while you are away, so a monster you killed a minute ago does not come back just because you refreshed. Everything that should have respawned while you were away is back.
+
+## v0.14.1 – 2026-10-26
+### Fixed
+- **The character no longer runs away on its own** after you right-click, open the browser menu, or switch away from the game while holding a movement key. Movement keys are released automatically in those cases.
+- **Dungeon monsters stay dead after a refresh.** When you came back to a dungeon in progress after refreshing the page, the monsters you had already killed were back within seconds. They now stay dead. This also applies when a friend joins a dungeon that is already in progress.
+
+## v0.14.0 – 2026-10-26
+### Changed
+- **More monsters in the world.** The big high-level zones felt empty after the map grew. Mistmarsh now has almost twice as many monsters, Frostcrown about two and a quarter times as many, and Ashfields almost three times as many. Red Plains, Iron Ridge, the Gravelands and the Bonefields also got somewhat more.
+
 ## v0.13.0 – 2026-10-25
 ### Added
 - **Move the controls on phones.** Open the menu, then Display and controls, then "Move the controls", and drag the joystick, the Hit, Interact and Target buttons, the pet button and both skill bars to wherever you want them. Your layout is saved, and "Reset layout" puts everything back.
